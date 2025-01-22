@@ -8,19 +8,18 @@
         "format:fix": "prettier --write .",
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
-        "create-token": "ts-node src/create-token2022.ts"
+        "create-token": "ts-node src/create-token.ts"
     },
     "keywords": [],
     "author": "",
     "license": "UNLICENSED",
     "private": true,
-    "engines": {
-        "node": "^20.9.0",
-        "npm": ">=10.2.0"
-    },
     "dependencies": {
-        "@solana/spl-token": "^0.4.9",
-        "@solana/web3.js": "^1.98.0"
+        "@metaplex-foundation/mpl-token-metadata": "^3.3.0",
+        "@metaplex-foundation/mpl-toolbox": "^0.9.4",
+        "@metaplex-foundation/umi": "^1.0.0",
+        "@metaplex-foundation/umi-bundle-defaults": "^1.0.0",
+        "@metaplex-foundation/umi-uploader-irys": "^1.0.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.18.0",
@@ -28,6 +27,7 @@
         "@types/eslint__js": "^8.42.3",
         "@types/node": "^22.10.7",
         "dotenv": "^16.4.7",
+        "eslint": "^9.18.0",
         "eslint-config-prettier": "^10.0.1",
         "eslint-plugin-prettier": "^5.2.3",
         "husky": "^9.1.7",
