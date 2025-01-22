@@ -22,6 +22,7 @@ import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 import { extractEnvironmentVariables } from "./environment";
 import { createLogger } from "./logger";
+import { createCache } from "./cache";
 
 interface Metadata {
     name: string;
@@ -35,9 +36,12 @@ dotenv.config({
     path: isCI ? ".env.example" : ".env",
 });
 
+const cacheDir = `${__dirname}/../cache`;
+const dataDir = `${__dirname}/../data`;
+
 const envVars = extractEnvironmentVariables();
 const logger = createLogger(envVars.LOG_LEVEL);
-const dataDir = `${__dirname}/../data`;
+const cache = createCache(cacheDir);
 
 (async () => {
     const umi = createUmi(envVars.RPC_URL).use(mplTokenMetadata()).use(irysUploader());
@@ -63,8 +67,13 @@ async function importSigner(umi: Umi): Promise<KeypairSigner> {
 }
 
 async function uploadImage(umi: Umi): Promise<string> {
-    logger.debug(`Uploading image to Arweave...`);
+    let imageUri = cache.get<string>("imageUri");
+    if (imageUri) {
+        logger.info(`Image loaded from cache`);
+        return imageUri;
+    }
 
+    logger.debug(`Uploading image to Arweave...`);
     const imageFile = await fs.readFile(`${dataDir}/image.webp`);
     const umiImageFile = createGenericFile(imageFile, "image.webp", {
         tags: [{ name: "Content-Type", value: "image/webp" }],
@@ -74,16 +83,34 @@ async function uploadImage(umi: Umi): Promise<string> {
         throw new Error(err);
     });
     logger.info(`Image uploaded to Arweave at ${imageUris}`);
-    return imageUris[0];
+
+    imageUri = imageUris[0];
+    cache.set("imageUri", imageUri);
+    cache.save();
+    logger.debug(`Image URI saved to cache`);
+
+    return imageUri;
 }
 
-async function uploadMetadata(umi: Umi, imageUri: string): Promise<void> {
+async function uploadMetadata(umi: Umi, imageUri: string): Promise<Metadata> {
+    let metadata = cache.get<Metadata>("metadata");
+    if (metadata) {
+        logger.info(`Metadata loaded from cache`);
+        return metadata;
+    }
+
     logger.debug(`Uploading metadata to Arweave...`);
-    const metadata: Metadata = JSON.parse(await fs.readFile(`${dataDir}/metadata.json`, "utf-8"));
+    metadata = JSON.parse(await fs.readFile(`${dataDir}/metadata.json`, "utf-8"));
     metadata.image = imageUri;
 
     const metadataUri = await umi.uploader.uploadJson(metadata).catch((err) => {
         throw new Error(err);
     });
     logger.info(`Metadata uploaded to Arweave at ${metadataUri}`);
+
+    cache.set("metadata", metadata);
+    cache.save();
+    logger.debug(`Metadata saved to cache`);
+
+    return metadata;
 }

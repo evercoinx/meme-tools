@@ -8,6 +8,7 @@
         "format:fix": "prettier --write .",
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
+        "clean": "rm -rf cache/* data/*",
         "create-token": "ts-node src/create-token.ts"
     },
     "keywords": [],
@@ -20,6 +21,7 @@
         "@metaplex-foundation/umi": "^1.0.0",
         "@metaplex-foundation/umi-bundle-defaults": "^1.0.0",
         "@metaplex-foundation/umi-uploader-irys": "^1.0.0",
+        "flat-cache": "^6.1.5",
         "pino": "^9.6.0",
         "pino-pretty": "^13.0.0"
     },
