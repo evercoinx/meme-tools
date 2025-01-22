@@ -1,6 +1,7 @@
 import * as Joi from "joi";
 
 interface EnvironmentSchema {
+    LOG_LEVEL: string;
     RPC_URL: string;
     KEYPAIR_PATH: string;
 }
@@ -8,6 +9,10 @@ interface EnvironmentSchema {
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()
         .keys({
+            LOG_LEVEL: Joi.string()
+                .optional()
+                .valid("debug", "info", "warn", "error", "fatal")
+                .default("info"),
             RPC_URL: Joi.string().required().uri().description("RPC URL"),
             KEYPAIR_PATH: Joi.string()
                 .required()

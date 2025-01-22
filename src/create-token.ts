@@ -21,6 +21,7 @@ import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 import { extractEnvironmentVariables } from "./environment";
+import { createLogger } from "./logger";
 
 interface Metadata {
     name: string;
@@ -35,6 +36,7 @@ dotenv.config({
 });
 
 const envVars = extractEnvironmentVariables();
+const logger = createLogger(envVars.LOG_LEVEL);
 const dataDir = `${__dirname}/../data`;
 
 (async () => {
@@ -48,7 +50,7 @@ const dataDir = `${__dirname}/../data`;
     await uploadMetadata(umi, imageUri);
 
     const mintSigner = generateSigner(umi);
-    console.log(`Mint ${mintSigner.publicKey} created`);
+    logger.info(`Mint ${mintSigner.publicKey} created`);
 })();
 
 async function importSigner(umi: Umi): Promise<KeypairSigner> {
@@ -56,12 +58,13 @@ async function importSigner(umi: Umi): Promise<KeypairSigner> {
     const keypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(walletFile));
 
     const signer = createSignerFromKeypair(umi, keypair);
-    console.log(`Signer ${signer.publicKey} imported`);
+    logger.info(`Signer ${signer.publicKey} imported`);
     return signer;
 }
 
 async function uploadImage(umi: Umi): Promise<string> {
-    console.log(`Uploading image to Arweave...`);
+    logger.debug(`Uploading image to Arweave...`);
+
     const imageFile = await fs.readFile(`${dataDir}/image.webp`);
     const umiImageFile = createGenericFile(imageFile, "image.webp", {
         tags: [{ name: "Content-Type", value: "image/webp" }],
@@ -70,17 +73,17 @@ async function uploadImage(umi: Umi): Promise<string> {
     const imageUris = await umi.uploader.upload([umiImageFile]).catch((err) => {
         throw new Error(err);
     });
-    console.log(`Image uploaded to Arweave at ${imageUris}`);
+    logger.info(`Image uploaded to Arweave at ${imageUris}`);
     return imageUris[0];
 }
 
 async function uploadMetadata(umi: Umi, imageUri: string): Promise<void> {
-    console.log(`Uploading metadata to Arweave...`);
+    logger.debug(`Uploading metadata to Arweave...`);
     const metadata: Metadata = JSON.parse(await fs.readFile(`${dataDir}/metadata.json`, "utf-8"));
     metadata.image = imageUri;
 
     const metadataUri = await umi.uploader.uploadJson(metadata).catch((err) => {
         throw new Error(err);
     });
-    console.log(`Metadata uploaded to Arweave at ${metadataUri}`);
+    logger.info(`Metadata uploaded to Arweave at ${metadataUri}`);
 }
