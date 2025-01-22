@@ -13,7 +13,6 @@ import {
     percentAmount,
     createGenericFile,
     signerIdentity,
-    sol,
     Umi,
     KeypairSigner,
 } from "@metaplex-foundation/umi";
@@ -38,6 +37,7 @@ dotenv.config({
 
 const cacheDir = `${__dirname}/../cache`;
 const dataDir = `${__dirname}/../data`;
+const explorerUri = "https://explorer.solana.com";
 
 const envVars = extractEnvironmentVariables();
 const logger = createLogger(envVars.LOG_LEVEL);
@@ -50,12 +50,51 @@ const cache = createCache(cacheDir);
     umi.use(signerIdentity(signer));
 
     const imageUri = await uploadImage(umi);
-
-    await uploadMetadata(umi, imageUri);
+    const metadata = await uploadMetadata(umi, imageUri);
 
     const mintSigner = generateSigner(umi);
     logger.info(`Mint ${mintSigner.publicKey} created`);
+
+    await sendTransaction(umi, metadata, mintSigner);
 })();
+
+async function sendTransaction(
+    umi: Umi,
+    metadata: Metadata,
+    mintSigner: KeypairSigner
+): Promise<void> {
+    const createFungibleIx = createFungible(umi, {
+        mint: mintSigner,
+        name: metadata.name,
+        uri: metadata.image,
+        sellerFeeBasisPoints: percentAmount(0),
+        decimals: 9,
+    });
+
+    const createTokenIx = createTokenIfMissing(umi, {
+        mint: mintSigner.publicKey,
+        owner: umi.identity.publicKey,
+        ataProgram: getSplAssociatedTokenProgramId(umi),
+    });
+
+    const mintTokensIx = mintTokensTo(umi, {
+        mint: mintSigner.publicKey,
+        token: findAssociatedTokenPda(umi, {
+            mint: mintSigner.publicKey,
+            owner: umi.identity.publicKey,
+        }),
+        amount: 1_000_000_000n,
+    });
+
+    logger.debug("Sending transaction...");
+    const tx = await createFungibleIx.add(createTokenIx).add(mintTokensIx).sendAndConfirm(umi);
+
+    const signature = base58.deserialize(tx.signature)[0];
+
+    logger.info("Transaction confirmed");
+    logger.info(`${explorerUri}/tx/${signature}?cluster=devnet`);
+    logger.info(`${explorerUri}/address/${mintSigner.publicKey}?cluster=devnet`);
+}
 
 async function importSigner(umi: Umi): Promise<KeypairSigner> {
     const walletFile: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf-8"));
