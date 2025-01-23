@@ -4,6 +4,7 @@ interface EnvironmentSchema {
     LOG_LEVEL: string;
     RPC_URL: string;
     KEYPAIR_PATH: string;
+    TOKEN_SYMBOL: string;
 }
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
@@ -18,6 +19,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .pattern(/^\/([\w.-]+\/?)*$/)
                 .description("Keypair path"),
+            TOKEN_SYMBOL: Joi.string().required().uppercase(),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 

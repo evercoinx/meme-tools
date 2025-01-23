@@ -8,7 +8,7 @@
         "format:fix": "prettier --write .",
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
-        "clean": "rm -rf cache/* data/*",
+        "clean": "rm -rf cache/*",
         "create-token": "ts-node src/create-token.ts"
     },
     "keywords": [],
