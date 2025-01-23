@@ -1,26 +1,28 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as dotenv from "dotenv";
-import { createFungible, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import {
-    createTokenIfMissing,
-    findAssociatedTokenPda,
-    getSplAssociatedTokenProgramId,
-    mintTokensTo,
-} from "@metaplex-foundation/mpl-toolbox";
+    createV1,
+    mintV1,
+    mplTokenMetadata,
+    TokenStandard,
+} from "@metaplex-foundation/mpl-token-metadata";
+import { findAssociatedTokenPda } from "@metaplex-foundation/mpl-toolbox";
 import {
-    KeypairSigner,
-    Umi,
     createSignerFromKeypair,
     createGenericFile,
     generateSigner,
+    KeypairSigner,
     percentAmount,
+    publicKey,
     tokenAmount,
     signerIdentity,
+    some,
+    Umi,
 } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
 import { base58 } from "@metaplex-foundation/umi/serializers";
+import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
 import { extractEnvironmentVariables } from "./environment";
 import { createLogger } from "./logger";
 import { createCache } from "./cache";
@@ -47,9 +49,10 @@ const METADATA_DIR = `${__dirname}/../metadata`;
 const EXPLORER_URI = "https://explorer.solana.com";
 
 const TOKEN_DATA = {
-    decimals: 9,
+    decimals: some(9),
     supply: tokenAmount(1_000_000_000, undefined, 9),
 };
+const SPL_TOKEN_2022_PROGRAM_ID = publicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
 
 const envVars = extractEnvironmentVariables();
 const logger = createLogger(envVars.LOG_LEVEL);
@@ -59,8 +62,8 @@ const cache = createCache(CACHE_DIR);
     try {
         const umi = createUmi(envVars.RPC_URL).use(mplTokenMetadata()).use(irysUploader());
 
-        const paySigner = await importPaySigner(umi);
-        umi.use(signerIdentity(paySigner));
+        const identitySigner = await importPaySigner(umi);
+        umi.use(signerIdentity(identitySigner));
 
         const imageUri = await uploadImage(umi);
         const metadata = await uploadMetadata(umi, imageUri);
@@ -79,9 +82,9 @@ async function importPaySigner(umi: Umi): Promise<KeypairSigner> {
     const walletFile: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf-8"));
     const keypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(walletFile));
 
-    const paySigner = createSignerFromKeypair(umi, keypair);
-    logger.info(`Pay signer ${paySigner.publicKey} imported`);
-    return paySigner;
+    const identitySigner = createSignerFromKeypair(umi, keypair);
+    logger.info(`Identity signer ${identitySigner.publicKey} imported`);
+    return identitySigner;
 }
 
 async function uploadImage(umi: Umi): Promise<string> {
@@ -126,6 +129,7 @@ async function uploadMetadata(umi: Umi, imageUri: string): Promise<ExtendedMetad
     const metadataUri = await umi.uploader.uploadJson(metadata).catch((err) => {
         throw new Error(err);
     });
+    metadata.uri = metadataUri;
     logger.info(`Metadata uploaded to Arweave at ${metadataUri}`);
 
     cache.set("metadata", metadata);
@@ -140,32 +144,36 @@ async function sendTransaction(
     metadata: ExtendedMetadata,
     mintSigner: KeypairSigner
 ): Promise<void> {
-    const createFungibleIx = createFungible(umi, {
+    const createTokenIx = createV1(umi, {
         mint: mintSigner,
+        authority: umi.identity,
         name: metadata.name,
+        symbol: metadata.symbol,
         uri: metadata.uri,
-        sellerFeeBasisPoints: percentAmount(0),
         decimals: TOKEN_DATA.decimals,
+        creators: null,
+        isMutable: false,
+        sellerFeeBasisPoints: percentAmount(0),
+        splTokenProgram: SPL_TOKEN_2022_PROGRAM_ID,
+        tokenStandard: TokenStandard.Fungible,
     });
 
-    const createTokenIx = createTokenIfMissing(umi, {
-        mint: mintSigner.publicKey,
-        owner: umi.identity.publicKey,
-        ataProgram: getSplAssociatedTokenProgramId(umi),
-    });
-
-    const mintTokensIx = mintTokensTo(umi, {
+    const mintTokensIx = mintV1(umi, {
         mint: mintSigner.publicKey,
         token: findAssociatedTokenPda(umi, {
             mint: mintSigner.publicKey,
             owner: umi.identity.publicKey,
+            tokenProgramId: SPL_TOKEN_2022_PROGRAM_ID,
         }),
+        authority: umi.identity,
         amount: TOKEN_DATA.supply.basisPoints,
+        tokenOwner: umi.identity.publicKey,
+        splTokenProgram: SPL_TOKEN_2022_PROGRAM_ID,
+        tokenStandard: TokenStandard.Fungible,
     });
 
     logger.debug("Sending transaction...");
-    const tx = await createFungibleIx.add(createTokenIx).add(mintTokensIx).sendAndConfirm(umi);
-
+    const tx = await createTokenIx.add(mintTokensIx).sendAndConfirm(umi);
     const signature = base58.deserialize(tx.signature)[0];
 
     logger.info("Transaction confirmed");
