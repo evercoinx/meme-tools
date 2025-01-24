@@ -3,10 +3,12 @@ import * as path from "node:path";
 import * as dotenv from "dotenv";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
+    AuthorityType,
     createAssociatedTokenAccountInstruction,
     createInitializeMetadataPointerInstruction,
     createInitializeMintInstruction,
     createMintToInstruction,
+    createSetAuthorityInstruction,
     ExtensionType,
     getAssociatedTokenAddress,
     getMintLen,
@@ -175,7 +177,7 @@ async function sendTransaction(
         }),
         createInitializeMetadataPointerInstruction(
             mint.publicKey,
-            payer.publicKey,
+            null,
             mint.publicKey,
             TOKEN_2022_PROGRAM_ID
         ),
@@ -209,6 +211,14 @@ async function sendTransaction(
             associatedToken,
             payer.publicKey,
             TOKEN_DATA.supply,
+            [],
+            TOKEN_2022_PROGRAM_ID
+        ),
+        createSetAuthorityInstruction(
+            mint.publicKey,
+            payer.publicKey,
+            AuthorityType.MintTokens,
+            null,
             [],
             TOKEN_2022_PROGRAM_ID
         )
