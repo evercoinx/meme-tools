@@ -2,30 +2,27 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as dotenv from "dotenv";
 import {
-    createV1,
-    mintV1,
-    mplTokenMetadata,
-    TokenStandard,
-} from "@metaplex-foundation/mpl-token-metadata";
-import { findAssociatedTokenPda } from "@metaplex-foundation/mpl-toolbox";
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    createAssociatedTokenAccountInstruction,
+    createInitializeMint2Instruction,
+    createMintToInstruction,
+    getAssociatedTokenAddress,
+    getMinimumBalanceForRentExemptMint,
+    MINT_SIZE,
+    TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import {
-    createSignerFromKeypair,
-    createGenericFile,
-    generateSigner,
-    KeypairSigner,
-    percentAmount,
-    publicKey,
-    tokenAmount,
-    signerIdentity,
-    some,
-    Umi,
-} from "@metaplex-foundation/umi";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { base58 } from "@metaplex-foundation/umi/serializers";
-import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
+    Connection,
+    Keypair,
+    LAMPORTS_PER_SOL,
+    sendAndConfirmTransaction,
+    SystemProgram,
+    Transaction,
+} from "@solana/web3.js";
 import { extractEnvironmentVariables } from "./environment";
 import { createLogger } from "./logger";
 import { createCache } from "./cache";
+import { createIPFS } from "./ipfs";
 
 interface Metadata {
     name: string;
@@ -49,64 +46,59 @@ const METADATA_DIR = `${__dirname}/../metadata`;
 const EXPLORER_URI = "https://explorer.solana.com";
 
 const TOKEN_DATA = {
-    decimals: some(9),
-    supply: tokenAmount(1_000_000_000, undefined, 9),
+    decimals: 9,
+    supply: 1_000_000_000 * LAMPORTS_PER_SOL,
 };
-const SPL_TOKEN_2022_PROGRAM_ID = publicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
 
 const envVars = extractEnvironmentVariables();
 const logger = createLogger(envVars.LOG_LEVEL);
 const cache = createCache(CACHE_DIR);
+const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
 
 (async () => {
     try {
-        const umi = createUmi(envVars.RPC_URL).use(mplTokenMetadata()).use(irysUploader());
+        const payer = await importPayer();
 
-        const identitySigner = await importPaySigner(umi);
-        umi.use(signerIdentity(identitySigner));
+        const imageUri = await uploadImage();
+        const metadata = await uploadMetadata(imageUri);
 
-        const imageUri = await uploadImage(umi);
-        const metadata = await uploadMetadata(umi, imageUri);
+        const mint = Keypair.generate();
+        logger.info(`Mint ${mint.publicKey.toBase58()} created`);
 
-        const mintSigner = generateSigner(umi);
-        logger.info(`Mint signer ${mintSigner.publicKey} created`);
+        const connection = new Connection(envVars.RPC_URL, "confirmed");
 
-        await sendTransaction(umi, metadata, mintSigner);
+        await sendTransaction(connection, metadata, payer, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-async function importPaySigner(umi: Umi): Promise<KeypairSigner> {
-    const walletFile: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf-8"));
-    const keypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(walletFile));
+async function importPayer(): Promise<Keypair> {
+    const secretKey: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf-8"));
+    const payerKeypair = Keypair.fromSecretKey(Uint8Array.from(secretKey));
 
-    const identitySigner = createSignerFromKeypair(umi, keypair);
-    logger.info(`Identity signer ${identitySigner.publicKey} imported`);
-    return identitySigner;
+    logger.info(`Payer ${payerKeypair.publicKey.toBase58()} imported`);
+    return payerKeypair;
 }
 
-async function uploadImage(umi: Umi): Promise<string> {
+async function uploadImage(): Promise<string> {
     let imageUri = cache.get<string>("imageUri");
     if (imageUri) {
-        logger.info(`Image loaded from cache`);
+        logger.info("Image loaded from cache");
         return imageUri;
     }
 
-    logger.debug(`Uploading image to Arweave...`);
+    logger.debug("Uploading image to IPFS...");
     const imageFileName = `${envVars.TOKEN_SYMBOL}.webp`;
-    const imageFile = await fs.readFile(path.join(IMAGE_DIR, imageFileName));
-    const umiImageFile = createGenericFile(imageFile, imageFileName, {
-        tags: [{ name: "Content-Type", value: "image/webp" }],
-    });
+    const imageBlob = new Blob([await fs.readFile(path.join(IMAGE_DIR, imageFileName))]);
 
-    const imageUris = await umi.uploader.upload([umiImageFile]).catch((err) => {
-        throw new Error(err);
-    });
-    logger.info(`Image uploaded to Arweave at ${imageUris}`);
+    const imageFile = new File([imageBlob], imageFileName, { type: "image/webp" });
+    const upload = await ipfs.upload.file(imageFile);
 
-    imageUri = imageUris[0];
+    imageUri = `${envVars.IPFS_GATEWAY}/${upload.IpfsHash}`;
+    logger.info(`Image uploaded to IPFS at ${imageUri}`);
+
     cache.set("imageUri", imageUri);
     cache.save();
     logger.debug(`Image URI saved to cache`);
@@ -114,23 +106,28 @@ async function uploadImage(umi: Umi): Promise<string> {
     return imageUri;
 }
 
-async function uploadMetadata(umi: Umi, imageUri: string): Promise<ExtendedMetadata> {
+async function uploadMetadata(imageUri: string): Promise<ExtendedMetadata> {
     let metadata = cache.get<ExtendedMetadata>("metadata");
     if (metadata) {
         logger.info(`Metadata loaded from cache`);
         return metadata;
     }
 
-    logger.debug(`Uploading metadata to Arweave...`);
+    logger.debug(`Uploading metadata to IPFS...`);
     const metadataFilename = `${envVars.TOKEN_SYMBOL}.json`;
-    metadata = JSON.parse(await fs.readFile(path.join(METADATA_DIR, metadataFilename), "utf-8"));
-    metadata.image = imageUri;
+    metadata = {
+        ...JSON.parse(await fs.readFile(path.join(METADATA_DIR, metadataFilename), "utf-8")),
+        image: imageUri,
+    };
 
-    const metadataUri = await umi.uploader.uploadJson(metadata).catch((err) => {
-        throw new Error(err);
+    const metadataFile = new File([JSON.stringify(metadata)], metadataFilename, {
+        type: "text/plain",
     });
-    metadata.uri = metadataUri;
-    logger.info(`Metadata uploaded to Arweave at ${metadataUri}`);
+    const upload = await ipfs.upload.file(metadataFile);
+
+    const metadataUri = `${envVars.IPFS_GATEWAY}/${upload.IpfsHash}`;
+    metadata = { ...metadata, uri: metadataUri };
+    logger.info(`Metadata uploaded to IPFS at ${metadataUri}`);
 
     cache.set("metadata", metadata);
     cache.save();
@@ -140,43 +137,59 @@ async function uploadMetadata(umi: Umi, imageUri: string): Promise<ExtendedMetad
 }
 
 async function sendTransaction(
-    umi: Umi,
+    connection: Connection,
     metadata: ExtendedMetadata,
-    mintSigner: KeypairSigner
+    payer: Keypair,
+    mint: Keypair
 ): Promise<void> {
-    const createTokenIx = createV1(umi, {
-        mint: mintSigner,
-        authority: umi.identity,
-        name: metadata.name,
-        symbol: metadata.symbol,
-        uri: metadata.uri,
-        decimals: TOKEN_DATA.decimals,
-        creators: null,
-        isMutable: false,
-        sellerFeeBasisPoints: percentAmount(0),
-        splTokenProgram: SPL_TOKEN_2022_PROGRAM_ID,
-        tokenStandard: TokenStandard.Fungible,
-    });
+    const mintRentLamports = await getMinimumBalanceForRentExemptMint(connection);
+    const transaction = new Transaction();
 
-    const mintTokensIx = mintV1(umi, {
-        mint: mintSigner.publicKey,
-        token: findAssociatedTokenPda(umi, {
-            mint: mintSigner.publicKey,
-            owner: umi.identity.publicKey,
-            tokenProgramId: SPL_TOKEN_2022_PROGRAM_ID,
+    const associatedToken = await getAssociatedTokenAddress(
+        mint.publicKey,
+        payer.publicKey,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    transaction.add(
+        SystemProgram.createAccount({
+            fromPubkey: payer.publicKey,
+            newAccountPubkey: mint.publicKey,
+            lamports: mintRentLamports,
+            space: MINT_SIZE,
+            programId: TOKEN_PROGRAM_ID,
         }),
-        authority: umi.identity,
-        amount: TOKEN_DATA.supply.basisPoints,
-        tokenOwner: umi.identity.publicKey,
-        splTokenProgram: SPL_TOKEN_2022_PROGRAM_ID,
-        tokenStandard: TokenStandard.Fungible,
-    });
+        createInitializeMint2Instruction(
+            mint.publicKey,
+            TOKEN_DATA.decimals,
+            payer.publicKey,
+            null,
+            TOKEN_PROGRAM_ID
+        ),
+        createAssociatedTokenAccountInstruction(
+            payer.publicKey,
+            associatedToken,
+            payer.publicKey,
+            mint.publicKey,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        ),
+        createMintToInstruction(
+            mint.publicKey,
+            associatedToken,
+            payer.publicKey,
+            TOKEN_DATA.supply,
+            [],
+            TOKEN_PROGRAM_ID
+        )
+    );
 
     logger.debug("Sending transaction...");
-    const tx = await createTokenIx.add(mintTokensIx).sendAndConfirm(umi);
-    const signature = base58.deserialize(tx.signature)[0];
+    const signature = await sendAndConfirmTransaction(connection, transaction, [payer, mint]);
 
     logger.info("Transaction confirmed");
     logger.info(`${EXPLORER_URI}/tx/${signature}?cluster=devnet`);
-    logger.info(`${EXPLORER_URI}/address/${mintSigner.publicKey}?cluster=devnet`);
+    logger.info(`${EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=devnet`);
 }
