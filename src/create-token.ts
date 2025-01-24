@@ -4,12 +4,15 @@ import * as dotenv from "dotenv";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     createAssociatedTokenAccountInstruction,
-    createInitializeMint2Instruction,
+    createInitializeMetadataPointerInstruction,
+    createInitializeMintInstruction,
     createMintToInstruction,
+    ExtensionType,
     getAssociatedTokenAddress,
-    getMinimumBalanceForRentExemptMint,
-    MINT_SIZE,
-    TOKEN_PROGRAM_ID,
+    getMintLen,
+    LENGTH_SIZE,
+    TOKEN_2022_PROGRAM_ID,
+    TYPE_SIZE,
 } from "@solana/spl-token";
 import {
     Connection,
@@ -19,18 +22,16 @@ import {
     SystemProgram,
     Transaction,
 } from "@solana/web3.js";
+import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import { extractEnvironmentVariables } from "./environment";
 import { createLogger } from "./logger";
 import { createCache } from "./cache";
 import { createIPFS } from "./ipfs";
 
-interface Metadata {
+interface OffchainTokenMetadata {
     name: string;
     symbol: string;
     description: string;
-}
-
-interface ExtendedMetadata extends Metadata {
     image: string;
     uri: string;
 }
@@ -59,14 +60,13 @@ const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
     try {
         const payer = await importPayer();
 
-        const imageUri = await uploadImage();
-        const metadata = await uploadMetadata(imageUri);
-
         const mint = Keypair.generate();
         logger.info(`Mint ${mint.publicKey.toBase58()} created`);
 
-        const connection = new Connection(envVars.RPC_URL, "confirmed");
+        const imageUri = await uploadImage();
+        const metadata = await uploadMetadata(imageUri);
 
+        const connection = new Connection(envVars.RPC_URL, "confirmed");
         await sendTransaction(connection, metadata, payer, mint);
     } catch (err) {
         logger.fatal(err);
@@ -96,7 +96,7 @@ async function uploadImage(): Promise<string> {
     const imageFile = new File([imageBlob], imageFileName, { type: "image/webp" });
     const upload = await ipfs.upload.file(imageFile);
 
-    imageUri = `${envVars.IPFS_GATEWAY}/${upload.IpfsHash}`;
+    imageUri = `${envVars.IPFS_GATEWAY}/ipfs/${upload.IpfsHash}`;
     logger.info(`Image uploaded to IPFS at ${imageUri}`);
 
     cache.set("imageUri", imageUri);
@@ -106,8 +106,8 @@ async function uploadImage(): Promise<string> {
     return imageUri;
 }
 
-async function uploadMetadata(imageUri: string): Promise<ExtendedMetadata> {
-    let metadata = cache.get<ExtendedMetadata>("metadata");
+async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> {
+    let metadata = cache.get<OffchainTokenMetadata>("metadata");
     if (metadata) {
         logger.info(`Metadata loaded from cache`);
         return metadata;
@@ -125,8 +125,11 @@ async function uploadMetadata(imageUri: string): Promise<ExtendedMetadata> {
     });
     const upload = await ipfs.upload.file(metadataFile);
 
-    const metadataUri = `${envVars.IPFS_GATEWAY}/${upload.IpfsHash}`;
-    metadata = { ...metadata, uri: metadataUri };
+    const metadataUri = `${envVars.IPFS_GATEWAY}/ipfs/${upload.IpfsHash}`;
+    metadata = {
+        ...metadata,
+        uri: metadataUri,
+    };
     logger.info(`Metadata uploaded to IPFS at ${metadataUri}`);
 
     cache.set("metadata", metadata);
@@ -138,42 +141,67 @@ async function uploadMetadata(imageUri: string): Promise<ExtendedMetadata> {
 
 async function sendTransaction(
     connection: Connection,
-    metadata: ExtendedMetadata,
+    offchainMetadata: OffchainTokenMetadata,
     payer: Keypair,
     mint: Keypair
 ): Promise<void> {
-    const mintRentLamports = await getMinimumBalanceForRentExemptMint(connection);
-    const transaction = new Transaction();
+    const metadata: TokenMetadata = {
+        mint: mint.publicKey,
+        name: offchainMetadata.name,
+        symbol: offchainMetadata.symbol,
+        uri: offchainMetadata.uri,
+        additionalMetadata: [],
+    };
+    const mintLen = getMintLen([ExtensionType.MetadataPointer]);
+    const metadataLen = TYPE_SIZE + LENGTH_SIZE + pack(metadata).length;
+    const mintLamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
 
     const associatedToken = await getAssociatedTokenAddress(
         mint.publicKey,
         payer.publicKey,
         false,
-        TOKEN_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
+    const transaction = new Transaction();
     transaction.add(
         SystemProgram.createAccount({
             fromPubkey: payer.publicKey,
             newAccountPubkey: mint.publicKey,
-            lamports: mintRentLamports,
-            space: MINT_SIZE,
-            programId: TOKEN_PROGRAM_ID,
+            space: mintLen,
+            lamports: mintLamports,
+            programId: TOKEN_2022_PROGRAM_ID,
         }),
-        createInitializeMint2Instruction(
+        createInitializeMetadataPointerInstruction(
+            mint.publicKey,
+            payer.publicKey,
+            mint.publicKey,
+            TOKEN_2022_PROGRAM_ID
+        ),
+        createInitializeMintInstruction(
             mint.publicKey,
             TOKEN_DATA.decimals,
             payer.publicKey,
             null,
-            TOKEN_PROGRAM_ID
+            TOKEN_2022_PROGRAM_ID
         ),
+        createInitializeInstruction({
+            mint: mint.publicKey,
+            mintAuthority: payer.publicKey,
+            updateAuthority: payer.publicKey,
+            metadata: mint.publicKey,
+            name: metadata.name,
+            symbol: metadata.symbol,
+            uri: metadata.uri,
+            programId: TOKEN_2022_PROGRAM_ID,
+        }),
         createAssociatedTokenAccountInstruction(
             payer.publicKey,
             associatedToken,
             payer.publicKey,
             mint.publicKey,
-            TOKEN_PROGRAM_ID,
+            TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         ),
         createMintToInstruction(
@@ -182,7 +210,7 @@ async function sendTransaction(
             payer.publicKey,
             TOKEN_DATA.supply,
             [],
-            TOKEN_PROGRAM_ID
+            TOKEN_2022_PROGRAM_ID
         )
     );
 
