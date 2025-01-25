@@ -9,8 +9,8 @@
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
         "clean": "rm -rf dist/* storage/cache.json",
-        "create-token": "ts-node src/create-token.ts",
-        "create-pool": "ts-node src/create-pool.ts"
+        "create-token": "ts-node src/tasks/create-token.ts",
+        "create-pool": "ts-node src/tasks/create-pool.ts"
     },
     "keywords": [],
     "author": "",

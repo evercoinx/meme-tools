@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { encryption, envVars, keyring, KEYRING_KEY_MINT, logger } from "./common";
+import { encryption, envVars, keyring, KEYRING_KEY_MINT, logger } from "./init";
 
 (async () => {
     try {
@@ -13,7 +13,7 @@ import { encryption, envVars, keyring, KEYRING_KEY_MINT, logger } from "./common
 })();
 
 async function importKeypairs(connection: Connection): Promise<[Keypair, Keypair]> {
-    const secretKey: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf-8"));
+    const secretKey: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf8"));
     const payer = Keypair.fromSecretKey(Uint8Array.from(secretKey));
 
     const balance = await connection.getBalance(payer.publicKey);

@@ -1,15 +1,16 @@
 import dotenv from "dotenv";
-import { extractEnvironmentVariables } from "./environment";
-import { createLogger } from "./logger";
-import { createCache, createKeyring } from "./storage";
-import { Encryption } from "./encryption";
-import { createIPFS } from "./ipfs";
+import { Encryption } from "../modules/encryption";
+import { extractEnvironmentVariables } from "../modules/environment";
+import { createIPFS } from "../modules/ipfs";
+import { createLogger } from "../modules/logger";
+import { createCache, createKeyring } from "../modules/storage";
 
 dotenv.config();
 
-export const IMAGE_DIR = `${__dirname}/../input/image`;
-export const METADATA_DIR = `${__dirname}/../input/metadata`;
-export const STORAGE_DIR = `${__dirname}/../storage`;
+const cwd = process.cwd();
+export const IMAGE_DIR = `${cwd}/input/images`;
+export const METADATA_DIR = `${cwd}/input/metadata`;
+export const STORAGE_DIR = `${cwd}/storage`;
 
 export const CACHE_KEY_METADATA = "metadata";
 export const CACHE_KEY_IMAGE_URI = "image_uri";

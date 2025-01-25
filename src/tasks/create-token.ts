@@ -37,7 +37,7 @@ import {
     KEYRING_KEY_MINT,
     logger,
     METADATA_DIR,
-} from "./common";
+} from "./init";
 
 interface OffchainTokenMetadata {
     name: string;
@@ -68,7 +68,7 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
 })();
 
 async function generateKeypairs(connection: Connection): Promise<[Keypair, Keypair]> {
-    const payerSecretKey: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf-8"));
+    const payerSecretKey: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf8"));
     const payer = Keypair.fromSecretKey(Uint8Array.from(payerSecretKey));
 
     const balance = await connection.getBalance(payer.publicKey);
@@ -122,7 +122,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
     logger.debug(`Uploading metadata to IPFS...`);
     const metadataFilename = `${envVars.TOKEN_SYMBOL}.json`;
     metadata = {
-        ...JSON.parse(await fs.readFile(path.join(METADATA_DIR, metadataFilename), "utf-8")),
+        ...JSON.parse(await fs.readFile(path.join(METADATA_DIR, metadataFilename), "utf8")),
         image: imageUri,
     };
 

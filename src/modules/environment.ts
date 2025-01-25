@@ -20,7 +20,10 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .optional()
                 .valid("debug", "info", "warn", "error", "fatal")
                 .default("info"),
-            IPFS_JWT: Joi.string().required().description("IPFS JWT"),
+            IPFS_JWT: Joi.string()
+                .required()
+                .pattern(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/)
+                .description("IPFS JWT"),
             IPFS_GATEWAY: Joi.string().required().uri().description("IPFS Gateway"),
             RPC_URI: Joi.string()
                 .optional()
@@ -68,5 +71,6 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
     if (error) {
         throw new Error(error.annotate());
     }
+
     return envVars;
 }
