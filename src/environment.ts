@@ -38,12 +38,14 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             TOKEN_SYMBOL: Joi.string().required().uppercase().max(20).description("Token symbol"),
             TOKEN_DECIMALS: Joi.number()
                 .optional()
+                .integer()
                 .min(0)
-                .max(9)
-                .default(9)
+                .max(6)
+                .default(6)
                 .description("Token decimals"),
             TOKEN_SUPPLY: Joi.number()
                 .optional()
+                .integer()
                 .min(1e5)
                 .max(1e11)
                 .default(1e9)

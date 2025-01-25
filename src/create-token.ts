@@ -160,9 +160,16 @@ async function sendTransaction(
         uri: offchainMetadata.uri,
         additionalMetadata: [],
     };
-    const mintLen = getMintLen([ExtensionType.MetadataPointer]);
-    const metadataLen = TYPE_SIZE + LENGTH_SIZE + pack(metadata).length;
-    const mintLamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
+    // Size of Mint account with MetadataPointer extension
+    const mintSize = getMintLen([ExtensionType.MetadataPointer]);
+    // Size of Metadata extension: 2 bytes for type, 2 bytes for length
+    const metadataDataExtensionSize = TYPE_SIZE + LENGTH_SIZE;
+    // Size of metadata
+    const metadataSize = pack(metadata).length;
+    // Minimum lamports required for Mint account
+    const mintLamports = await connection.getMinimumBalanceForRentExemption(
+        mintSize + metadataDataExtensionSize + metadataSize
+    );
 
     const associatedToken = await getAssociatedTokenAddress(
         mint.publicKey,
@@ -174,19 +181,22 @@ async function sendTransaction(
 
     const transaction = new Transaction();
     transaction.add(
+        // Invoke the System program to create a new account
         SystemProgram.createAccount({
             fromPubkey: payer.publicKey,
             newAccountPubkey: mint.publicKey,
-            space: mintLen,
+            space: mintSize,
             lamports: mintLamports,
             programId: TOKEN_2022_PROGRAM_ID,
         }),
+        // Initialize the MetadataPointer extension
         createInitializeMetadataPointerInstruction(
             mint.publicKey,
             null,
             mint.publicKey,
             TOKEN_2022_PROGRAM_ID
         ),
+        // Initialize Mint account data
         createInitializeMintInstruction(
             mint.publicKey,
             envVars.TOKEN_DECIMALS,
@@ -194,6 +204,7 @@ async function sendTransaction(
             null,
             TOKEN_2022_PROGRAM_ID
         ),
+        // Initialize Metadata account data
         createInitializeInstruction({
             mint: mint.publicKey,
             mintAuthority: payer.publicKey,
@@ -204,6 +215,7 @@ async function sendTransaction(
             uri: metadata.uri,
             programId: TOKEN_2022_PROGRAM_ID,
         }),
+        // Create the Associated token account connecting the Owner account with the Mint account
         createAssociatedTokenAccountInstruction(
             payer.publicKey,
             associatedToken,
@@ -212,6 +224,7 @@ async function sendTransaction(
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         ),
+        // Mint tokens to the Owner's Associated token account
         createMintToInstruction(
             mint.publicKey,
             associatedToken,
@@ -220,6 +233,7 @@ async function sendTransaction(
             [],
             TOKEN_2022_PROGRAM_ID
         ),
+        // Revoke the MintTokens authority from the Owner account
         createSetAuthorityInstruction(
             mint.publicKey,
             payer.publicKey,
@@ -234,7 +248,7 @@ async function sendTransaction(
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer, mint]);
 
     logger.info("Transaction confirmed");
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=devnet`);
+    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=devnet-alpha`);
     logger.info(
         `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=devnet-alpha`
     );
