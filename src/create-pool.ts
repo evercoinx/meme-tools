@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { cache, envVars, logger } from "./common";
+import { encryption, envVars, keyring, KEYRING_KEY_MINT, logger } from "./common";
 
 (async () => {
     try {
@@ -22,12 +22,13 @@ async function importKeypairs(connection: Connection): Promise<[Keypair, Keypair
     }
     logger.info(`Payer ${payer.publicKey.toBase58()} imported`);
 
-    const mintSecretKey = cache.get<string>("mint");
-    if (!mintSecretKey) {
-        throw new Error(`Mint not loaded from cache`);
+    const encryptedMint = keyring.get<string>(KEYRING_KEY_MINT);
+    if (!encryptedMint) {
+        throw new Error(`Mint not loaded from keyring`);
     }
 
-    const mint = Keypair.fromSecretKey(Buffer.from(mintSecretKey, "utf-8"));
+    const mintSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedMint));
+    const mint = Keypair.fromSecretKey(Uint8Array.from(mintSecretKey));
     logger.info(`Mint ${mint.publicKey.toBase58()} imported`);
 
     return [payer, mint];

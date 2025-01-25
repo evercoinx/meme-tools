@@ -1,14 +1,14 @@
 {
-    "name": "meme",
+    "name": "meme-tools",
     "version": "1.0.0",
-    "description": "Meme Launchpad",
+    "description": "Meme Tools",
     "scripts": {
         "prepare": "husky",
         "format": "prettier --check .",
         "format:fix": "prettier --write .",
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
-        "clean": "rm -rf cache/*",
+        "clean": "rm -rf dist/* storage/cache.json",
         "create-token": "ts-node src/create-token.ts",
         "create-pool": "ts-node src/create-pool.ts"
     },

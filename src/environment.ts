@@ -7,6 +7,7 @@ interface EnvironmentSchema {
     RPC_URI: string;
     EXPLORER_URI: string;
     KEYPAIR_PATH: string;
+    KEYRING_SECRET_KEY: string;
     TOKEN_SYMBOL: string;
     TOKEN_DECIMALS: number;
     TOKEN_SUPPLY: number;
@@ -35,6 +36,10 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .pattern(/^\/([\w.-]+\/?)*$/)
                 .description("Keypair path for payer"),
+            KEYRING_SECRET_KEY: Joi.string()
+                .required()
+                .pattern(/^[0-9a-z]{32}$/)
+                .description("Keyring secret key"),
             TOKEN_SYMBOL: Joi.string().required().uppercase().max(20).description("Token symbol"),
             TOKEN_DECIMALS: Joi.number()
                 .optional()
