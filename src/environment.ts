@@ -1,12 +1,15 @@
-import * as Joi from "joi";
+import Joi from "joi";
 
 interface EnvironmentSchema {
     LOG_LEVEL: string;
     IPFS_JWT: string;
     IPFS_GATEWAY: string;
-    RPC_URL: string;
+    RPC_URI: string;
+    EXPLORER_URI: string;
     KEYPAIR_PATH: string;
     TOKEN_SYMBOL: string;
+    TOKEN_DECIMALS: number;
+    TOKEN_SUPPLY: number;
 }
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
@@ -18,12 +21,33 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .default("info"),
             IPFS_JWT: Joi.string().required().description("IPFS JWT"),
             IPFS_GATEWAY: Joi.string().required().uri().description("IPFS Gateway"),
-            RPC_URL: Joi.string().required().uri().description("RPC URL"),
+            RPC_URI: Joi.string()
+                .optional()
+                .uri()
+                .default("https://api.devnet.solana.com")
+                .description("Solana RPC URI"),
+            EXPLORER_URI: Joi.string()
+                .optional()
+                .uri()
+                .default("https://solana.fm")
+                .description("Solana explorer URI"),
             KEYPAIR_PATH: Joi.string()
                 .required()
                 .pattern(/^\/([\w.-]+\/?)*$/)
-                .description("Keypair path"),
-            TOKEN_SYMBOL: Joi.string().required().uppercase(),
+                .description("Keypair path for payer"),
+            TOKEN_SYMBOL: Joi.string().required().uppercase().max(20).description("Token symbol"),
+            TOKEN_DECIMALS: Joi.number()
+                .optional()
+                .min(0)
+                .max(9)
+                .default(9)
+                .description("Token decimals"),
+            TOKEN_SUPPLY: Joi.number()
+                .optional()
+                .min(1e5)
+                .max(1e11)
+                .default(1e9)
+                .description("Token supply"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 

@@ -1,6 +1,6 @@
-import * as fs from "node:fs/promises";
-import * as path from "node:path";
-import * as dotenv from "dotenv";
+import fs from "node:fs/promises";
+import path from "node:path";
+import dotenv from "dotenv";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     AuthorityType,
@@ -20,6 +20,7 @@ import {
     Connection,
     Keypair,
     LAMPORTS_PER_SOL,
+    PublicKey,
     sendAndConfirmTransaction,
     SystemProgram,
     Transaction,
@@ -36,6 +37,9 @@ interface OffchainTokenMetadata {
     description: string;
     image: string;
     uri: string;
+    external_url: string;
+    social_links: Record<string, string>;
+    tags: string[];
 }
 
 const isCI = !!process.env.CI;
@@ -46,29 +50,22 @@ dotenv.config({
 const CACHE_DIR = `${__dirname}/../cache`;
 const IMAGE_DIR = `${__dirname}/../image`;
 const METADATA_DIR = `${__dirname}/../metadata`;
-const EXPLORER_URI = "https://explorer.solana.com";
-
-const TOKEN_DATA = {
-    decimals: 9,
-    supply: 1_000_000_000 * LAMPORTS_PER_SOL,
-};
 
 const envVars = extractEnvironmentVariables();
 const logger = createLogger(envVars.LOG_LEVEL);
 const cache = createCache(CACHE_DIR);
 const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
 
+const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ipfsHash}`;
+
 (async () => {
     try {
-        const payer = await importPayer();
-
-        const mint = Keypair.generate();
-        logger.info(`Mint ${mint.publicKey.toBase58()} created`);
+        const connection = new Connection(envVars.RPC_URI, "confirmed");
+        const [payer, mint] = await generateKeypairs(connection);
 
         const imageUri = await uploadImage();
         const metadata = await uploadMetadata(imageUri);
 
-        const connection = new Connection(envVars.RPC_URL, "confirmed");
         await sendTransaction(connection, metadata, payer, mint);
     } catch (err) {
         logger.fatal(err);
@@ -76,12 +73,20 @@ const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
     }
 })();
 
-async function importPayer(): Promise<Keypair> {
+async function generateKeypairs(connection: Connection): Promise<[Keypair, Keypair]> {
     const secretKey: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf-8"));
-    const payerKeypair = Keypair.fromSecretKey(Uint8Array.from(secretKey));
+    const payer = Keypair.fromSecretKey(Uint8Array.from(secretKey));
 
-    logger.info(`Payer ${payerKeypair.publicKey.toBase58()} imported`);
-    return payerKeypair;
+    const balance = await connection.getBalance(payer.publicKey);
+    if (balance === 0) {
+        await connection.requestAirdrop(payer.publicKey, 1 * LAMPORTS_PER_SOL);
+    }
+    logger.info(`Payer ${payer.publicKey.toBase58()} imported`);
+
+    const mint = Keypair.generate();
+    logger.info(`Mint ${mint.publicKey.toBase58()} created`);
+
+    return [payer, mint];
 }
 
 async function uploadImage(): Promise<string> {
@@ -98,7 +103,7 @@ async function uploadImage(): Promise<string> {
     const imageFile = new File([imageBlob], imageFileName, { type: "image/webp" });
     const upload = await ipfs.upload.file(imageFile);
 
-    imageUri = `${envVars.IPFS_GATEWAY}/ipfs/${upload.IpfsHash}`;
+    imageUri = generateIpfsUri(upload.IpfsHash);
     logger.info(`Image uploaded to IPFS at ${imageUri}`);
 
     cache.set("imageUri", imageUri);
@@ -127,7 +132,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
     });
     const upload = await ipfs.upload.file(metadataFile);
 
-    const metadataUri = `${envVars.IPFS_GATEWAY}/ipfs/${upload.IpfsHash}`;
+    const metadataUri = generateIpfsUri(upload.IpfsHash);
     metadata = {
         ...metadata,
         uri: metadataUri,
@@ -149,6 +154,7 @@ async function sendTransaction(
 ): Promise<void> {
     const metadata: TokenMetadata = {
         mint: mint.publicKey,
+        updateAuthority: PublicKey.default,
         name: offchainMetadata.name,
         symbol: offchainMetadata.symbol,
         uri: offchainMetadata.uri,
@@ -183,7 +189,7 @@ async function sendTransaction(
         ),
         createInitializeMintInstruction(
             mint.publicKey,
-            TOKEN_DATA.decimals,
+            envVars.TOKEN_DECIMALS,
             payer.publicKey,
             null,
             TOKEN_2022_PROGRAM_ID
@@ -210,7 +216,7 @@ async function sendTransaction(
             mint.publicKey,
             associatedToken,
             payer.publicKey,
-            TOKEN_DATA.supply,
+            envVars.TOKEN_SUPPLY * 10 ** envVars.TOKEN_DECIMALS,
             [],
             TOKEN_2022_PROGRAM_ID
         ),
@@ -228,6 +234,8 @@ async function sendTransaction(
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer, mint]);
 
     logger.info("Transaction confirmed");
-    logger.info(`${EXPLORER_URI}/tx/${signature}?cluster=devnet`);
-    logger.info(`${EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=devnet`);
+    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=devnet`);
+    logger.info(
+        `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=devnet-alpha`
+    );
 }
