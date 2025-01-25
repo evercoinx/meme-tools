@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import dotenv from "dotenv";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     AuthorityType,
@@ -26,10 +25,7 @@ import {
     Transaction,
 } from "@solana/web3.js";
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
-import { extractEnvironmentVariables } from "./environment";
-import { createLogger } from "./logger";
-import { createCache } from "./cache";
-import { createIPFS } from "./ipfs";
+import { cache, envVars, IMAGE_DIR, ipfs, METADATA_DIR, logger } from "./common";
 
 interface OffchainTokenMetadata {
     name: string;
@@ -41,20 +37,6 @@ interface OffchainTokenMetadata {
     social_links: Record<string, string>;
     tags: string[];
 }
-
-const isCI = !!process.env.CI;
-dotenv.config({
-    path: isCI ? ".env.example" : ".env",
-});
-
-const CACHE_DIR = `${__dirname}/../cache`;
-const IMAGE_DIR = `${__dirname}/../image`;
-const METADATA_DIR = `${__dirname}/../metadata`;
-
-const envVars = extractEnvironmentVariables();
-const logger = createLogger(envVars.LOG_LEVEL);
-const cache = createCache(CACHE_DIR);
-const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
 
 const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ipfsHash}`;
 
@@ -84,7 +66,10 @@ async function generateKeypairs(connection: Connection): Promise<[Keypair, Keypa
     logger.info(`Payer ${payer.publicKey.toBase58()} imported`);
 
     const mint = Keypair.generate();
-    logger.info(`Mint ${mint.publicKey.toBase58()} created`);
+    logger.info(`Mint ${mint.publicKey.toBase58()} generated`);
+    cache.set("mint", Buffer.from(mint.secretKey).toString("utf-8"));
+    cache.save();
+    logger.debug(`Mint ${mint.publicKey.toBase58()} saved to cache`);
 
     return [payer, mint];
 }

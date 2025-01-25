@@ -9,13 +9,15 @@
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
         "clean": "rm -rf cache/*",
-        "create-token": "ts-node src/create-token.ts"
+        "create-token": "ts-node src/create-token.ts",
+        "create-pool": "ts-node src/create-pool.ts"
     },
     "keywords": [],
     "author": "",
     "license": "UNLICENSED",
     "private": true,
     "dependencies": {
+        "@raydium-io/raydium-sdk-v2": "^0.1.106-alpha",
         "@solana/spl-token": "^0.4.9",
         "@solana/web3.js": "^1.98.0",
         "flat-cache": "^6.1.5",
