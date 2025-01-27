@@ -80,25 +80,31 @@ async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
     );
     logger.info(`Pool ${pool.publicKey.toBase58()} computed`);
 
+    const mintA = {
+        address: mintAPublicKey.toBase58(),
+        programId: TOKEN_2022_PROGRAM_ID.toBase58(),
+        decimals: envVars.TOKEN_DECIMALS,
+    };
+    const mintB = {
+        address: mintBPublicKey.toBase58(),
+        programId: TOKEN_2022_PROGRAM_ID.toBase58(),
+        decimals: 9,
+    };
+    const mintAAmount = new BN(envVars.TOKEN_SUPPLY)
+        .mul(new BN(envVars.TOKEN_DECIMALS))
+        .mul(new BN(envVars.TOKEN_POOL_SIZE_BPS))
+        .div(new BN(MAX_BPS));
+
+    const mintBAmount = new BN(envVars.TOKEN_POOL_SOL_AMOUNT).mul(new BN(LAMPORTS_PER_SOL));
+
     const { transaction } = await raydium.cpmm.createPool<TxVersion.LEGACY>({
         poolId: pool.publicKey,
         programId: createPoolProgram,
         poolFeeAccount: createPoolFeeAccount,
-        mintA: {
-            address: mintAPublicKey.toBase58(),
-            programId: TOKEN_2022_PROGRAM_ID.toBase58(),
-            decimals: envVars.TOKEN_DECIMALS,
-        },
-        mintB: {
-            address: mintBPublicKey.toBase58(),
-            programId: TOKEN_2022_PROGRAM_ID.toBase58(),
-            decimals: 9,
-        },
-        mintAAmount: new BN(envVars.TOKEN_SUPPLY)
-            .mul(new BN(envVars.TOKEN_DECIMALS))
-            .mul(new BN(envVars.TOKEN_POOL_SIZE_BPS))
-            .div(new BN(MAX_BPS)),
-        mintBAmount: new BN(envVars.TOKEN_POOL_SOL_AMOUNT).mul(new BN(LAMPORTS_PER_SOL)),
+        mintA,
+        mintB,
+        mintAAmount,
+        mintBAmount,
         startTime: new BN(0),
         feeConfig,
         associatedOnly: false,

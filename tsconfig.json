@@ -4,8 +4,9 @@
         "lib": ["es2023"],
         "target": "es2022",
         "allowJs": true,
-        "outDir": "./dist",
-        "rootDir": "./src",
+        "outDir": "dist",
+        "sourceMap": true,
+        "rootDir": "src",
         "strict": true,
         "noImplicitAny": true,
         "esModuleInterop": true

@@ -1,3 +1,4 @@
+import "source-map-support/register";
 import dotenv from "dotenv";
 import { Connection } from "@solana/web3.js";
 import { Encryption } from "../modules/encryption";
