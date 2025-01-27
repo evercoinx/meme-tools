@@ -21,24 +21,11 @@ export const KEYRING_KEY_MINT = "mint";
 
 export const envVars = extractEnvironmentVariables();
 export const logger = createLogger(envVars.LOG_LEVEL);
-export const cluster = detectCluster(envVars.RPC_URI);
 export const connection = new Connection(envVars.RPC_URI, "confirmed");
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYRING_SECRET_KEY);
 export const cache = createCache(STORAGE_DIR);
 export const keyring = createKeyring(STORAGE_DIR);
 export const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
-
-function detectCluster(rpcUri: string): string {
-    if (rpcUri.includes("devnet")) {
-        return "devnet";
-    } else if (rpcUri.includes("testnet")) {
-        return "testnet";
-    } else if (rpcUri.includes("mainnet")) {
-        return "mainnet";
-    }
-
-    throw new Error("Cluster not detected");
-}
 
 export function lamportsToSol(amount: bigint | number, decimals = 3) {
     if (amount > Number.MAX_SAFE_INTEGER) {

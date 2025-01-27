@@ -5,6 +5,7 @@ interface EnvironmentSchema {
     IPFS_JWT: string;
     IPFS_GATEWAY: string;
     RPC_URI: string;
+    RPC_CLUSTER: "devnet" | "testnet" | "mainnet";
     EXPLORER_URI: string;
     KEYPAIR_PATH: string;
     KEYRING_SECRET_KEY: string;
@@ -32,6 +33,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .default("https://api.devnet.solana.com")
                 .description("Solana RPC URI"),
+            RPC_CLUSTER: Joi.string()
+                .optional()
+                .valid("devnet", "testnet", "mainnet")
+                .default("devnet")
+                .description("Solana RPC cluster"),
             EXPLORER_URI: Joi.string()
                 .optional()
                 .uri()

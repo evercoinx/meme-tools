@@ -26,7 +26,6 @@ import {
 import BN from "bn.js";
 import {
     MAX_BPS,
-    cluster,
     connection,
     encryption,
     envVars,
@@ -131,15 +130,17 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
 
     logger.info("Transaction confirmed");
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${cluster}-alpha`);
+    logger.info(
+        `${envVars.EXPLORER_URI}/tx/${signature}?envVars.RPC_CLUSTER=${envVars.RPC_CLUSTER}-alpha`
+    );
 }
 
 async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
-    const raydium = await loadRaydium(cluster, connection, payer);
+    const raydium = await loadRaydium(envVars.RPC_CLUSTER, connection, payer);
 
     let createPoolProgram;
     let createPoolFeeAccount;
-    if (cluster === "devnet") {
+    if (envVars.RPC_CLUSTER === "devnet") {
         createPoolProgram = DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM;
         createPoolFeeAccount = DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC;
     } else {
@@ -198,5 +199,7 @@ async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
 
     logger.info("Transaction confirmed");
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${cluster}-alpha`);
+    logger.info(
+        `${envVars.EXPLORER_URI}/tx/${signature}?envVars.RPC_CLUSTER=${envVars.RPC_CLUSTER}-alpha`
+    );
 }
