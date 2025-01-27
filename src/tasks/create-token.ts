@@ -16,7 +16,6 @@ import {
     TYPE_SIZE,
 } from "@solana/spl-token";
 import {
-    Connection,
     Keypair,
     LAMPORTS_PER_SOL,
     PublicKey,
@@ -29,6 +28,8 @@ import {
     cache,
     CACHE_KEY_IMAGE_URI,
     CACHE_KEY_METADATA,
+    cluster,
+    connection,
     encryption,
     envVars,
     IMAGE_DIR,
@@ -54,20 +55,19 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
 
 (async () => {
     try {
-        const connection = new Connection(envVars.RPC_URI, "confirmed");
-        const [payer, mint] = await generateKeypairs(connection);
+        const [payer, mint] = await generateKeypairs();
 
         const imageUri = await uploadImage();
         const metadata = await uploadMetadata(imageUri);
 
-        await sendTransaction(connection, metadata, payer, mint);
+        await createToken(metadata, payer, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-async function generateKeypairs(connection: Connection): Promise<[Keypair, Keypair]> {
+async function generateKeypairs(): Promise<[Keypair, Keypair]> {
     const payerSecretKey: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf8"));
     const payer = Keypair.fromSecretKey(Uint8Array.from(payerSecretKey));
 
@@ -145,8 +145,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
     return metadata;
 }
 
-async function sendTransaction(
-    connection: Connection,
+async function createToken(
     offchainMetadata: OffchainTokenMetadata,
     payer: Keypair,
     mint: Keypair
@@ -162,12 +161,12 @@ async function sendTransaction(
     // Size of Mint account with MetadataPointer extension
     const mintSize = getMintLen([ExtensionType.MetadataPointer]);
     // Size of Metadata extension: 2 bytes for type, 2 bytes for length
-    const metadataDataExtensionSize = TYPE_SIZE + LENGTH_SIZE;
+    const metadataExtensionSize = TYPE_SIZE + LENGTH_SIZE;
     // Size of metadata
     const metadataSize = pack(metadata).length;
     // Minimum lamports required for Mint account
     const mintLamports = await connection.getMinimumBalanceForRentExemption(
-        mintSize + metadataDataExtensionSize + metadataSize
+        mintSize + metadataExtensionSize + metadataSize
     );
 
     const associatedToken = await getAssociatedTokenAddress(
@@ -243,12 +242,12 @@ async function sendTransaction(
         )
     );
 
-    logger.debug("Sending transaction...");
+    logger.debug("Sending transaction to create token...");
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer, mint]);
 
     logger.info("Transaction confirmed");
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=devnet-alpha`);
+    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${cluster}-alpha`);
     logger.info(
-        `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=devnet-alpha`
+        `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=${cluster}-alpha`
     );
 }
