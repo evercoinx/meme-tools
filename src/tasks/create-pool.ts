@@ -6,8 +6,23 @@ import {
     getCpmmPdaPoolId,
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
-import { NATIVE_MINT_2022, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmTransaction } from "@solana/web3.js";
+import {
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    createAssociatedTokenAccountInstruction,
+    createSyncNativeInstruction,
+    getAccount,
+    getAssociatedTokenAddress,
+    NATIVE_MINT_2022,
+    TOKEN_2022_PROGRAM_ID,
+} from "@solana/spl-token";
+import {
+    Keypair,
+    LAMPORTS_PER_SOL,
+    PublicKey,
+    sendAndConfirmTransaction,
+    SystemProgram,
+    Transaction,
+} from "@solana/web3.js";
 import BN from "bn.js";
 import {
     MAX_BPS,
@@ -18,12 +33,16 @@ import {
     keyring,
     KEYRING_KEY_MINT,
     logger,
+    lamportsToSol,
 } from "./init";
 import { loadRaydium } from "../modules/raydium";
 
 (async () => {
     try {
         const [payer, mint] = await importKeypairs();
+
+        await wrapSol(envVars.TOKEN_POOL_SOL_AMOUNT, payer);
+
         await createPool(payer, mint);
     } catch (err) {
         logger.fatal(err);
@@ -53,6 +72,68 @@ async function importKeypairs(): Promise<[Keypair, Keypair]> {
     return [payer, mint];
 }
 
+async function wrapSol(amount: number, payer: Keypair): Promise<void> {
+    const associatedTokenAccount = await getAssociatedTokenAddress(
+        NATIVE_MINT_2022,
+        payer.publicKey,
+        false,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    const instructions = [];
+
+    const account = await getAccount(
+        connection,
+        associatedTokenAccount,
+        "confirmed",
+        TOKEN_2022_PROGRAM_ID
+    );
+    if (!account.isInitialized) {
+        instructions.push(
+            createAssociatedTokenAccountInstruction(
+                payer.publicKey,
+                associatedTokenAccount,
+                payer.publicKey,
+                NATIVE_MINT_2022,
+                TOKEN_2022_PROGRAM_ID,
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+        );
+    }
+
+    const requestedLamportsToWrap = amount * LAMPORTS_PER_SOL;
+    const actualLamportsToWrap = BigInt(requestedLamportsToWrap) - account.amount;
+    if (actualLamportsToWrap > 0) {
+        const balance = await connection.getBalance(payer.publicKey);
+        if (actualLamportsToWrap > balance) {
+            throw new Error(`Payer has insufficient balance: ${lamportsToSol(balance)} SOL`);
+        }
+
+        instructions.push(
+            SystemProgram.transfer({
+                fromPubkey: payer.publicKey,
+                toPubkey: associatedTokenAccount,
+                lamports: actualLamportsToWrap,
+            }),
+            createSyncNativeInstruction(associatedTokenAccount, TOKEN_2022_PROGRAM_ID)
+        );
+    }
+
+    if (instructions.length === 0) {
+        logger.info(`Payer has sufficient balance: ${lamportsToSol(account.amount)} wSOL`);
+        return;
+    }
+
+    const transaction = new Transaction().add(...instructions);
+
+    logger.debug(`Sending transaction to wrap ${lamportsToSol(actualLamportsToWrap)} SOL...`);
+    const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
+
+    logger.info("Transaction confirmed");
+    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${cluster}-alpha`);
+}
+
 async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
     const raydium = await loadRaydium(cluster, connection, payer);
 
@@ -78,7 +159,7 @@ async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
         mintAPublicKey,
         mintBPublicKey
     );
-    logger.info(`Pool ${pool.publicKey.toBase58()} computed`);
+    logger.info(`Pool id computed: ${pool.publicKey.toBase58()}`);
 
     const mintA = {
         address: mintAPublicKey.toBase58(),
@@ -98,7 +179,6 @@ async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
     const mintBAmount = new BN(envVars.TOKEN_POOL_SOL_AMOUNT).mul(new BN(LAMPORTS_PER_SOL));
 
     const { transaction } = await raydium.cpmm.createPool<TxVersion.LEGACY>({
-        poolId: pool.publicKey,
         programId: createPoolProgram,
         poolFeeAccount: createPoolFeeAccount,
         mintA,
@@ -115,7 +195,7 @@ async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
     });
 
     logger.debug("Sending transaction to create pool...");
-    const signature = await sendAndConfirmTransaction(connection, transaction, [payer, mint]);
+    const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
 
     logger.info("Transaction confirmed");
     logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${cluster}-alpha`);

@@ -1,6 +1,6 @@
 import "source-map-support/register";
 import dotenv from "dotenv";
-import { Connection } from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Encryption } from "../modules/encryption";
 import { extractEnvironmentVariables } from "../modules/environment";
 import { createIPFS } from "../modules/ipfs";
@@ -38,4 +38,13 @@ function detectCluster(rpcUri: string): string {
     }
 
     throw new Error("Cluster not detected");
+}
+
+export function lamportsToSol(amount: bigint | number, decimals = 3) {
+    if (amount > Number.MAX_SAFE_INTEGER) {
+        throw new Error(`Too high amount for representation: ${amount}`);
+    }
+
+    const solAmount = Number(amount) / LAMPORTS_PER_SOL;
+    return solAmount.toFixed(decimals);
 }
