@@ -13,7 +13,6 @@ const cwd = process.cwd();
 export const IMAGE_DIR = `${cwd}/input/images`;
 export const METADATA_DIR = `${cwd}/input/metadata`;
 export const STORAGE_DIR = `${cwd}/storage`;
-export const MAX_BPS = 10_000;
 
 export const CACHE_KEY_METADATA = "metadata";
 export const CACHE_KEY_IMAGE_URI = "image_uri";

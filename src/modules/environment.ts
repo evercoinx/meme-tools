@@ -12,7 +12,7 @@ interface EnvironmentSchema {
     TOKEN_SYMBOL: string;
     TOKEN_DECIMALS: number;
     TOKEN_SUPPLY: number;
-    TOKEN_POOL_SIZE_BPS: number;
+    TOKEN_POOL_SIZE_PERCENT: number;
     TOKEN_POOL_SOL_AMOUNT: number;
 }
 
@@ -66,12 +66,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(1e11)
                 .default(1e9)
                 .description("Token supply"),
-            TOKEN_POOL_SIZE_BPS: Joi.number()
+            TOKEN_POOL_SIZE_PERCENT: Joi.number()
                 .required()
-                .integer()
-                .min(100)
-                .max(10_000)
-                .description("Token pool size (in bps)"),
+                .min(0.0001)
+                .max(1)
+                .description("Token pool size percent"),
             TOKEN_POOL_SOL_AMOUNT: Joi.number()
                 .required()
                 .min(0.01)

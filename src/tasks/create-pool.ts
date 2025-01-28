@@ -1,19 +1,22 @@
 import fs from "node:fs/promises";
 import {
-    CREATE_CPMM_POOL_FEE_ACC,
-    CREATE_CPMM_POOL_PROGRAM,
+    ApiV3Token,
+    CLMM_PROGRAM_ID,
+    ClmmConfigInfo,
     DEVNET_PROGRAM_ID,
-    getCpmmPdaPoolId,
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import {
+    Account,
     ASSOCIATED_TOKEN_PROGRAM_ID,
     createAssociatedTokenAccountInstruction,
     createSyncNativeInstruction,
     getAccount,
     getAssociatedTokenAddress,
-    NATIVE_MINT_2022,
+    NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
+    TOKEN_PROGRAM_ID,
+    TokenAccountNotFoundError,
 } from "@solana/spl-token";
 import {
     Keypair,
@@ -23,9 +26,8 @@ import {
     SystemProgram,
     Transaction,
 } from "@solana/web3.js";
-import BN from "bn.js";
+import Decimal from "decimal.js";
 import {
-    MAX_BPS,
     connection,
     encryption,
     envVars,
@@ -38,6 +40,10 @@ import { loadRaydium } from "../modules/raydium";
 
 (async () => {
     try {
+        if (!["mainnet", "devnet"].includes(envVars.RPC_CLUSTER)) {
+            throw new Error(`Unsupported cluster for Raydium: ${envVars.RPC_CLUSTER}`);
+        }
+
         const [payer, mint] = await importKeypairs();
 
         await wrapSol(envVars.TOKEN_POOL_SOL_AMOUNT, payer);
@@ -73,40 +79,48 @@ async function importKeypairs(): Promise<[Keypair, Keypair]> {
 
 async function wrapSol(amount: number, payer: Keypair): Promise<void> {
     const associatedTokenAccount = await getAssociatedTokenAddress(
-        NATIVE_MINT_2022,
+        NATIVE_MINT,
         payer.publicKey,
         false,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
     const instructions = [];
+    let account: Account | null = null;
+    let actualLamportsHeld = 0n;
 
-    const account = await getAccount(
-        connection,
-        associatedTokenAccount,
-        "confirmed",
-        TOKEN_2022_PROGRAM_ID
-    );
-    if (!account.isInitialized) {
+    try {
+        account = await getAccount(
+            connection,
+            associatedTokenAccount,
+            "confirmed",
+            TOKEN_PROGRAM_ID
+        );
+        actualLamportsHeld = account.amount;
+    } catch (err) {
+        if (!(err instanceof TokenAccountNotFoundError)) {
+            throw err;
+        }
+
         instructions.push(
             createAssociatedTokenAccountInstruction(
                 payer.publicKey,
                 associatedTokenAccount,
                 payer.publicKey,
-                NATIVE_MINT_2022,
-                TOKEN_2022_PROGRAM_ID,
+                NATIVE_MINT,
+                TOKEN_PROGRAM_ID,
                 ASSOCIATED_TOKEN_PROGRAM_ID
             )
         );
     }
 
     const requestedLamportsToWrap = amount * LAMPORTS_PER_SOL;
-    const actualLamportsToWrap = BigInt(requestedLamportsToWrap) - account.amount;
+    const actualLamportsToWrap = BigInt(requestedLamportsToWrap) - actualLamportsHeld;
     if (actualLamportsToWrap > 0) {
         const balance = await connection.getBalance(payer.publicKey);
         if (actualLamportsToWrap > balance) {
-            throw new Error(`Payer has insufficient balance: ${lamportsToSol(balance)} SOL`);
+            throw new Error(`Owner has insufficient balance: ${lamportsToSol(balance)} SOL`);
         }
 
         instructions.push(
@@ -115,12 +129,12 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
                 toPubkey: associatedTokenAccount,
                 lamports: actualLamportsToWrap,
             }),
-            createSyncNativeInstruction(associatedTokenAccount, TOKEN_2022_PROGRAM_ID)
+            createSyncNativeInstruction(associatedTokenAccount, TOKEN_PROGRAM_ID)
         );
     }
 
     if (instructions.length === 0) {
-        logger.info(`Payer has sufficient balance: ${lamportsToSol(account.amount)} wSOL`);
+        logger.info(`Owner has sufficient balance: ${lamportsToSol(actualLamportsHeld)} wSOL`);
         return;
     }
 
@@ -130,76 +144,77 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
 
     logger.info("Transaction confirmed");
-    logger.info(
-        `${envVars.EXPLORER_URI}/tx/${signature}?envVars.RPC_CLUSTER=${envVars.RPC_CLUSTER}-alpha`
-    );
+    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
 }
 
 async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
     const raydium = await loadRaydium(envVars.RPC_CLUSTER, connection, payer);
 
-    let createPoolProgram;
-    let createPoolFeeAccount;
-    if (envVars.RPC_CLUSTER === "devnet") {
-        createPoolProgram = DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM;
-        createPoolFeeAccount = DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC;
-    } else {
-        createPoolProgram = CREATE_CPMM_POOL_PROGRAM;
-        createPoolFeeAccount = CREATE_CPMM_POOL_FEE_ACC;
-    }
+    const clmmProgramId = raydium.cluster === "devnet" ? DEVNET_PROGRAM_ID.CLMM : CLMM_PROGRAM_ID;
+    const clmmConfig: ClmmConfigInfo = {
+        id: new PublicKey(
+            envVars.RPC_CLUSTER === "devnet"
+                ? "GjLEiquek1Nc2YjcBhufUGFRkaqW1JhaGjsdFd8mys38"
+                : "A1BBtTYJd4i3xU8D6Tc2FzU6ZN4oXZWXKZnCxwbHXr8x'"
+        ),
+        index: 3,
+        protocolFeeRate: 120_000,
+        tradeFeeRate: 10_000,
+        tickSpacing: 120,
+        fundFeeRate: 40_000,
+        fundOwner: "",
+        description: "",
+    };
 
-    const feeConfigs = await raydium.api.getCpmmConfigs();
-    const feeConfig = feeConfigs[0];
+    const chainId = raydium.cluster === "devnet" ? 103 : 101;
+    const mint1PublicKey = mint.publicKey;
+    const mint2PublicKey = NATIVE_MINT;
 
-    const mintAPublicKey = mint.publicKey;
-    const mintBPublicKey = NATIVE_MINT_2022;
-
-    const pool = getCpmmPdaPoolId(
-        createPoolProgram,
-        new PublicKey(feeConfig.id),
-        mintAPublicKey,
-        mintBPublicKey
-    );
-    logger.info(`Pool id computed: ${pool.publicKey.toBase58()}`);
-
-    const mintA = {
-        address: mintAPublicKey.toBase58(),
+    const mint1: ApiV3Token = {
+        chainId,
+        address: mint1PublicKey.toBase58(),
         programId: TOKEN_2022_PROGRAM_ID.toBase58(),
+        logoURI: `https://img-v1.raydium.io/icon/${mint1PublicKey.toBase58()}.png`,
+        symbol: envVars.TOKEN_SYMBOL,
+        name: envVars.TOKEN_SYMBOL,
         decimals: envVars.TOKEN_DECIMALS,
+        tags: [],
+        extensions: {},
     };
-    const mintB = {
-        address: mintBPublicKey.toBase58(),
-        programId: TOKEN_2022_PROGRAM_ID.toBase58(),
+    const mint2: ApiV3Token = {
+        chainId,
+        address: mint2PublicKey.toBase58(),
+        programId: TOKEN_PROGRAM_ID.toBase58(),
+        logoURI: `https://img-v1.raydium.io/icon/${mint2PublicKey.toBase58()}.png`,
+        symbol: "WSOL",
+        name: "Wrapped SOL",
         decimals: 9,
+        tags: [],
+        extensions: {},
     };
-    const mintAAmount = new BN(envVars.TOKEN_SUPPLY)
-        .mul(new BN(envVars.TOKEN_DECIMALS))
-        .mul(new BN(envVars.TOKEN_POOL_SIZE_BPS))
-        .div(new BN(MAX_BPS));
 
-    const mintBAmount = new BN(envVars.TOKEN_POOL_SOL_AMOUNT).mul(new BN(LAMPORTS_PER_SOL));
+    const mint1Amount = new Decimal(envVars.TOKEN_SUPPLY)
+        .mul(10 ** envVars.TOKEN_DECIMALS)
+        .mul(envVars.TOKEN_POOL_SIZE_PERCENT);
+    const mint2Amount = new Decimal(envVars.TOKEN_POOL_SOL_AMOUNT).mul(LAMPORTS_PER_SOL);
 
-    const { transaction } = await raydium.cpmm.createPool<TxVersion.LEGACY>({
-        programId: createPoolProgram,
-        poolFeeAccount: createPoolFeeAccount,
-        mintA,
-        mintB,
-        mintAAmount,
-        mintBAmount,
-        startTime: new BN(0),
-        feeConfig,
-        associatedOnly: false,
-        ownerInfo: {
-            feePayer: payer.publicKey,
-            useSOLBalance: true,
+    const {
+        transaction,
+        extInfo: {
+            address: { id: poolId },
         },
+    } = await raydium.clmm.createPool<TxVersion.LEGACY>({
+        programId: clmmProgramId,
+        owner: payer.publicKey,
+        mint1,
+        mint2,
+        ammConfig: clmmConfig,
+        initialPrice: new Decimal(1).div(mint1Amount.div(mint2Amount).toString()),
     });
 
-    logger.debug("Sending transaction to create pool...");
+    logger.debug(`Sending transaction to create pool ${poolId}...`);
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
 
-    logger.info("Transaction confirmed");
-    logger.info(
-        `${envVars.EXPLORER_URI}/tx/${signature}?envVars.RPC_CLUSTER=${envVars.RPC_CLUSTER}-alpha`
-    );
+    logger.info(`Transaction to create pool ${poolId} confirmed`);
+    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
 }

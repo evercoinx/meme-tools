@@ -28,7 +28,6 @@ import {
     cache,
     CACHE_KEY_IMAGE_URI,
     CACHE_KEY_METADATA,
-    cluster,
     connection,
     encryption,
     envVars,
@@ -242,12 +241,12 @@ async function createToken(
         )
     );
 
-    logger.debug("Sending transaction to create token...");
+    logger.debug(`Sending transaction to create token ${mint.publicKey.toBase58()}...`);
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer, mint]);
 
-    logger.info("Transaction confirmed");
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${cluster}-alpha`);
+    logger.info(`Transaction to create token ${mint.publicKey.toBase58()} confirmed`);
+    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
     logger.info(
-        `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=${cluster}-alpha`
+        `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=${envVars.RPC_CLUSTER}-alpha`
     );
 }
