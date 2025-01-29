@@ -10,6 +10,7 @@
         "lint:fix": "eslint --fix .",
         "clean": "rm -rf dist/*",
         "create-token": "ts-node src/tasks/create-token.ts",
+        "create-token:force": "ts-node src/tasks/create-token.ts --force",
         "create-pool": "ts-node src/tasks/create-pool.ts"
     },
     "keywords": [],
@@ -23,6 +24,7 @@
         "decimal.js": "^10.5.0",
         "dotenv": "^16.4.7",
         "flat-cache": "^6.1.5",
+        "minimist": "^1.2.8",
         "pinata-web3": "^0.5.4",
         "pino": "^9.6.0",
         "pino-pretty": "^13.0.0"
@@ -34,6 +36,7 @@
         "@types/bn.js": "^5.1.6",
         "@types/decimal.js": "^7.4.3",
         "@types/eslint__js": "^8.42.3",
+        "@types/minimist": "^1.2.5",
         "@types/node": "^22.10.7",
         "eslint": "^9.18.0",
         "eslint-config-prettier": "^10.0.1",

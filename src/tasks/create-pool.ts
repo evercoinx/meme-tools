@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 import {
     ApiV3Token,
     CLMM_PROGRAM_ID,
@@ -27,14 +28,27 @@ import {
     Transaction,
 } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { connection, encryption, envVars, storage, STORAGE_MINT_SECRET_KEY, logger } from "./init";
+import {
+    connection,
+    encryption,
+    envVars,
+    logger,
+    storage,
+    STORAGE_DIR,
+    STORAGE_MINT_SECRET_KEY,
+} from "./init";
 import { loadRaydium } from "../modules/raydium";
-import { lamportsToSol } from "./helpers";
+import { checkIfFileExists, lamportsToSol } from "./helpers";
 
 (async () => {
     try {
         if (!["mainnet", "devnet"].includes(envVars.RPC_CLUSTER)) {
             throw new Error(`Unsupported cluster for Raydium: ${envVars.RPC_CLUSTER}`);
+        }
+
+        const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
+        if (!storageExists) {
+            throw new Error(`Storage ${storage.cacheId} not exists`);
         }
 
         const [payer, mint] = await importKeypairs();
@@ -202,7 +216,7 @@ async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
         mint1,
         mint2,
         ammConfig: clmmConfig,
-        initialPrice: new Decimal(1).div(mint1Amount.div(mint2Amount).toString()),
+        initialPrice: new Decimal(1).div(mint1Amount.div(mint2Amount)),
     });
 
     logger.debug(`Sending transaction to create pool ${poolId}...`);
@@ -210,4 +224,5 @@ async function createPool(payer: Keypair, mint: Keypair): Promise<void> {
 
     logger.info(`Transaction to create pool ${poolId} confirmed`);
     logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
+    logger.info(`${envVars.EXPLORER_URI}/address/${poolId}?cluster=${envVars.RPC_CLUSTER}-alpha`);
 }

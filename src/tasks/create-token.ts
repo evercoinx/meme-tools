@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import minimist from "minimist";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     AuthorityType,
@@ -30,13 +31,13 @@ import {
     envVars,
     IMAGE_DIR,
     ipfs,
+    logger,
+    METADATA_DIR,
     storage,
     STORAGE_DIR,
     STORAGE_IMAGE_URI,
     STORAGE_METADATA,
     STORAGE_MINT_SECRET_KEY,
-    logger,
-    METADATA_DIR,
 } from "./init";
 import { checkIfFileExists } from "./helpers";
 
@@ -53,10 +54,14 @@ interface OffchainTokenMetadata {
 
 const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ipfsHash}`;
 
+const args = minimist(process.argv.slice(2), {
+    boolean: ["force"],
+});
+
 (async () => {
     try {
         const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
-        if (storageExists) {
+        if (storageExists && !args.force) {
             throw new Error(`Storage ${storage.cacheId} already exists`);
         }
 
