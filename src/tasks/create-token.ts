@@ -38,6 +38,7 @@ import {
     logger,
     METADATA_DIR,
 } from "./init";
+import { checkIfFileExists } from "./helpers";
 
 interface OffchainTokenMetadata {
     name: string;
@@ -51,15 +52,6 @@ interface OffchainTokenMetadata {
 }
 
 const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ipfsHash}`;
-
-const checkIfFileExists = async (path: string) => {
-    try {
-        await fs.access(path);
-        return true;
-    } catch {
-        return false;
-    }
-};
 
 (async () => {
     try {

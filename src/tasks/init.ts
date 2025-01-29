@@ -1,6 +1,6 @@
 import "source-map-support/register";
 import dotenv from "dotenv";
-import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 import { Encryption } from "../modules/encryption";
 import { extractEnvironmentVariables } from "../modules/environment";
 import { createIPFS } from "../modules/ipfs";
@@ -24,12 +24,3 @@ export const connection = new Connection(envVars.RPC_URI, "confirmed");
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYRING_SECRET_KEY);
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 export const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
-
-export function lamportsToSol(lamports: bigint | number, decimals = 3) {
-    if (lamports > Number.MAX_SAFE_INTEGER) {
-        throw new Error(`Too high amount for representation: ${lamports}`);
-    }
-
-    const sol = Number(lamports) / LAMPORTS_PER_SOL;
-    return sol.toFixed(decimals);
-}
