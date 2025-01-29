@@ -8,7 +8,7 @@
         "format:fix": "prettier --write .",
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
-        "clean": "rm -rf dist/* storage/cache.json",
+        "clean": "rm -rf dist/*",
         "create-token": "ts-node src/tasks/create-token.ts",
         "create-pool": "ts-node src/tasks/create-pool.ts"
     },

@@ -31,8 +31,8 @@ import {
     connection,
     encryption,
     envVars,
-    keyring,
-    KEYRING_KEY_MINT,
+    storage,
+    STORAGE_MINT_SECRET_KEY,
     logger,
     lamportsToSol,
 } from "./init";
@@ -65,12 +65,12 @@ async function importKeypairs(): Promise<[Keypair, Keypair]> {
     }
     logger.info(`Payer ${payer.publicKey.toBase58()} imported`);
 
-    const encryptedMint = keyring.get<string>(KEYRING_KEY_MINT);
-    if (!encryptedMint) {
-        throw new Error(`Mint not loaded from keyring`);
+    const encryptedMintSecretKey = storage.get<string>(STORAGE_MINT_SECRET_KEY);
+    if (!encryptedMintSecretKey) {
+        throw new Error("Mint secret key not loaded from storage");
     }
 
-    const mintSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedMint));
+    const mintSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedMintSecretKey));
     const mint = Keypair.fromSecretKey(Uint8Array.from(mintSecretKey));
     logger.info(`Mint ${mint.publicKey.toBase58()} imported`);
 
@@ -143,7 +143,7 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
     logger.debug(`Sending transaction to wrap ${lamportsToSol(actualLamportsToWrap)} SOL...`);
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
 
-    logger.info("Transaction confirmed");
+    logger.info(`Transaction to wrap ${lamportsToSol(actualLamportsToWrap)} SOL confirmed`);
     logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
 }
 

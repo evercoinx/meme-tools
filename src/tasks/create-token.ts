@@ -25,16 +25,16 @@ import {
 } from "@solana/web3.js";
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import {
-    cache,
-    CACHE_KEY_IMAGE_URI,
-    CACHE_KEY_METADATA,
     connection,
     encryption,
     envVars,
     IMAGE_DIR,
     ipfs,
-    keyring,
-    KEYRING_KEY_MINT,
+    storage,
+    STORAGE_DIR,
+    STORAGE_IMAGE_URI,
+    STORAGE_METADATA,
+    STORAGE_MINT_SECRET_KEY,
     logger,
     METADATA_DIR,
 } from "./init";
@@ -52,8 +52,22 @@ interface OffchainTokenMetadata {
 
 const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ipfsHash}`;
 
+const checkIfFileExists = async (path: string) => {
+    try {
+        await fs.access(path);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 (async () => {
     try {
+        const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
+        if (storageExists) {
+            throw new Error(`Storage ${storage.cacheId} already exists`);
+        }
+
         const [payer, mint] = await generateKeypairs();
 
         const imageUri = await uploadImage();
@@ -80,17 +94,17 @@ async function generateKeypairs(): Promise<[Keypair, Keypair]> {
     logger.info(`Mint ${mint.publicKey.toBase58()} generated`);
 
     const encryptedMint = encryption.encrypt(JSON.stringify(Array.from(mint.secretKey)));
-    keyring.set(KEYRING_KEY_MINT, encryptedMint);
-    keyring.save();
-    logger.debug(`Mint ${mint.publicKey.toBase58()} saved to keyring`);
+    storage.set(STORAGE_MINT_SECRET_KEY, encryptedMint);
+    storage.save();
+    logger.debug(`Mint ${mint.publicKey.toBase58()} saved to storage`);
 
     return [payer, mint];
 }
 
 async function uploadImage(): Promise<string> {
-    let imageUri = cache.get<string>(CACHE_KEY_IMAGE_URI);
+    let imageUri = storage.get<string>(STORAGE_IMAGE_URI);
     if (imageUri) {
-        logger.info("Image loaded from cache");
+        logger.info("Image loaded from storage");
         return imageUri;
     }
 
@@ -104,17 +118,17 @@ async function uploadImage(): Promise<string> {
     imageUri = generateIpfsUri(upload.IpfsHash);
     logger.info(`Image uploaded to IPFS at ${imageUri}`);
 
-    cache.set(CACHE_KEY_IMAGE_URI, imageUri);
-    cache.save();
-    logger.debug(`Image URI saved to cache`);
+    storage.set(STORAGE_IMAGE_URI, imageUri);
+    storage.save();
+    logger.debug(`Image URI saved to storage`);
 
     return imageUri;
 }
 
 async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> {
-    let metadata = cache.get<OffchainTokenMetadata>(CACHE_KEY_METADATA);
+    let metadata = storage.get<OffchainTokenMetadata>(STORAGE_METADATA);
     if (metadata) {
-        logger.info(`Metadata loaded from cache`);
+        logger.info(`Metadata loaded from storage`);
         return metadata;
     }
 
@@ -137,9 +151,9 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
     };
     logger.info(`Metadata uploaded to IPFS at ${metadataUri}`);
 
-    cache.set(CACHE_KEY_METADATA, metadata);
-    cache.save();
-    logger.debug(`Metadata saved to cache`);
+    storage.set(STORAGE_METADATA, metadata);
+    storage.save();
+    logger.debug(`Metadata saved to storage`);
 
     return metadata;
 }
