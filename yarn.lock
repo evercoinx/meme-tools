@@ -10,9 +10,9 @@
     regenerator-runtime "^0.14.0"
 
 "@chainsafe/is-ip@^2.0.1":
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/@chainsafe/is-ip/-/is-ip-2.0.2.tgz#7311e7403f11d8c5cfa48111f56fcecaac37c9f6"
-  integrity sha512-ndGqEMG1W5WkGagaqOZHpPU172AGdxr+LD15sv3WIUvT5oCFUrG1Y0CW/v2Egwj4JXEvSibaIIIqImsm98y1nA==
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@chainsafe/is-ip/-/is-ip-2.1.0.tgz#ba9ac32acd9027698e0b56b91c7af069d28d7931"
+  integrity sha512-KIjt+6IfysQ4GCv66xihEitBjvhU/bixbbbFxdJ1sqCp4uJ0wuZiYBPhksZoy4lfaF0k9cwNzY5upEW/VWdw3w==
 
 "@chainsafe/netmask@^2.0.0":
   version "2.0.0"
@@ -229,10 +229,10 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.1.1.tgz#1ec17e2edbec25c8306d424ecfbf13c7de1aaa31"
   integrity sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==
 
-"@raydium-io/raydium-sdk-v2@^0.1.108-alpha":
-  version "0.1.108-alpha"
-  resolved "https://registry.yarnpkg.com/@raydium-io/raydium-sdk-v2/-/raydium-sdk-v2-0.1.108-alpha.tgz#5f0b3ff3689c9e1ee1effebc0c8ba47873d84726"
-  integrity sha512-g2Z2ejVhwL1ZRpVA3bpwtYEOf4FnwpgTDzkhEJRo+xURP17QZ0xRUQ/rn7jOYmBI2qgA6iyykrfrCiamCRAeww==
+"@raydium-io/raydium-sdk-v2@^0.1.111-alpha":
+  version "0.1.111-alpha"
+  resolved "https://registry.yarnpkg.com/@raydium-io/raydium-sdk-v2/-/raydium-sdk-v2-0.1.111-alpha.tgz#622fd832ffacdc0dc9b6c4b9f70b7412ca986753"
+  integrity sha512-mIvwClYgiBgKsYWgM6sFWXpwxYeWhXvZpSOPA6+o0xuRSEBo2hmpuy98DdWOkSZwoUUg1oTKSdRGepBwtpZqQw==
   dependencies:
     "@solana/buffer-layout" "^4.0.1"
     "@solana/spl-token" "^0.4.8"
@@ -359,15 +359,14 @@
     "@solana/codecs" "2.0.0-rc.1"
 
 "@solana/spl-token@^0.4.8", "@solana/spl-token@^0.4.9":
-  version "0.4.11"
-  resolved "https://registry.yarnpkg.com/@solana/spl-token/-/spl-token-0.4.11.tgz#331ccba30495c62f6dc4c1b8c1454f2c4e2a09fc"
-  integrity sha512-wG9I5nPpRCseiJ3+LyO0Fa8MJsecg6v32zPsP2nZYn/VyfGYET1DkhXVtqLE3dkVSjrt+2ILc9iewOX5L0hpGA==
+  version "0.4.12"
+  resolved "https://registry.yarnpkg.com/@solana/spl-token/-/spl-token-0.4.12.tgz#09361f9c8116f277b177dbcae7e3a273a19cd48a"
+  integrity sha512-K6CxzSoO1vC+WBys25zlSDaW0w4UFZO/IvEZquEI35A/PjqXNQHeVigmDCZYEJfESvYarKwsr8tYr/29lPtvaw==
   dependencies:
     "@solana/buffer-layout" "^4.0.0"
     "@solana/buffer-layout-utils" "^0.2.0"
     "@solana/spl-token-group" "^0.0.7"
     "@solana/spl-token-metadata" "^0.1.6"
-    "@solana/zk-sdk" "0.1.0"
     buffer "^6.0.3"
 
 "@solana/web3.js@^1.32.0", "@solana/web3.js@^1.95.3", "@solana/web3.js@^1.98.0":
@@ -390,11 +389,6 @@
     node-fetch "^2.7.0"
     rpc-websockets "^9.0.2"
     superstruct "^2.0.2"
-
-"@solana/zk-sdk@0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@solana/zk-sdk/-/zk-sdk-0.1.0.tgz#f0d5f0bec8688962332dc1fd817627dda493bef6"
-  integrity sha512-5iWTokAx6sOLSJVj7wABhhHtJ2KifXP1yjefBwXhd/BNwl+ZmI5KwQEGPYHGJEDabhqwam2Kwly7N+k0Bj7Bng==
 
 "@swc/helpers@^0.5.11":
   version "0.5.15"
@@ -1118,9 +1112,9 @@ fast-stable-stringify@^1.0.0:
   integrity sha512-wpYMUmFu5f00Sm0cj2pfivpmawLZ0NKdviQ4w9zJeR8JVtOpOxHmLaJuj0vxvGqMJQWyP/COUkF75/57OKyRag==
 
 fastq@^1.6.0:
-  version "1.18.0"
-  resolved "https://registry.yarnpkg.com/fastq/-/fastq-1.18.0.tgz#d631d7e25faffea81887fe5ea8c9010e1b36fee0"
-  integrity sha512-QKHXPW0hD8g4UET03SdOdunzSouc9N4AuHdsX8XNcTsuz+yYFILVNIX4l9yHABMhiEI9Db0JTTIpu0wB+Y1QQw==
+  version "1.19.0"
+  resolved "https://registry.yarnpkg.com/fastq/-/fastq-1.19.0.tgz#a82c6b7c2bb4e44766d865f07997785fecfdcb89"
+  integrity sha512-7SFSRCNjBQIZH/xZR3iy5iQYR8aGBE0h3VG6/cwlbrpdciNYBMotQav8c1XI3HjHH+NikUpP53nPdlZSdWmFzA==
   dependencies:
     reusify "^1.0.4"
 
