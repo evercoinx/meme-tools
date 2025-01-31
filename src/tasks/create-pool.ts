@@ -7,6 +7,7 @@ import {
     DEVNET_PROGRAM_ID,
     PoolUtils,
     Raydium,
+    TickUtils,
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import {
@@ -59,7 +60,8 @@ import { checkIfFileExists, lamportsToSol } from "./helpers";
 
         const raydium = await loadRaydium(envVars.RPC_CLUSTER, connection, payer);
         const poolId = await createPool(raydium, payer, mint);
-        await buyTokens(raydium, poolId, new BN(0.01), 0.2, payer);
+        await createPosition(raydium, poolId, new BN(0.1), payer);
+        await swapSolToToken(raydium, poolId, new BN(0.01), 0.1, payer);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -231,10 +233,62 @@ async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Prom
     return new PublicKey(poolId);
 }
 
-async function buyTokens(
+async function createPosition(raydium: Raydium, poolIdKey: PublicKey, amount: BN, payer: Keypair) {
+    const poolId = poolIdKey.toBase58();
+    const { poolInfo, poolKeys } = await raydium.clmm.getPoolInfoFromRpc(poolId);
+
+    const { tick: lowerTick } = TickUtils.getPriceAndTick({
+        poolInfo,
+        price: new Decimal(10 ** -poolInfo.mintA.decimals),
+        baseIn: true,
+    });
+
+    const { tick: upperTick } = TickUtils.getPriceAndTick({
+        poolInfo,
+        price: new Decimal(10 ** poolInfo.mintA.decimals),
+        baseIn: true,
+    });
+
+    amount = new BN(new Decimal(amount.toString()).mul(10 ** poolInfo.mintA.decimals).toFixed(0));
+
+    const epochInfo = await raydium.fetchEpochInfo();
+    const { amountSlippageB } = await PoolUtils.getLiquidityAmountOutFromAmountIn({
+        poolInfo,
+        slippage: 0,
+        inputA: true,
+        tickLower: Math.min(lowerTick, upperTick),
+        tickUpper: Math.max(lowerTick, upperTick),
+        amount,
+        add: true,
+        amountHasFee: true,
+        epochInfo,
+    });
+
+    const {
+        transaction,
+        extInfo: { nftMint },
+    } = await raydium.clmm.openPositionFromBase<TxVersion.LEGACY>({
+        poolInfo,
+        poolKeys,
+        tickUpper: Math.max(lowerTick, upperTick),
+        tickLower: Math.min(lowerTick, upperTick),
+        base: "MintA",
+        ownerInfo: { useSOLBalance: true },
+        baseAmount: amount,
+        otherAmountMax: amountSlippageB.amount,
+    });
+
+    logger.debug(`Sending transaction to create position ${nftMint.toBase58()}...`);
+    const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
+
+    logger.info(`Transaction to create position ${nftMint.toBase58()} confirmed`);
+    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
+}
+
+async function swapSolToToken(
     raydium: Raydium,
     poolIdKey: PublicKey,
-    amountIn: BN,
+    inputAmount: BN,
     slippage: number,
     payer: Keypair
 ): Promise<void> {
@@ -251,7 +305,7 @@ async function buyTokens(
     const { minAmountOut, remainingAccounts } = PoolUtils.computeAmountOutFormat({
         poolInfo: clmmPoolInfo,
         tickArrayCache: tickData[poolId],
-        amountIn,
+        amountIn: inputAmount,
         tokenOut: poolInfo[isWsolBase ? "mintB" : "mintA"],
         slippage,
         epochInfo: await raydium.fetchEpochInfo(),
@@ -261,7 +315,7 @@ async function buyTokens(
         poolInfo,
         poolKeys,
         inputMint: poolInfo[isWsolBase ? "mintA" : "mintB"].address,
-        amountIn,
+        amountIn: inputAmount,
         amountOutMin: minAmountOut.amount.raw,
         observationId: clmmPoolInfo.observationId,
         ownerInfo: { useSOLBalance: false },
