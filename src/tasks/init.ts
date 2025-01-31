@@ -17,6 +17,7 @@ export const STORAGE_DIR = `${cwd}/storage`;
 export const STORAGE_METADATA = "metadata";
 export const STORAGE_IMAGE_URI = "image_uri";
 export const STORAGE_MINT_SECRET_KEY = "mint_secret_key";
+export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 
 export const envVars = extractEnvironmentVariables();
 export const logger = createLogger(envVars.LOG_LEVEL);

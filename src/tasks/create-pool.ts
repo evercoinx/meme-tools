@@ -2,12 +2,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
     ApiV3Token,
-    CLMM_PROGRAM_ID,
-    ClmmConfigInfo,
+    CREATE_CPMM_POOL_FEE_ACC,
+    CREATE_CPMM_POOL_PROGRAM,
     DEVNET_PROGRAM_ID,
-    PoolUtils,
+    getCpmmPdaAmmConfigId,
     Raydium,
-    TickUtils,
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import {
@@ -25,7 +24,6 @@ import {
 import {
     Keypair,
     LAMPORTS_PER_SOL,
-    PublicKey,
     sendAndConfirmTransaction,
     SystemProgram,
     Transaction,
@@ -40,9 +38,12 @@ import {
     storage,
     STORAGE_DIR,
     STORAGE_MINT_SECRET_KEY,
+    STORAGE_RAYDIUM_POOL_ID,
 } from "./init";
 import { loadRaydium } from "../modules/raydium";
 import { checkIfFileExists, lamportsToSol } from "./helpers";
+
+type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
 
 (async () => {
     try {
@@ -59,9 +60,7 @@ import { checkIfFileExists, lamportsToSol } from "./helpers";
         await wrapSol(envVars.TOKEN_POOL_SOL_AMOUNT, payer);
 
         const raydium = await loadRaydium(envVars.RPC_CLUSTER, connection, payer);
-        const poolId = await createPool(raydium, payer, mint);
-        await createPosition(raydium, poolId, new BN(0.1), payer);
-        await swapSolToToken(raydium, poolId, new BN(0.01), 0.1, payer);
+        await createPool(raydium, payer, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -160,171 +159,86 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
     logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
 }
 
-async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Promise<PublicKey> {
-    const clmmProgramId = raydium.cluster === "devnet" ? DEVNET_PROGRAM_ID.CLMM : CLMM_PROGRAM_ID;
-    const clmmConfig: ClmmConfigInfo = {
-        id: new PublicKey(
-            envVars.RPC_CLUSTER === "devnet"
-                ? "GjLEiquek1Nc2YjcBhufUGFRkaqW1JhaGjsdFd8mys38"
-                : "A1BBtTYJd4i3xU8D6Tc2FzU6ZN4oXZWXKZnCxwbHXr8x'"
-        ),
-        index: 3,
-        protocolFeeRate: 120_000,
-        tradeFeeRate: 10_000,
-        tickSpacing: 120,
-        fundFeeRate: 40_000,
-        fundOwner: "",
-        description: "",
-    };
+async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Promise<string> {
+    let raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
+    if (raydiumPoolId) {
+        logger.info(`Raydium pool id ${raydiumPoolId} loaded from storage`);
+        return raydiumPoolId;
+    }
 
-    const chainId = raydium.cluster === "devnet" ? 103 : 101;
-    const mint1PublicKey = NATIVE_MINT;
-    const mint2PublicKey = mint.publicKey;
-
-    const mint1: ApiV3Token = {
-        chainId,
-        address: mint1PublicKey.toBase58(),
+    const mintA: Token = {
+        address: NATIVE_MINT.toBase58(),
         programId: TOKEN_PROGRAM_ID.toBase58(),
-        logoURI: `https://img-v1.raydium.io/icon/${mint1PublicKey.toBase58()}.png`,
         symbol: "WSOL",
         name: "Wrapped SOL",
         decimals: 9,
-        tags: [],
-        extensions: {},
     };
-    const mint2: ApiV3Token = {
-        chainId,
-        address: mint2PublicKey.toBase58(),
+    const mintB: Token = {
+        address: mint.publicKey.toBase58(),
         programId: TOKEN_2022_PROGRAM_ID.toBase58(),
-        logoURI: `https://img-v1.raydium.io/icon/${mint2PublicKey.toBase58()}.png`,
         symbol: envVars.TOKEN_SYMBOL,
         name: envVars.TOKEN_SYMBOL,
         decimals: envVars.TOKEN_DECIMALS,
-        tags: [],
-        extensions: {},
     };
 
-    const mint1Amount = new Decimal(envVars.TOKEN_POOL_SOL_AMOUNT).mul(LAMPORTS_PER_SOL);
-    const mint2Amount = new Decimal(envVars.TOKEN_SUPPLY)
-        .mul(10 ** envVars.TOKEN_DECIMALS)
-        .mul(envVars.TOKEN_POOL_SIZE_PERCENT);
+    const feeConfigs = await raydium.api.getCpmmConfigs();
+    if (raydium.cluster === "devnet") {
+        feeConfigs.forEach((feeConfig) => {
+            const id = getCpmmPdaAmmConfigId(
+                DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
+                feeConfig.index
+            );
+            feeConfig.id = id.publicKey.toBase58();
+        });
+    }
+    const feeConfig = feeConfigs[0];
 
     const {
         transaction,
         extInfo: {
-            address: { id: poolId },
+            address: { poolId },
         },
-    } = await raydium.clmm.createPool<TxVersion.LEGACY>({
-        programId: clmmProgramId,
-        owner: payer.publicKey,
-        mint1,
-        mint2,
-        ammConfig: clmmConfig,
-        initialPrice: mint2Amount.div(mint1Amount),
+    } = await raydium.cpmm.createPool<TxVersion.LEGACY>({
+        programId:
+            raydium.cluster === "devnet"
+                ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM
+                : CREATE_CPMM_POOL_PROGRAM,
+        poolFeeAccount:
+            raydium.cluster === "devnet"
+                ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC
+                : CREATE_CPMM_POOL_FEE_ACC,
+        mintA,
+        mintB,
+        mintAAmount: new BN(
+            new Decimal(envVars.TOKEN_POOL_SOL_AMOUNT).mul(LAMPORTS_PER_SOL).toFixed(0)
+        ),
+        mintBAmount: new BN(
+            new Decimal(envVars.TOKEN_SUPPLY)
+                .mul(10 ** envVars.TOKEN_DECIMALS)
+                .mul(envVars.TOKEN_POOL_SIZE_PERCENT)
+                .toFixed(0)
+        ),
+        startTime: new BN(0),
+        feeConfig,
+        associatedOnly: false,
+        ownerInfo: {
+            useSOLBalance: false,
+        },
     });
 
-    logger.debug(`Sending transaction to create pool ${poolId}...`);
+    raydiumPoolId = poolId.toBase58();
+    logger.debug(`Sending transaction to create pool ${raydiumPoolId}...`);
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
 
-    logger.info(`Transaction to create pool ${poolId} confirmed`);
+    logger.info(`Transaction to create pool ${raydiumPoolId} confirmed`);
     logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
-    logger.info(`${envVars.EXPLORER_URI}/address/${poolId}?cluster=${envVars.RPC_CLUSTER}-alpha`);
+    logger.info(
+        `${envVars.EXPLORER_URI}/address/${raydiumPoolId}?cluster=${envVars.RPC_CLUSTER}-alpha`
+    );
 
-    return new PublicKey(poolId);
-}
+    storage.set(STORAGE_RAYDIUM_POOL_ID, raydiumPoolId);
+    storage.save();
+    logger.debug(`Raydium pool id ${raydiumPoolId} saved to storage`);
 
-async function createPosition(raydium: Raydium, poolIdKey: PublicKey, amount: BN, payer: Keypair) {
-    const poolId = poolIdKey.toBase58();
-    const { poolInfo, poolKeys } = await raydium.clmm.getPoolInfoFromRpc(poolId);
-
-    const { tick: lowerTick } = TickUtils.getPriceAndTick({
-        poolInfo,
-        price: new Decimal(10 ** -poolInfo.mintA.decimals),
-        baseIn: true,
-    });
-
-    const { tick: upperTick } = TickUtils.getPriceAndTick({
-        poolInfo,
-        price: new Decimal(10 ** poolInfo.mintA.decimals),
-        baseIn: true,
-    });
-
-    amount = new BN(new Decimal(amount.toString()).mul(10 ** poolInfo.mintA.decimals).toFixed(0));
-
-    const epochInfo = await raydium.fetchEpochInfo();
-    const { amountSlippageB } = await PoolUtils.getLiquidityAmountOutFromAmountIn({
-        poolInfo,
-        slippage: 0,
-        inputA: true,
-        tickLower: Math.min(lowerTick, upperTick),
-        tickUpper: Math.max(lowerTick, upperTick),
-        amount,
-        add: true,
-        amountHasFee: true,
-        epochInfo,
-    });
-
-    const {
-        transaction,
-        extInfo: { nftMint },
-    } = await raydium.clmm.openPositionFromBase<TxVersion.LEGACY>({
-        poolInfo,
-        poolKeys,
-        tickUpper: Math.max(lowerTick, upperTick),
-        tickLower: Math.min(lowerTick, upperTick),
-        base: "MintA",
-        ownerInfo: { useSOLBalance: true },
-        baseAmount: amount,
-        otherAmountMax: amountSlippageB.amount,
-    });
-
-    logger.debug(`Sending transaction to create position ${nftMint.toBase58()}...`);
-    const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
-
-    logger.info(`Transaction to create position ${nftMint.toBase58()} confirmed`);
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
-}
-
-async function swapSolToToken(
-    raydium: Raydium,
-    poolIdKey: PublicKey,
-    inputAmount: BN,
-    slippage: number,
-    payer: Keypair
-): Promise<void> {
-    const poolId = poolIdKey.toBase58();
-    const {
-        computePoolInfo: clmmPoolInfo,
-        tickData,
-        poolInfo,
-        poolKeys,
-    } = await raydium.clmm.getPoolInfoFromRpc(poolId);
-
-    const isWsolBase = poolInfo.mintA.symbol === "WSOL";
-
-    const { minAmountOut, remainingAccounts } = PoolUtils.computeAmountOutFormat({
-        poolInfo: clmmPoolInfo,
-        tickArrayCache: tickData[poolId],
-        amountIn: inputAmount,
-        tokenOut: poolInfo[isWsolBase ? "mintB" : "mintA"],
-        slippage,
-        epochInfo: await raydium.fetchEpochInfo(),
-    });
-
-    const { transaction } = await raydium.clmm.swap<TxVersion.LEGACY>({
-        poolInfo,
-        poolKeys,
-        inputMint: poolInfo[isWsolBase ? "mintA" : "mintB"].address,
-        amountIn: inputAmount,
-        amountOutMin: minAmountOut.amount.raw,
-        observationId: clmmPoolInfo.observationId,
-        ownerInfo: { useSOLBalance: false },
-        remainingAccounts,
-    });
-
-    logger.debug(`Sending transaction to buy tokens in pool ${poolId}...`);
-    const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
-
-    logger.info(`Transaction to buy tokens in pool ${poolId} confirmed`);
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
+    return raydiumPoolId;
 }

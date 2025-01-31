@@ -117,7 +117,7 @@ async function uploadImage(): Promise<string> {
 
     storage.set(STORAGE_IMAGE_URI, imageUri);
     storage.save();
-    logger.debug(`Image URI saved to storage`);
+    logger.debug("Image URI saved to storage");
 
     return imageUri;
 }
@@ -125,7 +125,7 @@ async function uploadImage(): Promise<string> {
 async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> {
     let metadata = storage.get<OffchainTokenMetadata>(STORAGE_METADATA);
     if (metadata) {
-        logger.info(`Metadata loaded from storage`);
+        logger.info("Metadata loaded from storage");
         return metadata;
     }
 
@@ -150,7 +150,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
 
     storage.set(STORAGE_METADATA, metadata);
     storage.save();
-    logger.debug(`Metadata saved to storage`);
+    logger.debug("Metadata saved to storage");
 
     return metadata;
 }
