@@ -20,8 +20,6 @@ module.exports = tseslint.config(
                 warnOnUnsupportedTypeScriptVersion: false,
             },
         },
-        rules: {
-            "@typescript-eslint/no-non-null-assertion": "off",
-        },
+        rules: {},
     }
 );

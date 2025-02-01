@@ -1,10 +1,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+    ApiV3PoolInfoStandardItemCpmm,
     ApiV3Token,
+    CpmmKeys,
+    CpmmRpcData,
     CREATE_CPMM_POOL_FEE_ACC,
     CREATE_CPMM_POOL_PROGRAM,
     CurveCalculator,
+    DEV_CREATE_CPMM_POOL_PROGRAM,
     DEVNET_PROGRAM_ID,
     getCpmmPdaAmmConfigId,
     Raydium,
@@ -61,7 +65,7 @@ type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "dec
 
         const raydium = await loadRaydium(envVars.RPC_CLUSTER, connection, payer);
         const raydiumPoolId = await createPool(raydium, payer, mint);
-        await swapSolToToken(raydium, raydiumPoolId, 0.001, 0.1, payer);
+        await swapSolToToken(raydium, raydiumPoolId, 0.001, 0.1, payer, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -259,9 +263,42 @@ async function swapSolToToken(
     raydiumPoolId: string,
     amount: number,
     slippage: number,
-    payer: Keypair
+    payer: Keypair,
+    mint: Keypair
 ): Promise<void> {
-    const { poolInfo, poolKeys, rpcData } = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId);
+    let poolInfo: ApiV3PoolInfoStandardItemCpmm;
+    let poolKeys: CpmmKeys | undefined;
+    let rpcData: CpmmRpcData;
+
+    if (raydium.cluster === "devnet") {
+        const data = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId);
+        poolInfo = data.poolInfo;
+        if (poolInfo.programId !== DEV_CREATE_CPMM_POOL_PROGRAM.toBase58()) {
+            throw new Error(`Not CPMM pool: ${data.poolInfo.programId}`);
+        }
+        poolKeys = data.poolKeys;
+        rpcData = data.rpcData;
+    } else {
+        const data = await raydium.api.fetchPoolById({ ids: raydiumPoolId });
+        poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
+        if (poolInfo.programId !== CREATE_CPMM_POOL_PROGRAM.toBase58()) {
+            throw new Error(`Not CPMM pool: ${poolInfo.programId}`);
+        }
+        rpcData = await raydium.cpmm.getRpcPoolInfo(poolInfo.id, true);
+    }
+
+    if (typeof rpcData.configInfo === "undefined") {
+        throw new Error("Missing config info");
+    }
+
+    const poolPairAddresses = [NATIVE_MINT.toBase58(), mint.publicKey.toBase58()];
+    if (
+        !poolPairAddresses.includes(poolInfo.mintA.address) ||
+        !poolPairAddresses.includes(poolInfo.mintB.address)
+    ) {
+        throw new Error(`Invalid pool: ${poolInfo.mintA.address}/${poolInfo.mintB.address}`);
+    }
+
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
     const inputAmount = new BN(new Decimal(amount).mul(LAMPORTS_PER_SOL).toFixed(0));
 
@@ -269,7 +306,7 @@ async function swapSolToToken(
         inputAmount,
         baseIn ? rpcData.baseReserve : rpcData.quoteReserve,
         baseIn ? rpcData.quoteReserve : rpcData.baseReserve,
-        rpcData.configInfo!.tradeFeeRate
+        rpcData.configInfo.tradeFeeRate
     );
 
     const {
