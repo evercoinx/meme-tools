@@ -3,12 +3,49 @@ import {
     Connection,
     Keypair,
     LAMPORTS_PER_SOL,
+    MessageV0,
     TransactionInstruction,
     TransactionMessage,
     VersionedTransaction,
 } from "@solana/web3.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
 import { Logger } from "pino";
+
+export function formatSol(amount: BN | bigint | number, decimals = 3) {
+    return new Decimal(amount.toString(10)).div(LAMPORTS_PER_SOL).toFixed(decimals);
+}
+
+export function formatUnits(amount: BN | bigint | number, units: number, decimals = 0) {
+    return new Decimal(amount.toString(10)).div(units).toFixed(decimals);
+}
+
+export function versionedMessageToInstructions(
+    versionedMessage: MessageV0
+): TransactionInstruction[] {
+    const accountKeys = versionedMessage.staticAccountKeys;
+    const instructions: TransactionInstruction[] = [];
+
+    for (const compiledIx of versionedMessage.compiledInstructions) {
+        const keys = compiledIx.accountKeyIndexes.map((index) => ({
+            pubkey: accountKeys[index],
+            isSigner: versionedMessage.isAccountSigner(index),
+            isWritable: versionedMessage.isAccountWritable(index),
+        }));
+        const programId = accountKeys[compiledIx.programIdIndex];
+        const data = Buffer.from(compiledIx.data);
+
+        instructions.push(
+            new TransactionInstruction({
+                keys,
+                programId,
+                data,
+            })
+        );
+    }
+
+    return instructions;
+}
 
 export async function sendAndConfirmVersionedTransaction(
     connection: Connection,
@@ -20,7 +57,6 @@ export async function sendAndConfirmVersionedTransaction(
     logMessage: string
 ): Promise<void> {
     const payer = signers[0];
-
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
         payerKey: payer.publicKey,
@@ -47,11 +83,6 @@ export async function sendAndConfirmVersionedTransaction(
 
     logger.info(`Transaction ${logMessage} confirmed`);
     logger.info(`${explorerUri}/tx/${signature}?cluster=${cluster}-alpha`);
-}
-
-export function lamportsToSol(lamports: bigint | number, decimals = 3) {
-    const sol = new Decimal(lamports.toString()).div(LAMPORTS_PER_SOL);
-    return sol.toFixed(decimals);
 }
 
 export async function checkIfFileExists(path: string) {

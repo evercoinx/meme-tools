@@ -4,6 +4,7 @@ import {
     ApiV3Token,
     CREATE_CPMM_POOL_FEE_ACC,
     CREATE_CPMM_POOL_PROGRAM,
+    CurveCalculator,
     DEVNET_PROGRAM_ID,
     getCpmmPdaAmmConfigId,
     Raydium,
@@ -35,7 +36,12 @@ import {
     STORAGE_RAYDIUM_POOL_ID,
 } from "./init";
 import { loadRaydium } from "../modules/raydium";
-import { checkIfFileExists, lamportsToSol, sendAndConfirmVersionedTransaction } from "./helpers";
+import {
+    checkIfFileExists,
+    formatSol,
+    formatUnits,
+    sendAndConfirmVersionedTransaction,
+} from "./helpers";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
 
@@ -54,7 +60,8 @@ type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "dec
         await wrapSol(envVars.TOKEN_POOL_SOL_AMOUNT, payer);
 
         const raydium = await loadRaydium(envVars.RPC_CLUSTER, connection, payer);
-        await createPool(raydium, payer, mint);
+        const raydiumPoolId = await createPool(raydium, payer, mint);
+        await swapSolToToken(raydium, raydiumPoolId, 0.001, 0.1, payer);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -126,7 +133,7 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
     if (actualLamportsToWrap > 0) {
         const balance = await connection.getBalance(payer.publicKey);
         if (actualLamportsToWrap > balance) {
-            throw new Error(`Owner has insufficient balance: ${lamportsToSol(balance)} SOL`);
+            throw new Error(`Owner has insufficient balance: ${formatSol(balance)} SOL`);
         }
 
         instructions.push(
@@ -140,7 +147,7 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
     }
 
     if (instructions.length === 0) {
-        logger.info(`Owner has sufficient balance: ${lamportsToSol(actualLamportsHeld)} wSOL`);
+        logger.info(`Owner has sufficient balance: ${formatSol(actualLamportsHeld)} wSOL`);
         return;
     }
 
@@ -151,7 +158,7 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
         [payer],
         envVars.EXPLORER_URI,
         logger,
-        `to wrap ${lamportsToSol(actualLamportsToWrap)} SOL`
+        `to wrap ${formatSol(actualLamportsToWrap)} SOL`
     );
 }
 
@@ -245,4 +252,44 @@ async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Prom
     logger.debug(`Raydium pool id ${raydiumPoolId} saved to storage`);
 
     return raydiumPoolId;
+}
+
+async function swapSolToToken(
+    raydium: Raydium,
+    raydiumPoolId: string,
+    amount: number,
+    slippage: number,
+    payer: Keypair
+): Promise<void> {
+    const { poolInfo, poolKeys, rpcData } = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId);
+    const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
+    const inputAmount = new BN(new Decimal(amount).mul(LAMPORTS_PER_SOL).toFixed(0));
+
+    const swapResult = CurveCalculator.swap(
+        inputAmount,
+        baseIn ? rpcData.baseReserve : rpcData.quoteReserve,
+        baseIn ? rpcData.quoteReserve : rpcData.baseReserve,
+        rpcData.configInfo!.tradeFeeRate
+    );
+
+    const {
+        transaction: { instructions },
+    } = await raydium.cpmm.swap<TxVersion.LEGACY>({
+        poolInfo,
+        poolKeys,
+        inputAmount,
+        swapResult,
+        slippage,
+        baseIn,
+    });
+
+    await sendAndConfirmVersionedTransaction(
+        connection,
+        envVars.RPC_CLUSTER,
+        instructions,
+        [payer],
+        envVars.EXPLORER_URI,
+        logger,
+        `to swap ${formatSol(swapResult.sourceAmountSwapped)} SOL to ${formatUnits(swapResult.destinationAmountSwapped, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL}`
+    );
 }

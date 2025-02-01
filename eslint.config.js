@@ -21,7 +21,7 @@ module.exports = tseslint.config(
             },
         },
         rules: {
-            "no-console": "off",
+            "@typescript-eslint/no-non-null-assertion": "off",
         },
     }
 );
