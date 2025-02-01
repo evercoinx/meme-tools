@@ -1,3 +1,4 @@
+import { Cluster } from "@solana/web3.js";
 import Joi from "joi";
 
 interface EnvironmentSchema {
@@ -5,10 +6,10 @@ interface EnvironmentSchema {
     IPFS_JWT: string;
     IPFS_GATEWAY: string;
     RPC_URI: string;
-    RPC_CLUSTER: "devnet" | "testnet" | "mainnet";
+    CLUSTER: Cluster;
     EXPLORER_URI: string;
-    KEYPAIR_PATH: string;
-    KEYRING_SECRET_KEY: string;
+    DEV_KEYPAIR_PATH: string;
+    KEYRING_SECRET: string;
     TOKEN_SYMBOL: string;
     TOKEN_DECIMALS: number;
     TOKEN_SUPPLY: number;
@@ -33,24 +34,24 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .default("https://api.devnet.solana.com")
                 .description("Solana RPC URI"),
-            RPC_CLUSTER: Joi.string()
+            CLUSTER: Joi.string()
                 .optional()
-                .valid("devnet", "testnet", "mainnet")
+                .valid("devnet", "testnet", "mainnet-beta")
                 .default("devnet")
-                .description("Solana RPC cluster"),
+                .description("Solana cluster"),
             EXPLORER_URI: Joi.string()
                 .optional()
                 .uri()
                 .default("https://solana.fm")
                 .description("Solana explorer URI"),
-            KEYPAIR_PATH: Joi.string()
+            DEV_KEYPAIR_PATH: Joi.string()
                 .required()
                 .pattern(/^\/([\w.-]+\/?)*$/)
-                .description("Keypair path for payer"),
-            KEYRING_SECRET_KEY: Joi.string()
+                .description("Dev keypair path"),
+            KEYRING_SECRET: Joi.string()
                 .required()
                 .pattern(/^[0-9a-z]{32}$/)
-                .description("Keyring secret key"),
+                .description("Keyring secret"),
             TOKEN_SYMBOL: Joi.string().required().uppercase().max(20).description("Token symbol"),
             TOKEN_DECIMALS: Joi.number()
                 .optional()

@@ -16,7 +16,7 @@ import {
     TOKEN_2022_PROGRAM_ID,
     TYPE_SIZE,
 } from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import {
     connection,
@@ -32,7 +32,7 @@ import {
     STORAGE_METADATA,
     STORAGE_MINT_SECRET_KEY,
 } from "./init";
-import { checkIfFileExists, sendAndConfirmVersionedTransaction } from "./helpers";
+import { checkIfFileExists, importDevKeypair, sendAndConfirmVersionedTransaction } from "./helpers";
 
 interface OffchainTokenMetadata {
     name: string;
@@ -61,37 +61,34 @@ const args = minimist(process.argv.slice(2), {
             storage.destroy();
         }
 
-        const [payer, mint] = await generateKeypairs();
+        const dev = await importDevKeypair(
+            envVars.DEV_KEYPAIR_PATH,
+            connection,
+            envVars.CLUSTER,
+            logger
+        );
+        const mint = await generateMintKeypair();
 
         const imageUri = await uploadImage();
         const metadata = await uploadMetadata(imageUri);
 
-        await createToken(metadata, payer, mint);
+        await createToken(metadata, dev, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-async function generateKeypairs(): Promise<[Keypair, Keypair]> {
-    const payerSecretKey: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf8"));
-    const payer = Keypair.fromSecretKey(Uint8Array.from(payerSecretKey));
-
-    const balance = await connection.getBalance(payer.publicKey);
-    if (balance === 0) {
-        await connection.requestAirdrop(payer.publicKey, 1 * LAMPORTS_PER_SOL);
-    }
-    logger.info(`Payer ${payer.publicKey.toBase58()} imported`);
-
+async function generateMintKeypair(): Promise<Keypair> {
     const mint = Keypair.generate();
-    logger.info(`Mint ${mint.publicKey.toBase58()} generated`);
+    logger.info(`Mint generated: ${mint.publicKey.toBase58()}`);
 
     const encryptedMint = encryption.encrypt(JSON.stringify(Array.from(mint.secretKey)));
     storage.set(STORAGE_MINT_SECRET_KEY, encryptedMint);
     storage.save();
-    logger.debug(`Mint ${mint.publicKey.toBase58()} saved to storage`);
+    logger.debug(`Mint saved to storage as encrypted`);
 
-    return [payer, mint];
+    return mint;
 }
 
 async function uploadImage(): Promise<string> {
@@ -109,7 +106,7 @@ async function uploadImage(): Promise<string> {
     const upload = await ipfs.upload.file(imageFile);
 
     imageUri = generateIpfsUri(upload.IpfsHash);
-    logger.info(`Image uploaded to IPFS at ${imageUri}`);
+    logger.info(`Image uploaded to IPFS: ${imageUri}`);
 
     storage.set(STORAGE_IMAGE_URI, imageUri);
     storage.save();
@@ -142,7 +139,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
         ...metadata,
         uri: metadataUri,
     };
-    logger.info(`Metadata uploaded to IPFS at ${metadataUri}`);
+    logger.info(`Metadata uploaded to IPFS: ${metadataUri}`);
 
     storage.set(STORAGE_METADATA, metadata);
     storage.save();
@@ -153,7 +150,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
 
 async function createToken(
     offchainMetadata: OffchainTokenMetadata,
-    payer: Keypair,
+    dev: Keypair,
     mint: Keypair
 ): Promise<void> {
     const metadata: TokenMetadata = {
@@ -177,7 +174,7 @@ async function createToken(
 
     const associatedToken = await getAssociatedTokenAddress(
         mint.publicKey,
-        payer.publicKey,
+        dev.publicKey,
         false,
         TOKEN_2022_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
@@ -186,7 +183,7 @@ async function createToken(
     const instructions = [
         // Invoke the System program to create a new account
         SystemProgram.createAccount({
-            fromPubkey: payer.publicKey,
+            fromPubkey: dev.publicKey,
             newAccountPubkey: mint.publicKey,
             space: mintSize,
             lamports: mintLamports,
@@ -203,15 +200,15 @@ async function createToken(
         createInitializeMintInstruction(
             mint.publicKey,
             envVars.TOKEN_DECIMALS,
-            payer.publicKey,
+            dev.publicKey,
             null,
             TOKEN_2022_PROGRAM_ID
         ),
         // Initialize Metadata account data
         createInitializeInstruction({
             mint: mint.publicKey,
-            mintAuthority: payer.publicKey,
-            updateAuthority: payer.publicKey,
+            mintAuthority: dev.publicKey,
+            updateAuthority: dev.publicKey,
             metadata: mint.publicKey,
             name: metadata.name,
             symbol: metadata.symbol,
@@ -220,9 +217,9 @@ async function createToken(
         }),
         // Create the Associated token account connecting the Owner account with the Mint account
         createAssociatedTokenAccountInstruction(
-            payer.publicKey,
+            dev.publicKey,
             associatedToken,
-            payer.publicKey,
+            dev.publicKey,
             mint.publicKey,
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
@@ -231,7 +228,7 @@ async function createToken(
         createMintToInstruction(
             mint.publicKey,
             associatedToken,
-            payer.publicKey,
+            dev.publicKey,
             envVars.TOKEN_SUPPLY * 10 ** envVars.TOKEN_DECIMALS,
             [],
             TOKEN_2022_PROGRAM_ID
@@ -239,7 +236,7 @@ async function createToken(
         // Revoke the MintTokens authority from the Owner account
         createSetAuthorityInstruction(
             mint.publicKey,
-            payer.publicKey,
+            dev.publicKey,
             AuthorityType.MintTokens,
             null,
             [],
@@ -249,14 +246,14 @@ async function createToken(
 
     await sendAndConfirmVersionedTransaction(
         connection,
-        envVars.RPC_CLUSTER,
+        envVars.CLUSTER,
         instructions,
-        [payer, mint],
+        [dev, mint],
         envVars.EXPLORER_URI,
         logger,
         `to create token ${mint.publicKey.toBase58()}`
     );
     logger.info(
-        `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=${envVars.RPC_CLUSTER}-alpha`
+        `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=${envVars.CLUSTER}-alpha`
     );
 }

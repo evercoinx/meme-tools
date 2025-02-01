@@ -22,6 +22,6 @@ export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 export const envVars = extractEnvironmentVariables();
 export const logger = createLogger(envVars.LOG_LEVEL);
 export const connection = new Connection(envVars.RPC_URI, "confirmed");
-export const encryption = new Encryption("aes-256-cbc", envVars.KEYRING_SECRET_KEY);
+export const encryption = new Encryption("aes-256-cbc", envVars.KEYRING_SECRET);
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 export const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);

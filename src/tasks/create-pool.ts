@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import {
     ApiV3PoolInfoStandardItemCpmm,
@@ -44,6 +43,7 @@ import {
     checkIfFileExists,
     formatSol,
     formatUnits,
+    importDevKeypair,
     sendAndConfirmVersionedTransaction,
 } from "./helpers";
 
@@ -51,8 +51,8 @@ type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "dec
 
 (async () => {
     try {
-        if (!["mainnet", "devnet"].includes(envVars.RPC_CLUSTER)) {
-            throw new Error(`Unsupported cluster for Raydium: ${envVars.RPC_CLUSTER}`);
+        if (!["devnet", "mainnet-beta"].includes(envVars.CLUSTER)) {
+            throw new Error(`Unsupported cluster for Raydium: ${envVars.CLUSTER}`);
         }
 
         const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
@@ -60,28 +60,25 @@ type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "dec
             throw new Error(`Storage ${storage.cacheId} not exists`);
         }
 
-        const [payer, mint] = await importKeypairs();
-        await wrapSol(envVars.TOKEN_POOL_SOL_AMOUNT, payer);
+        const dev = await importDevKeypair(
+            envVars.DEV_KEYPAIR_PATH,
+            connection,
+            envVars.CLUSTER,
+            logger
+        );
+        const mint = await importMintKeypair();
+        await wrapSol(envVars.TOKEN_POOL_SOL_AMOUNT, dev);
 
-        const raydium = await loadRaydium(envVars.RPC_CLUSTER, connection, payer);
-        const raydiumPoolId = await createPool(raydium, payer, mint);
-        await swapSolToToken(raydium, raydiumPoolId, 0.001, 0.1, payer, mint);
+        const raydium = await loadRaydium(envVars.CLUSTER, connection, dev);
+        const raydiumPoolId = await createPool(raydium, dev, mint);
+        await swapSolToToken(raydium, raydiumPoolId, 0.001, 0.1, dev, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-async function importKeypairs(): Promise<[Keypair, Keypair]> {
-    const secretKey: number[] = JSON.parse(await fs.readFile(envVars.KEYPAIR_PATH, "utf8"));
-    const payer = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-
-    const balance = await connection.getBalance(payer.publicKey);
-    if (balance === 0) {
-        await connection.requestAirdrop(payer.publicKey, 1 * LAMPORTS_PER_SOL);
-    }
-    logger.info(`Payer ${payer.publicKey.toBase58()} imported`);
-
+async function importMintKeypair(): Promise<Keypair> {
     const encryptedMintSecretKey = storage.get<string>(STORAGE_MINT_SECRET_KEY);
     if (!encryptedMintSecretKey) {
         throw new Error("Mint secret key not loaded from storage");
@@ -89,15 +86,15 @@ async function importKeypairs(): Promise<[Keypair, Keypair]> {
 
     const mintSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedMintSecretKey));
     const mint = Keypair.fromSecretKey(Uint8Array.from(mintSecretKey));
-    logger.info(`Mint ${mint.publicKey.toBase58()} imported`);
+    logger.info(`Mint imported: ${mint.publicKey.toBase58()}`);
 
-    return [payer, mint];
+    return mint;
 }
 
-async function wrapSol(amount: number, payer: Keypair): Promise<void> {
+async function wrapSol(amount: number, dev: Keypair): Promise<void> {
     const associatedTokenAccount = await getAssociatedTokenAddress(
         NATIVE_MINT,
-        payer.publicKey,
+        dev.publicKey,
         false,
         TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
@@ -122,9 +119,9 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
 
         instructions.push(
             createAssociatedTokenAccountInstruction(
-                payer.publicKey,
+                dev.publicKey,
                 associatedTokenAccount,
-                payer.publicKey,
+                dev.publicKey,
                 NATIVE_MINT,
                 TOKEN_PROGRAM_ID,
                 ASSOCIATED_TOKEN_PROGRAM_ID
@@ -135,14 +132,14 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
     const requestedLamportsToWrap = amount * LAMPORTS_PER_SOL;
     const actualLamportsToWrap = BigInt(requestedLamportsToWrap) - actualLamportsHeld;
     if (actualLamportsToWrap > 0) {
-        const balance = await connection.getBalance(payer.publicKey);
+        const balance = await connection.getBalance(dev.publicKey);
         if (actualLamportsToWrap > balance) {
             throw new Error(`Owner has insufficient balance: ${formatSol(balance)} SOL`);
         }
 
         instructions.push(
             SystemProgram.transfer({
-                fromPubkey: payer.publicKey,
+                fromPubkey: dev.publicKey,
                 toPubkey: associatedTokenAccount,
                 lamports: actualLamportsToWrap,
             }),
@@ -157,16 +154,16 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
 
     await sendAndConfirmVersionedTransaction(
         connection,
-        envVars.RPC_CLUSTER,
+        envVars.CLUSTER,
         instructions,
-        [payer],
+        [dev],
         envVars.EXPLORER_URI,
         logger,
         `to wrap ${formatSol(actualLamportsToWrap)} SOL`
     );
 }
 
-async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Promise<string> {
+async function createPool(raydium: Raydium, dev: Keypair, mint: Keypair): Promise<string> {
     let raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
     if (raydiumPoolId) {
         logger.info(`Raydium pool id ${raydiumPoolId} loaded from storage`);
@@ -240,15 +237,15 @@ async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Prom
 
     await sendAndConfirmVersionedTransaction(
         connection,
-        envVars.RPC_CLUSTER,
+        envVars.CLUSTER,
         instructions,
-        [payer],
+        [dev],
         envVars.EXPLORER_URI,
         logger,
         `to create pool ${raydiumPoolId}`
     );
     logger.info(
-        `${envVars.EXPLORER_URI}/address/${raydiumPoolId}?cluster=${envVars.RPC_CLUSTER}-alpha`
+        `${envVars.EXPLORER_URI}/address/${raydiumPoolId}?cluster=${envVars.CLUSTER}-alpha`
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, raydiumPoolId);
@@ -263,7 +260,7 @@ async function swapSolToToken(
     raydiumPoolId: string,
     amount: number,
     slippage: number,
-    payer: Keypair,
+    dev: Keypair,
     mint: Keypair
 ): Promise<void> {
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
@@ -322,9 +319,9 @@ async function swapSolToToken(
 
     await sendAndConfirmVersionedTransaction(
         connection,
-        envVars.RPC_CLUSTER,
+        envVars.CLUSTER,
         instructions,
-        [payer],
+        [dev],
         envVars.EXPLORER_URI,
         logger,
         `to swap ${formatSol(swapResult.sourceAmountSwapped)} SOL to ${formatUnits(swapResult.destinationAmountSwapped, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL}`
