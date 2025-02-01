@@ -16,14 +16,7 @@ import {
     TOKEN_2022_PROGRAM_ID,
     TYPE_SIZE,
 } from "@solana/spl-token";
-import {
-    Keypair,
-    LAMPORTS_PER_SOL,
-    PublicKey,
-    sendAndConfirmTransaction,
-    SystemProgram,
-    Transaction,
-} from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import {
     connection,
@@ -39,7 +32,7 @@ import {
     STORAGE_METADATA,
     STORAGE_MINT_SECRET_KEY,
 } from "./init";
-import { checkIfFileExists } from "./helpers";
+import { checkIfFileExists, sendAndConfirmVersionedTransaction } from "./helpers";
 
 interface OffchainTokenMetadata {
     name: string;
@@ -190,8 +183,7 @@ async function createToken(
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
-    const transaction = new Transaction();
-    transaction.add(
+    const instructions = [
         // Invoke the System program to create a new account
         SystemProgram.createAccount({
             fromPubkey: payer.publicKey,
@@ -252,14 +244,18 @@ async function createToken(
             null,
             [],
             TOKEN_2022_PROGRAM_ID
-        )
+        ),
+    ];
+
+    await sendAndConfirmVersionedTransaction(
+        connection,
+        envVars.RPC_CLUSTER,
+        instructions,
+        [payer, mint],
+        envVars.EXPLORER_URI,
+        logger,
+        `to create token ${mint.publicKey.toBase58()}`
     );
-
-    logger.debug(`Sending transaction to create token ${mint.publicKey.toBase58()}...`);
-    const signature = await sendAndConfirmTransaction(connection, transaction, [payer, mint]);
-
-    logger.info(`Transaction to create token ${mint.publicKey.toBase58()} confirmed`);
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
     logger.info(
         `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=${envVars.RPC_CLUSTER}-alpha`
     );

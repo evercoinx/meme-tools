@@ -21,13 +21,7 @@ import {
     TOKEN_PROGRAM_ID,
     TokenAccountNotFoundError,
 } from "@solana/spl-token";
-import {
-    Keypair,
-    LAMPORTS_PER_SOL,
-    sendAndConfirmTransaction,
-    SystemProgram,
-    Transaction,
-} from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
@@ -41,7 +35,7 @@ import {
     STORAGE_RAYDIUM_POOL_ID,
 } from "./init";
 import { loadRaydium } from "../modules/raydium";
-import { checkIfFileExists, lamportsToSol } from "./helpers";
+import { checkIfFileExists, lamportsToSol, sendAndConfirmVersionedTransaction } from "./helpers";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
 
@@ -150,13 +144,15 @@ async function wrapSol(amount: number, payer: Keypair): Promise<void> {
         return;
     }
 
-    const transaction = new Transaction().add(...instructions);
-
-    logger.debug(`Sending transaction to wrap ${lamportsToSol(actualLamportsToWrap)} SOL...`);
-    const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
-
-    logger.info(`Transaction to wrap ${lamportsToSol(actualLamportsToWrap)} SOL confirmed`);
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
+    await sendAndConfirmVersionedTransaction(
+        connection,
+        envVars.RPC_CLUSTER,
+        instructions,
+        [payer],
+        envVars.EXPLORER_URI,
+        logger,
+        `to wrap ${lamportsToSol(actualLamportsToWrap)} SOL`
+    );
 }
 
 async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Promise<string> {
@@ -197,7 +193,7 @@ async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Prom
     }
 
     const {
-        transaction,
+        transaction: { instructions },
         extInfo: {
             address: { poolId },
         },
@@ -230,11 +226,16 @@ async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Prom
     });
 
     raydiumPoolId = poolId.toBase58();
-    logger.debug(`Sending transaction to create pool ${raydiumPoolId}...`);
-    const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
 
-    logger.info(`Transaction to create pool ${raydiumPoolId} confirmed`);
-    logger.info(`${envVars.EXPLORER_URI}/tx/${signature}?cluster=${envVars.RPC_CLUSTER}-alpha`);
+    await sendAndConfirmVersionedTransaction(
+        connection,
+        envVars.RPC_CLUSTER,
+        instructions,
+        [payer],
+        envVars.EXPLORER_URI,
+        logger,
+        `to create pool ${raydiumPoolId}`
+    );
     logger.info(
         `${envVars.EXPLORER_URI}/address/${raydiumPoolId}?cluster=${envVars.RPC_CLUSTER}-alpha`
     );
