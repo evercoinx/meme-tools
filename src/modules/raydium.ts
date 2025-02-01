@@ -4,7 +4,7 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 export async function loadRaydium(
     cluster: Cluster,
     connection: Connection,
-    owner: Keypair
+    owner?: Keypair
 ): Promise<Raydium> {
     if (cluster !== "devnet" && cluster !== "mainnet-beta") {
         throw new Error(`Cluster not supported by Raydium: ${cluster}`);

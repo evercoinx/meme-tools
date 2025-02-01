@@ -13,7 +13,7 @@ import BN from "bn.js";
 import Decimal from "decimal.js";
 import { Logger } from "pino";
 
-export function formatSol(amount: BN | bigint | number, decimals = 3) {
+export function formatSol(amount: BN | bigint | number, decimals = 4) {
     return new Decimal(amount.toString(10)).div(LAMPORTS_PER_SOL).toFixed(decimals);
 }
 
