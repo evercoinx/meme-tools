@@ -61,8 +61,11 @@ const args = minimist(process.argv.slice(2), {
 (async () => {
     try {
         const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
-        if (storageExists && !args.force) {
-            throw new Error(`Storage ${storage.cacheId} already exists`);
+        if (storageExists) {
+            if (!args.force) {
+                throw new Error(`Storage ${storage.cacheId} already exists`);
+            }
+            storage.destroy();
         }
 
         const [payer, mint] = await generateKeypairs();

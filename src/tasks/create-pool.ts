@@ -182,16 +182,19 @@ async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Prom
     };
 
     const feeConfigs = await raydium.api.getCpmmConfigs();
-    if (raydium.cluster === "devnet") {
-        feeConfigs.forEach((feeConfig) => {
-            const id = getCpmmPdaAmmConfigId(
-                DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
-                feeConfig.index
-            );
-            feeConfig.id = id.publicKey.toBase58();
-        });
+    if (feeConfigs.length === 0) {
+        throw new Error("No CPMM fee configs found");
     }
+    feeConfigs.sort((a, b) => a.tradeFeeRate - b.tradeFeeRate);
+
     const feeConfig = feeConfigs[0];
+    if (raydium.cluster === "devnet") {
+        const id = getCpmmPdaAmmConfigId(
+            DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
+            feeConfig.index
+        );
+        feeConfig.id = id.publicKey.toBase58();
+    }
 
     const {
         transaction,
@@ -220,7 +223,7 @@ async function createPool(raydium: Raydium, payer: Keypair, mint: Keypair): Prom
         ),
         startTime: new BN(0),
         feeConfig,
-        associatedOnly: false,
+        associatedOnly: true,
         ownerInfo: {
             useSOLBalance: false,
         },
