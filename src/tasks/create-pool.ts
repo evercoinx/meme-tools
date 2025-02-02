@@ -39,13 +39,9 @@ import {
     STORAGE_RAYDIUM_POOL_ID,
 } from "./init";
 import { loadRaydium } from "../modules/raydium";
-import {
-    checkIfFileExists,
-    formatSol,
-    formatUnits,
-    importDevKeypair,
-    sendAndConfirmVersionedTransaction,
-} from "./helpers";
+import { checkIfFileExists } from "../helpers/filesystem";
+import { formatSol, formatUnits } from "../helpers/format";
+import { importDevKeypair, sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
 

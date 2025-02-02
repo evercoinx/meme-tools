@@ -32,7 +32,8 @@ import {
     STORAGE_METADATA,
     STORAGE_MINT_SECRET_KEY,
 } from "./init";
-import { checkIfFileExists, importDevKeypair, sendAndConfirmVersionedTransaction } from "./helpers";
+import { checkIfFileExists } from "../helpers/filesystem";
+import { importDevKeypair, sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 interface OffchainTokenMetadata {
     name: string;

@@ -1,8 +1,9 @@
 import path from "node:path";
+import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
 import { connection, envVars, logger, storage, STORAGE_DIR, STORAGE_RAYDIUM_POOL_ID } from "./init";
 import { loadRaydium } from "../modules/raydium";
-import { checkIfFileExists } from "./helpers";
-import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
+import { checkIfFileExists } from "../helpers/filesystem";
+import { currency, decimal, percent } from "../helpers/format";
 
 (async () => {
     try {
@@ -37,29 +38,29 @@ import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
         if (raydium.cluster === "devnet") {
             mintASymbol = "WSOL";
             mintBSymbol = envVars.TOKEN_SYMBOL;
-            feePercent = poolInfo.feeRate / 10_000;
+            feePercent = poolInfo.feeRate / 1_000_000;
         } else {
             mintASymbol = poolInfo.mintA.symbol;
             mintBSymbol = poolInfo.mintB.symbol;
-            feePercent = poolInfo.feeRate * 100;
+            feePercent = poolInfo.feeRate;
         }
 
         logger.info(
-            `Pool id: %s\n\t\tType: %s\n\t\tPrice: 1 %s ≈ %f %s\n\t\tFee tier: %f%%\n\t\tPool liquidity: $%f\n\t\tPooled %s: %f\n\t\tPooled %s: %f\n\t\tLP mint id: %s\n\t\tLP supply: %f\n\t\tPermanently locked: %f%%`,
+            `Pool id: %s\n\t\tType: %s\n\t\tPrice: 1 %s ≈ %s %s\n\t\tFee tier: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP mint id: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s`,
             poolInfo.id,
             poolInfo.type,
             mintASymbol,
-            poolInfo.price.toFixed(4),
+            decimal.format(poolInfo.price),
             mintBSymbol,
-            feePercent,
-            poolInfo.tvl,
+            percent.format(feePercent),
+            currency.format(poolInfo.tvl),
             mintASymbol,
-            poolInfo.mintAmountA,
+            decimal.format(poolInfo.mintAmountA),
             mintBSymbol,
-            poolInfo.mintAmountB,
+            decimal.format(poolInfo.mintAmountB),
             poolInfo.lpMint.address,
-            poolInfo.lpAmount,
-            poolInfo.burnPercent * 100
+            decimal.format(poolInfo.lpAmount),
+            percent.format(poolInfo.burnPercent)
         );
     } catch (err) {
         logger.fatal(err);

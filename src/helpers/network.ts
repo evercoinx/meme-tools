@@ -9,17 +9,8 @@ import {
     TransactionMessage,
     VersionedTransaction,
 } from "@solana/web3.js";
-import BN from "bn.js";
-import Decimal from "decimal.js";
 import { Logger } from "pino";
-
-export function formatSol(amount: BN | bigint | number, decimals = 4) {
-    return new Decimal(amount.toString(10)).div(LAMPORTS_PER_SOL).toFixed(decimals);
-}
-
-export function formatUnits(amount: BN | bigint | number, units: number, decimals = 0) {
-    return new Decimal(amount.toString(10)).div(units).toFixed(decimals);
-}
+import { formatSol } from "./format";
 
 export function versionedMessageToInstructions(
     versionedMessage: MessageV0
@@ -107,13 +98,4 @@ export async function sendAndConfirmVersionedTransaction(
 
     logger.info(`Transaction ${logMessage} confirmed`);
     logger.info(`${explorerUri}/tx/${signature}?cluster=${cluster}-alpha`);
-}
-
-export async function checkIfFileExists(path: string) {
-    try {
-        await fs.access(path);
-        return true;
-    } catch {
-        return false;
-    }
 }
