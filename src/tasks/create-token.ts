@@ -83,7 +83,7 @@ const args = minimist(process.argv.slice(2), {
 
 async function generateMintKeypair(): Promise<Keypair> {
     const mint = Keypair.generate();
-    logger.info(`Mint generated: ${mint.publicKey.toBase58()}`);
+    logger.info("Mint generated: %s", mint.publicKey.toBase58());
 
     const encryptedMint = encryption.encrypt(JSON.stringify(Array.from(mint.secretKey)));
     storage.set(STORAGE_MINT_SECRET_KEY, encryptedMint);
@@ -108,7 +108,7 @@ async function uploadImage(): Promise<string> {
     const upload = await ipfs.upload.file(imageFile);
 
     imageUri = generateIpfsUri(upload.IpfsHash);
-    logger.info(`Image uploaded to IPFS: ${imageUri}`);
+    logger.info("Image uploaded to IPFS: %s", imageUri);
 
     storage.set(STORAGE_IMAGE_URI, imageUri);
     storage.save();
@@ -141,7 +141,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
         ...metadata,
         uri: metadataUri,
     };
-    logger.info(`Metadata uploaded to IPFS: ${metadataUri}`);
+    logger.info("Metadata uploaded to IPFS: %s", metadataUri);
 
     storage.set(STORAGE_METADATA, metadata);
     storage.save();
@@ -174,7 +174,7 @@ async function createToken(
         mintSize + metadataExtensionSize + metadataSize
     );
 
-    const associatedToken = await getAssociatedTokenAddress(
+    const associatedTokenAccount = await getAssociatedTokenAddress(
         mint.publicKey,
         dev.publicKey,
         false,
@@ -220,7 +220,7 @@ async function createToken(
         // Create the Associated token account connecting the Owner account with the Mint account
         createAssociatedTokenAccountInstruction(
             dev.publicKey,
-            associatedToken,
+            associatedTokenAccount,
             dev.publicKey,
             mint.publicKey,
             TOKEN_2022_PROGRAM_ID,
@@ -229,7 +229,7 @@ async function createToken(
         // Mint tokens to the Owner's Associated token account
         createMintToInstruction(
             mint.publicKey,
-            associatedToken,
+            associatedTokenAccount,
             dev.publicKey,
             envVars.TOKEN_SUPPLY * 10 ** envVars.TOKEN_DECIMALS,
             [],
@@ -253,5 +253,9 @@ async function createToken(
         logger,
         `to create token ${mint.publicKey.toBase58()}`
     );
-    logger.info(explorer.generateAddressUri(mint.publicKey.toBase58()));
+    logger.info(
+        "Mint: %s\n\t\tWallet Mint ATA: %s",
+        explorer.generateAddressUri(mint.publicKey.toBase58()),
+        explorer.generateAddressUri(associatedTokenAccount.toBase58())
+    );
 }
