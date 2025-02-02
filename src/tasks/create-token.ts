@@ -22,6 +22,7 @@ import {
     connection,
     encryption,
     envVars,
+    explorer,
     IMAGE_DIR,
     ipfs,
     logger,
@@ -247,14 +248,10 @@ async function createToken(
 
     await sendAndConfirmVersionedTransaction(
         connection,
-        envVars.CLUSTER,
         instructions,
         [dev, mint],
-        envVars.EXPLORER_URI,
         logger,
         `to create token ${mint.publicKey.toBase58()}`
     );
-    logger.info(
-        `${envVars.EXPLORER_URI}/address/${mint.publicKey.toBase58()}?cluster=${envVars.CLUSTER}-alpha`
-    );
+    logger.info(explorer.generateAddressUri(mint.publicKey.toBase58()));
 }

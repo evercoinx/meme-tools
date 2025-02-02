@@ -11,6 +11,7 @@ import {
 } from "@solana/web3.js";
 import { Logger } from "pino";
 import { formatSol } from "./format";
+import { explorer } from "../tasks/init";
 
 export function versionedMessageToInstructions(
     versionedMessage: MessageV0
@@ -64,10 +65,8 @@ export async function importDevKeypair(
 
 export async function sendAndConfirmVersionedTransaction(
     connection: Connection,
-    cluster: string,
     instructions: TransactionInstruction[],
     signers: Keypair[],
-    explorerUri: string,
     logger: Logger,
     logMessage: string
 ): Promise<void> {
@@ -97,5 +96,5 @@ export async function sendAndConfirmVersionedTransaction(
     }
 
     logger.info(`Transaction ${logMessage} confirmed`);
-    logger.info(`${explorerUri}/tx/${signature}?cluster=${cluster}-alpha`);
+    logger.info(explorer.generateTransactionUri(signature));
 }

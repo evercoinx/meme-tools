@@ -32,6 +32,7 @@ import {
     connection,
     encryption,
     envVars,
+    explorer,
     logger,
     storage,
     STORAGE_DIR,
@@ -150,10 +151,8 @@ async function wrapSol(amount: number, dev: Keypair): Promise<void> {
 
     await sendAndConfirmVersionedTransaction(
         connection,
-        envVars.CLUSTER,
         instructions,
         [dev],
-        envVars.EXPLORER_URI,
         logger,
         `to wrap ${formatSol(actualLamportsToWrap)} SOL`
     );
@@ -233,16 +232,12 @@ async function createPool(raydium: Raydium, dev: Keypair, mint: Keypair): Promis
 
     await sendAndConfirmVersionedTransaction(
         connection,
-        envVars.CLUSTER,
         instructions,
         [dev],
-        envVars.EXPLORER_URI,
         logger,
         `to create pool ${raydiumPoolId}`
     );
-    logger.info(
-        `${envVars.EXPLORER_URI}/address/${raydiumPoolId}?cluster=${envVars.CLUSTER}-alpha`
-    );
+    logger.info(explorer.generateAddressUri(raydiumPoolId));
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, raydiumPoolId);
     storage.save();
@@ -315,10 +310,8 @@ async function swapSolToToken(
 
     await sendAndConfirmVersionedTransaction(
         connection,
-        envVars.CLUSTER,
         instructions,
         [dev],
-        envVars.EXPLORER_URI,
         logger,
         `to swap ${formatSol(swapResult.sourceAmountSwapped)} SOL to ${formatUnits(swapResult.destinationAmountSwapped, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL}`
     );

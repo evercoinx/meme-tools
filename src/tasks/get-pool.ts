@@ -1,9 +1,17 @@
 import path from "node:path";
 import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
-import { connection, envVars, logger, storage, STORAGE_DIR, STORAGE_RAYDIUM_POOL_ID } from "./init";
+import {
+    connection,
+    envVars,
+    explorer,
+    logger,
+    storage,
+    STORAGE_DIR,
+    STORAGE_RAYDIUM_POOL_ID,
+} from "./init";
 import { loadRaydium } from "../modules/raydium";
 import { checkIfFileExists } from "../helpers/filesystem";
-import { currency, decimal, percent } from "../helpers/format";
+import { currency, date, decimal, percent } from "../helpers/format";
 
 (async () => {
     try {
@@ -38,7 +46,7 @@ import { currency, decimal, percent } from "../helpers/format";
         if (raydium.cluster === "devnet") {
             mintASymbol = "WSOL";
             mintBSymbol = envVars.TOKEN_SYMBOL;
-            feePercent = poolInfo.feeRate / 1_000_000;
+            feePercent = poolInfo.feeRate / 1e6;
         } else {
             mintASymbol = poolInfo.mintA.symbol;
             mintBSymbol = poolInfo.mintB.symbol;
@@ -46,21 +54,27 @@ import { currency, decimal, percent } from "../helpers/format";
         }
 
         logger.info(
-            `Pool id: %s\n\t\tType: %s\n\t\tPrice: 1 %s ≈ %s %s\n\t\tFee tier: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP mint id: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s`,
-            poolInfo.id,
+            `Raydium pool info (%s)\n\t\tPool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\tPool type: %s\n\t\tPrice: 1 %s ≈ %s %s\n\t\tFee tier: %s\n\t\tOpen time: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s`,
+            raydium.cluster,
+            explorer.generateAddressUri(poolInfo.id),
+            mintASymbol,
+            explorer.generateAddressUri(poolInfo.mintA.address),
+            mintBSymbol,
+            explorer.generateAddressUri(poolInfo.mintB.address),
+            explorer.generateAddressUri(poolInfo.lpMint.address),
             poolInfo.type,
             mintASymbol,
             decimal.format(poolInfo.price),
             mintBSymbol,
             percent.format(feePercent),
+            date.format(new Date(Number(poolInfo.openTime) * 1e3)),
             currency.format(poolInfo.tvl),
             mintASymbol,
             decimal.format(poolInfo.mintAmountA),
             mintBSymbol,
             decimal.format(poolInfo.mintAmountB),
-            poolInfo.lpMint.address,
             decimal.format(poolInfo.lpAmount),
-            percent.format(poolInfo.burnPercent)
+            percent.format(poolInfo.burnPercent / 1e2)
         );
     } catch (err) {
         logger.fatal(err);
