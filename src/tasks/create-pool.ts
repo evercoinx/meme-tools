@@ -12,19 +12,8 @@ import {
     getCpmmPdaAmmConfigId,
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
-import {
-    Account,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    createAssociatedTokenAccountInstruction,
-    createSyncNativeInstruction,
-    getAccount,
-    getAssociatedTokenAddress,
-    NATIVE_MINT,
-    TOKEN_2022_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    TokenAccountNotFoundError,
-} from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
+import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
@@ -40,7 +29,7 @@ import { loadRaydium } from "../modules/raydium";
 import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { formatSol, formatUnits } from "../helpers/format";
-import { sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { sendAndConfirmVersionedTransaction, wrapSol } from "../helpers/network";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
 
@@ -61,7 +50,7 @@ const SLIPPAGE = 0.03;
         const mint = importMintKeypair();
         const holders = importHolderKeypairs();
 
-        await wrapDevSol(envVars.INITIAL_POOL_SOL_LIQUIDITY, dev);
+        await wrapSol(new Decimal(envVars.INITIAL_POOL_SOL_LIQUIDITY), dev);
 
         const raydiumPoolId = await createPool(dev, mint);
 
@@ -74,74 +63,6 @@ const SLIPPAGE = 0.03;
         process.exit(1);
     }
 })();
-
-export async function wrapDevSol(amount: number, dev: Keypair): Promise<void> {
-    const associatedTokenAccount = await getAssociatedTokenAddress(
-        NATIVE_MINT,
-        dev.publicKey,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    const instructions = [];
-    let account: Account | null = null;
-    let lamportsHeld = 0n;
-
-    try {
-        account = await getAccount(
-            connection,
-            associatedTokenAccount,
-            "confirmed",
-            TOKEN_PROGRAM_ID
-        );
-        lamportsHeld = account.amount;
-    } catch (err) {
-        if (!(err instanceof TokenAccountNotFoundError)) {
-            throw err;
-        }
-
-        instructions.push(
-            createAssociatedTokenAccountInstruction(
-                dev.publicKey,
-                associatedTokenAccount,
-                dev.publicKey,
-                NATIVE_MINT,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
-            )
-        );
-    }
-
-    const requestedLamportsToWrap = amount * LAMPORTS_PER_SOL;
-    const lamportsToWrap = BigInt(requestedLamportsToWrap) - lamportsHeld;
-    if (lamportsToWrap > 0) {
-        const balance = await connection.getBalance(dev.publicKey);
-        if (lamportsToWrap > balance) {
-            throw new Error(`Owner has insufficient balance: ${formatSol(balance)} SOL`);
-        }
-
-        instructions.push(
-            SystemProgram.transfer({
-                fromPubkey: dev.publicKey,
-                toPubkey: associatedTokenAccount,
-                lamports: lamportsToWrap,
-            }),
-            createSyncNativeInstruction(associatedTokenAccount, TOKEN_PROGRAM_ID)
-        );
-    }
-
-    if (instructions.length === 0) {
-        logger.info("Owner has sufficient balance: %s wSOL", formatSol(lamportsHeld));
-        return;
-    }
-
-    await sendAndConfirmVersionedTransaction(
-        instructions,
-        [dev],
-        `to wrap ${formatSol(lamportsToWrap)} SOL for ${dev.publicKey.toBase58()}`
-    );
-}
 
 async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
     let raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
