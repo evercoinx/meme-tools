@@ -10,7 +10,6 @@ import {
     DEV_CREATE_CPMM_POOL_PROGRAM,
     DEVNET_PROGRAM_ID,
     getCpmmPdaAmmConfigId,
-    Raydium,
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import {
@@ -36,6 +35,7 @@ import {
     logger,
     storage,
     STORAGE_DIR,
+    STORAGE_HOLDER_SECRET_KEYS,
     STORAGE_MINT_SECRET_KEY,
     STORAGE_RAYDIUM_POOL_ID,
 } from "./init";
@@ -45,6 +45,8 @@ import { formatSol, formatUnits } from "../helpers/format";
 import { importDevKeypair, sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
+
+const SLIPPAGE = 0.03;
 
 (async () => {
     try {
@@ -63,19 +65,24 @@ type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "dec
             envVars.CLUSTER,
             logger
         );
-        const mint = await importMintKeypair();
-        await wrapSol(envVars.TOKEN_POOL_SOL_AMOUNT, dev);
+        const mint = importMintKeypair();
+        const holders = importHolderKeypairs();
 
-        const raydium = await loadRaydium(envVars.CLUSTER, connection, dev);
-        const raydiumPoolId = await createPool(raydium, dev, mint);
-        await swapSolToToken(raydium, raydiumPoolId, 0.001, 0.03, dev, mint);
+        await wrapDevSol(envVars.INITIAL_POOL_SOL_LIQUIDITY, dev);
+
+        const raydiumPoolId = await createPool(dev, mint);
+
+        const amount = new Decimal(envVars.INITIAL_POOL_SOL_LIQUIDITY).mul(
+            envVars.HOLDER_SHARE_PERCENT_PER_POOL
+        );
+        await swapSolToTokenByHolders(raydiumPoolId, amount, SLIPPAGE, holders, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-async function importMintKeypair(): Promise<Keypair> {
+function importMintKeypair(): Keypair {
     const encryptedMintSecretKey = storage.get<string>(STORAGE_MINT_SECRET_KEY);
     if (!encryptedMintSecretKey) {
         throw new Error("Mint secret key not loaded from storage");
@@ -83,12 +90,30 @@ async function importMintKeypair(): Promise<Keypair> {
 
     const mintSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedMintSecretKey));
     const mint = Keypair.fromSecretKey(Uint8Array.from(mintSecretKey));
-    logger.info(`Mint imported: ${mint.publicKey.toBase58()}`);
+    logger.info("Mint imported: %s", mint.publicKey.toBase58());
 
     return mint;
 }
 
-async function wrapSol(amount: number, dev: Keypair): Promise<void> {
+function importHolderKeypairs(): Keypair[] {
+    const holders: Keypair[] = [];
+
+    for (let i = 0; i < envVars.HOLDER_COUNT_PER_POOL; i++) {
+        const encryptedHolderSecretKey = storage.get<string>(STORAGE_HOLDER_SECRET_KEYS[i]);
+        if (!encryptedHolderSecretKey) {
+            throw new Error("Holder secret key not loaded from storage");
+        }
+
+        const holderSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedHolderSecretKey));
+        const holder = Keypair.fromSecretKey(Uint8Array.from(holderSecretKey));
+        holders.push(holder);
+        logger.info("Holder imported: %s", holder.publicKey.toBase58());
+    }
+
+    return holders;
+}
+
+export async function wrapDevSol(amount: number, dev: Keypair): Promise<void> {
     const associatedTokenAccount = await getAssociatedTokenAddress(
         NATIVE_MINT,
         dev.publicKey,
@@ -154,17 +179,18 @@ async function wrapSol(amount: number, dev: Keypair): Promise<void> {
         instructions,
         [dev],
         logger,
-        `to wrap ${formatSol(lamportsToWrap)} SOL`
+        `to wrap ${formatSol(lamportsToWrap)} SOL for ${dev.publicKey.toBase58()}`
     );
 }
 
-async function createPool(raydium: Raydium, dev: Keypair, mint: Keypair): Promise<string> {
+async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
     let raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
     if (raydiumPoolId) {
         logger.info("Raydium pool id %s loaded from storage", raydiumPoolId);
         return raydiumPoolId;
     }
 
+    const raydium = await loadRaydium(envVars.CLUSTER, connection, dev);
     const mintA: Token = {
         address: NATIVE_MINT.toBase58(),
         programId: TOKEN_PROGRAM_ID.toBase58(),
@@ -212,12 +238,12 @@ async function createPool(raydium: Raydium, dev: Keypair, mint: Keypair): Promis
         mintA,
         mintB,
         mintAAmount: new BN(
-            new Decimal(envVars.TOKEN_POOL_SOL_AMOUNT).mul(LAMPORTS_PER_SOL).toFixed(0)
+            new Decimal(envVars.INITIAL_POOL_SOL_LIQUIDITY).mul(LAMPORTS_PER_SOL).toFixed(0)
         ),
         mintBAmount: new BN(
             new Decimal(envVars.TOKEN_SUPPLY)
                 .mul(10 ** envVars.TOKEN_DECIMALS)
-                .mul(envVars.TOKEN_POOL_SIZE_PERCENT)
+                .mul(envVars.INITIAL_POOL_SIZE_PERCENT)
                 .toFixed(0)
         ),
         startTime: new BN(0),
@@ -229,7 +255,6 @@ async function createPool(raydium: Raydium, dev: Keypair, mint: Keypair): Promis
     });
 
     raydiumPoolId = poolId.toBase58();
-
     await sendAndConfirmVersionedTransaction(
         connection,
         instructions,
@@ -237,6 +262,7 @@ async function createPool(raydium: Raydium, dev: Keypair, mint: Keypair): Promis
         logger,
         `to create pool ${raydiumPoolId}`
     );
+
     logger.info(
         "Pool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\t%s vault: %s\n\t\t%s vault: %s",
         explorer.generateAddressUri(raydiumPoolId),
@@ -258,14 +284,14 @@ async function createPool(raydium: Raydium, dev: Keypair, mint: Keypair): Promis
     return raydiumPoolId;
 }
 
-async function swapSolToToken(
-    raydium: Raydium,
+async function swapSolToTokenByHolders(
     raydiumPoolId: string,
-    amount: number,
+    amount: Decimal,
     slippage: number,
-    dev: Keypair,
+    holders: Keypair[],
     mint: Keypair
 ): Promise<void> {
+    const raydium = await loadRaydium(envVars.CLUSTER, connection);
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
     let poolKeys: CpmmKeys | undefined;
     let rpcData: CpmmRpcData;
@@ -300,7 +326,7 @@ async function swapSolToToken(
     }
 
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
-    const inputAmount = new BN(new Decimal(amount).mul(LAMPORTS_PER_SOL).toFixed(0));
+    const inputAmount = new BN(amount.mul(LAMPORTS_PER_SOL).toFixed(0));
 
     const swapResult = CurveCalculator.swap(
         inputAmount,
@@ -309,22 +335,25 @@ async function swapSolToToken(
         rpcData.configInfo.tradeFeeRate
     );
 
-    const {
-        transaction: { instructions },
-    } = await raydium.cpmm.swap<TxVersion.LEGACY>({
-        poolInfo,
-        poolKeys,
-        inputAmount,
-        swapResult,
-        slippage,
-        baseIn,
-    });
+    for (const holder of holders) {
+        const raydium = await loadRaydium(envVars.CLUSTER, connection, holder);
+        const {
+            transaction: { instructions },
+        } = await raydium.cpmm.swap<TxVersion.LEGACY>({
+            poolInfo,
+            poolKeys,
+            inputAmount,
+            swapResult,
+            slippage,
+            baseIn,
+        });
 
-    await sendAndConfirmVersionedTransaction(
-        connection,
-        instructions,
-        [dev],
-        logger,
-        `to swap ${formatSol(swapResult.sourceAmountSwapped)} SOL for ${formatUnits(swapResult.destinationAmountSwapped, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL}`
-    );
+        await sendAndConfirmVersionedTransaction(
+            connection,
+            instructions,
+            [holder],
+            logger,
+            `to swap ${formatSol(swapResult.sourceAmountSwapped)} WSOL for ${formatUnits(swapResult.destinationAmountSwapped, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`
+        );
+    }
 }

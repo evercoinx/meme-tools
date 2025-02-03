@@ -13,8 +13,10 @@ interface EnvironmentSchema {
     TOKEN_SYMBOL: string;
     TOKEN_DECIMALS: number;
     TOKEN_SUPPLY: number;
-    TOKEN_POOL_SIZE_PERCENT: number;
-    TOKEN_POOL_SOL_AMOUNT: number;
+    INITIAL_POOL_SIZE_PERCENT: number;
+    INITIAL_POOL_SOL_LIQUIDITY: number;
+    HOLDER_SHARE_PERCENT_PER_POOL: number;
+    HOLDER_COUNT_PER_POOL: number;
 }
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
@@ -67,16 +69,28 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(1e11)
                 .default(1e9)
                 .description("Token supply"),
-            TOKEN_POOL_SIZE_PERCENT: Joi.number()
+            INITIAL_POOL_SIZE_PERCENT: Joi.number()
                 .required()
                 .min(0.0001)
                 .max(1)
-                .description("Token pool size percent"),
-            TOKEN_POOL_SOL_AMOUNT: Joi.number()
+                .description("Initial pool size percent"),
+            INITIAL_POOL_SOL_LIQUIDITY: Joi.number()
                 .required()
-                .min(0.01)
-                .max(20)
-                .description("SOL amount for token pool"),
+                .min(0.0001)
+                .max(10)
+                .description("Initial pool liquidity"),
+            HOLDER_SHARE_PERCENT_PER_POOL: Joi.number()
+                .required()
+                .min(0.0001)
+                .max(1)
+                .description("Holder share percent per pool"),
+            HOLDER_COUNT_PER_POOL: Joi.number()
+                .optional()
+                .integer()
+                .min(0)
+                .max(4)
+                .default(4)
+                .description("Holder count per pool"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 

@@ -81,7 +81,7 @@ export async function sendAndConfirmVersionedTransaction(
     const transaction = new VersionedTransaction(messageV0);
     transaction.sign(signers);
 
-    logger.debug(`Sending transaction ${logMessage}...`);
+    logger.debug(`Sending transaction ${logMessage}`);
     const signature = await connection.sendTransaction(transaction, {
         preflightCommitment: "confirmed",
     });
@@ -95,6 +95,5 @@ export async function sendAndConfirmVersionedTransaction(
         throw new Error(confirmation.value.err.toString());
     }
 
-    logger.info(`Transaction ${logMessage} confirmed`);
-    logger.info(explorer.generateTransactionUri(signature));
+    logger.info("Transaction confirmed: %s", explorer.generateTransactionUri(signature));
 }

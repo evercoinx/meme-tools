@@ -1,4 +1,4 @@
 dist/
 node_modules/
 storage/
-package-lock.json
+yarn.lock

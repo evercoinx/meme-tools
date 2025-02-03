@@ -88,7 +88,7 @@ async function generateMintKeypair(): Promise<Keypair> {
     const encryptedMint = encryption.encrypt(JSON.stringify(Array.from(mint.secretKey)));
     storage.set(STORAGE_MINT_SECRET_KEY, encryptedMint);
     storage.save();
-    logger.debug(`Mint saved to storage as encrypted`);
+    logger.debug("Mint saved to storage as encrypted");
 
     return mint;
 }
@@ -254,7 +254,7 @@ async function createToken(
         `to create token ${mint.publicKey.toBase58()}`
     );
     logger.info(
-        "Mint: %s\n\t\tWallet Mint ATA: %s",
+        "Mint: %s\n\t\tDev Mint ATA: %s",
         explorer.generateAddressUri(mint.publicKey.toBase58()),
         explorer.generateAddressUri(associatedTokenAccount.toBase58())
     );
