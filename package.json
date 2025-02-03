@@ -14,6 +14,7 @@
         "create-token": "ts-node src/tasks/create-token.ts",
         "create-token:force": "ts-node src/tasks/create-token.ts --force",
         "create-pool": "ts-node src/tasks/create-pool.ts",
+        "get-funds": "ts-node src/tasks/get-funds.ts",
         "get-pool": "ts-node src/tasks/get-pool.ts"
     },
     "keywords": [],
