@@ -10,15 +10,17 @@ export async function loadRaydium(
         throw new Error(`Cluster not supported by Raydium: ${cluster}`);
     }
     if (connection.rpcEndpoint === clusterApiUrl("mainnet-beta")) {
-        throw new Error(`Free public RPC not allowed: ${connection.rpcEndpoint}`);
+        throw new Error(`Public mainnet RPC not allowed: ${connection.rpcEndpoint}`);
     }
 
     return Raydium.load({
-        cluster: cluster === "mainnet-beta" ? "mainnet" : cluster,
         connection,
+        cluster: cluster === "mainnet-beta" ? "mainnet" : cluster,
         owner,
         disableFeatureCheck: true,
         disableLoadToken: true,
         blockhashCommitment: "confirmed",
+        apiRequestInterval: 0, // use fresh data
+        apiRequestTimeout: 30_000, // ms
     });
 }

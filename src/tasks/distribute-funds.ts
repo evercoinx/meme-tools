@@ -31,31 +31,37 @@ const HOLDER_COMPUTATION_BUDGET_SOL = 0.01;
 })();
 
 async function distributeSol(amount: Decimal, dev: Keypair, holders: Keypair[]): Promise<void> {
+    const lamports = amount.mul(LAMPORTS_PER_SOL);
     const instructions: TransactionInstruction[] = [];
-    let totalAmount = new Decimal(0);
+    let totalLamportsToDistribute = new Decimal(0);
 
     for (const holder of holders) {
-        const balance = await connection.getBalance(holder.publicKey, "confirmed");
-        if (balance > 0) {
-            logger.warn("Holder %s has non zero balance. Skipped", holder.publicKey.toBase58());
+        const balance = new Decimal(await connection.getBalance(holder.publicKey, "confirmed"));
+        if (balance.gte(lamports)) {
+            logger.warn(
+                "Account %s has sufficient balance: %s SOL. Skipping",
+                holder.publicKey.toBase58(),
+                decimal.format(balance.div(LAMPORTS_PER_SOL).toNumber())
+            );
             continue;
         }
 
+        const lamportsToDistribute = lamports.sub(balance);
         instructions.push(
             SystemProgram.transfer({
                 fromPubkey: dev.publicKey,
                 toPubkey: holder.publicKey,
-                lamports: amount.mul(LAMPORTS_PER_SOL).toNumber(),
+                lamports: lamportsToDistribute.toNumber(),
             })
         );
-        totalAmount = totalAmount.add(amount);
+        totalLamportsToDistribute = totalLamportsToDistribute.add(lamportsToDistribute);
     }
 
     if (instructions.length > 0) {
         await sendAndConfirmVersionedTransaction(
             instructions,
             [dev],
-            `to distribute ${decimal.format(totalAmount.toNumber())} SOL between holders`
+            `to distribute ${decimal.format(totalLamportsToDistribute.div(LAMPORTS_PER_SOL).toNumber())} SOL between holders`
         );
     }
 }

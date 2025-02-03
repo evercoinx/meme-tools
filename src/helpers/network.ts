@@ -8,7 +8,6 @@ import {
     VersionedTransaction,
 } from "@solana/web3.js";
 import {
-    Account,
     ASSOCIATED_TOKEN_PROGRAM_ID,
     createAssociatedTokenAccountInstruction,
     createSyncNativeInstruction,
@@ -20,7 +19,7 @@ import {
 } from "@solana/spl-token";
 import Decimal from "decimal.js";
 import { connection, explorer, logger } from "../modules";
-import { formatSol } from "./format";
+import { decimal } from "./format";
 
 export function versionedMessageToInstructions(
     versionedMessage: MessageV0
@@ -49,27 +48,26 @@ export function versionedMessageToInstructions(
     return instructions;
 }
 
-export async function wrapSol(amount: Decimal, user: Keypair): Promise<void> {
+export async function wrapSol(amount: Decimal, owner: Keypair): Promise<void> {
     const associatedTokenAccount = await getAssociatedTokenAddress(
         NATIVE_MINT,
-        user.publicKey,
+        owner.publicKey,
         false,
         TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
     const instructions: TransactionInstruction[] = [];
-    let account: Account | null = null;
-    let lamportsHeld = new Decimal(0);
+    let wsolBalance = new Decimal(0);
 
     try {
-        account = await getAccount(
+        const account = await getAccount(
             connection,
             associatedTokenAccount,
             "confirmed",
             TOKEN_PROGRAM_ID
         );
-        lamportsHeld = new Decimal(account.amount.toString(10));
+        wsolBalance = new Decimal(account.amount.toString(10));
     } catch (err) {
         if (!(err instanceof TokenAccountNotFoundError)) {
             throw err;
@@ -77,9 +75,9 @@ export async function wrapSol(amount: Decimal, user: Keypair): Promise<void> {
 
         instructions.push(
             createAssociatedTokenAccountInstruction(
-                user.publicKey,
+                owner.publicKey,
                 associatedTokenAccount,
-                user.publicKey,
+                owner.publicKey,
                 NATIVE_MINT,
                 TOKEN_PROGRAM_ID,
                 ASSOCIATED_TOKEN_PROGRAM_ID
@@ -87,17 +85,11 @@ export async function wrapSol(amount: Decimal, user: Keypair): Promise<void> {
         );
     }
 
-    const requestedLamportsToWrap = amount.mul(LAMPORTS_PER_SOL);
-    const lamportsToWrap = requestedLamportsToWrap.sub(lamportsHeld);
+    const lamportsToWrap = amount.mul(LAMPORTS_PER_SOL).sub(wsolBalance);
     if (lamportsToWrap.gt(0)) {
-        const balance = await connection.getBalance(user.publicKey);
-        if (lamportsToWrap.gt(balance)) {
-            throw new Error(`Owner has insufficient balance: ${formatSol(balance)} SOL`);
-        }
-
         instructions.push(
             SystemProgram.transfer({
-                fromPubkey: user.publicKey,
+                fromPubkey: owner.publicKey,
                 toPubkey: associatedTokenAccount,
                 lamports: lamportsToWrap.toNumber(),
             }),
@@ -107,16 +99,17 @@ export async function wrapSol(amount: Decimal, user: Keypair): Promise<void> {
 
     if (instructions.length === 0) {
         logger.warn(
-            "Owner has sufficient balance: %s WSOL. Skipped",
-            formatSol(lamportsHeld.toNumber())
+            "Account %s has sufficient balance: %s WSOL. Skipping",
+            owner.publicKey.toBase58(),
+            decimal.format(wsolBalance.div(LAMPORTS_PER_SOL).toNumber())
         );
         return;
     }
 
     await sendAndConfirmVersionedTransaction(
         instructions,
-        [user],
-        `to wrap ${formatSol(lamportsToWrap.toNumber())} SOL for ${user.publicKey.toBase58()}`
+        [owner],
+        `to wrap ${lamportsToWrap.div(LAMPORTS_PER_SOL).toNumber()} SOL for ${owner.publicKey.toBase58()}`
     );
 }
 

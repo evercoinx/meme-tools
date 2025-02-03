@@ -29,13 +29,13 @@ export function generateMintKeypair(): Keypair {
 }
 
 export function importMintKeypair(): Keypair {
-    const encryptedMintSecretKey = storage.get<string>(STORAGE_MINT_SECRET_KEY);
-    if (!encryptedMintSecretKey) {
+    const encryptedSecretKey = storage.get<string>(STORAGE_MINT_SECRET_KEY);
+    if (!encryptedSecretKey) {
         throw new Error("Mint secret key not loaded from storage");
     }
 
-    const mintSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedMintSecretKey));
-    const mint = Keypair.fromSecretKey(Uint8Array.from(mintSecretKey));
+    const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
+    const mint = Keypair.fromSecretKey(Uint8Array.from(secretKey));
     logger.info("Mint %s imported", mint.publicKey.toBase58());
 
     return mint;
@@ -63,13 +63,13 @@ export function importHolderKeypairs(): Keypair[] {
     const holders: Keypair[] = [];
 
     for (let i = 0; i < envVars.HOLDER_COUNT_PER_POOL; i++) {
-        const encryptedHolderSecretKey = storage.get<string>(STORAGE_HOLDER_SECRET_KEYS[i]);
-        if (!encryptedHolderSecretKey) {
+        const encryptedSecretKey = storage.get<string>(STORAGE_HOLDER_SECRET_KEYS[i]);
+        if (!encryptedSecretKey) {
             throw new Error("Holder secret key not loaded from storage");
         }
 
-        const holderSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedHolderSecretKey));
-        const holder = Keypair.fromSecretKey(Uint8Array.from(holderSecretKey));
+        const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
+        const holder = Keypair.fromSecretKey(Uint8Array.from(secretKey));
         logger.info("Holder %s imported", holder.publicKey.toBase58());
 
         holders.push(holder);
