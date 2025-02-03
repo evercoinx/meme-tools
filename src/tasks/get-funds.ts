@@ -11,7 +11,7 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
-import { decimal } from "../helpers/format";
+import { formatDecimal } from "../helpers/format";
 import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
 
 (async () => {
@@ -65,7 +65,6 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
                     TOKEN_2022_PROGRAM_ID
                 );
                 mintBalance = new Decimal(account.amount.toString(10));
-                console.log(account.amount, "))))))");
             } catch {
                 // Do nothing
             }
@@ -74,13 +73,11 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
                 "Funds info (%s)\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s",
                 i === 0 ? "Dev" : `Holder #${i - 1}`,
                 account.publicKey.toBase58(),
-                decimal.format(solBalance.div(LAMPORTS_PER_SOL).toNumber()),
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                 wsolAssociatedTokenAccount.toBase58(),
-                wsolBalance ? decimal.format(wsolBalance.div(LAMPORTS_PER_SOL).toNumber()) : "?",
+                wsolBalance ? formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL)) : "?",
                 mintAssociatedTokenAccount.toBase58(),
-                mintBalance
-                    ? decimal.format(mintBalance.div(envVars.TOKEN_DECIMALS).toNumber())
-                    : "?",
+                mintBalance ? formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS), 6) : "?",
                 envVars.TOKEN_SYMBOL
             );
         }

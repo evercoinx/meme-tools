@@ -19,7 +19,7 @@ import {
 } from "@solana/spl-token";
 import Decimal from "decimal.js";
 import { connection, explorer, logger } from "../modules";
-import { decimal } from "./format";
+import { formatDecimal } from "./format";
 
 export function versionedMessageToInstructions(
     versionedMessage: MessageV0
@@ -101,7 +101,7 @@ export async function wrapSol(amount: Decimal, owner: Keypair): Promise<void> {
         logger.warn(
             "Account %s has sufficient balance: %s WSOL. Skipping",
             owner.publicKey.toBase58(),
-            decimal.format(wsolBalance.div(LAMPORTS_PER_SOL).toNumber())
+            formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL))
         );
         return;
     }

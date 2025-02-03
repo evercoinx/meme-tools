@@ -11,7 +11,7 @@ import {
 } from "../modules";
 import { loadRaydium } from "../modules/raydium";
 import { checkIfFileExists } from "../helpers/filesystem";
-import { currency, date, decimal, percent } from "../helpers/format";
+import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../helpers/format";
 
 (async () => {
     try {
@@ -64,17 +64,17 @@ import { currency, date, decimal, percent } from "../helpers/format";
             explorer.generateAddressUri(poolInfo.lpMint.address),
             poolInfo.type,
             mintASymbol,
-            decimal.format(poolInfo.price),
+            formatDecimal(poolInfo.price),
             mintBSymbol,
-            percent.format(feePercent),
-            date.format(new Date(Number(poolInfo.openTime) * 1e3)),
-            currency.format(poolInfo.tvl),
+            formatPercent(feePercent),
+            formatDate(Number(poolInfo.openTime)),
+            formatCurrency(poolInfo.tvl),
             mintASymbol,
-            decimal.format(poolInfo.mintAmountA),
+            formatDecimal(poolInfo.mintAmountA),
             mintBSymbol,
-            decimal.format(poolInfo.mintAmountB),
-            decimal.format(poolInfo.lpAmount),
-            percent.format(poolInfo.burnPercent / 1e2)
+            formatDecimal(poolInfo.mintAmountB),
+            formatDecimal(poolInfo.lpAmount),
+            formatPercent(poolInfo.burnPercent / 1e2)
         );
     } catch (err) {
         logger.fatal(err);

@@ -4,7 +4,7 @@ import Decimal from "decimal.js";
 import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
 import { generateHolderKeypairs, importDevKeypair, importHolderKeypairs } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
-import { decimal } from "../helpers/format";
+import { formatDecimal } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction, wrapSol } from "../helpers/network";
 
 const HOLDER_COMPUTATION_BUDGET_SOL = 0.01;
@@ -41,7 +41,7 @@ async function distributeSol(amount: Decimal, dev: Keypair, holders: Keypair[]):
             logger.warn(
                 "Account %s has sufficient balance: %s SOL. Skipping",
                 holder.publicKey.toBase58(),
-                decimal.format(balance.div(LAMPORTS_PER_SOL).toNumber())
+                formatDecimal(balance.div(LAMPORTS_PER_SOL))
             );
             continue;
         }
@@ -61,7 +61,7 @@ async function distributeSol(amount: Decimal, dev: Keypair, holders: Keypair[]):
         await sendAndConfirmVersionedTransaction(
             instructions,
             [dev],
-            `to distribute ${decimal.format(totalLamportsToDistribute.div(LAMPORTS_PER_SOL).toNumber())} SOL between holders`
+            `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`
         );
     }
 }
