@@ -12,7 +12,7 @@ import {
 export async function importDevKeypair(path: string): Promise<Keypair> {
     const secretKey: number[] = JSON.parse(await fs.readFile(path, "utf8"));
     const dev = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-    logger.info("Dev %s imported", dev.publicKey.toBase58());
+    logger.debug("Dev %s imported", dev.publicKey.toBase58());
     return dev;
 }
 
@@ -28,15 +28,15 @@ export function generateMintKeypair(): Keypair {
     return mint;
 }
 
-export function importMintKeypair(): Keypair {
+export function importMintKeypair(): Keypair | null {
     const encryptedSecretKey = storage.get<string>(STORAGE_MINT_SECRET_KEY);
     if (!encryptedSecretKey) {
-        throw new Error("Mint secret key not loaded from storage");
+        return null;
     }
 
     const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
     const mint = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-    logger.info("Mint %s imported", mint.publicKey.toBase58());
+    logger.debug("Mint %s imported", mint.publicKey.toBase58());
 
     return mint;
 }
@@ -70,7 +70,7 @@ export function importHolderKeypairs(): Keypair[] {
 
         const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
         const holder = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-        logger.info("Holder %s imported", holder.publicKey.toBase58());
+        logger.debug("Holder %s imported", holder.publicKey.toBase58());
 
         holders.push(holder);
     }

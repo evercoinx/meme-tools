@@ -19,7 +19,6 @@ import Decimal from "decimal.js";
 import {
     connection,
     envVars,
-    explorer,
     logger,
     storage,
     STORAGE_DIR,
@@ -27,8 +26,8 @@ import {
 } from "../modules";
 import { loadRaydium } from "../modules/raydium";
 import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
+import { formatDecimal } from "../helpers/format";
 import { checkIfFileExists } from "../helpers/filesystem";
-import { formatSol, formatUnits } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction, wrapSol } from "../helpers/network";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
@@ -48,7 +47,13 @@ const SLIPPAGE = 0.03;
 
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
         const mint = importMintKeypair();
+        if (!mint) {
+            throw new Error("Mint not imported");
+        }
         const holders = importHolderKeypairs();
+        if (holders.length === 0) {
+            throw new Error("Holders not imported");
+        }
 
         await wrapSol(new Decimal(envVars.INITIAL_POOL_SOL_LIQUIDITY), dev);
 
@@ -105,7 +110,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
     const {
         transaction: { instructions },
         extInfo: {
-            address: { poolId, lpMint, vaultA, vaultB },
+            address: { poolId },
         },
     } = await raydium.cpmm.createPool<TxVersion.LEGACY>({
         programId:
@@ -140,20 +145,6 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
         instructions,
         [dev],
         `to create pool ${raydiumPoolId}`
-    );
-
-    logger.info(
-        "Pool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\t%s vault: %s\n\t\t%s vault: %s",
-        explorer.generateAddressUri(raydiumPoolId),
-        mintA.symbol,
-        explorer.generateAddressUri(mintA.address),
-        mintB.symbol,
-        explorer.generateAddressUri(mintB.address),
-        explorer.generateAddressUri(lpMint.toBase58()),
-        mintA.symbol,
-        explorer.generateAddressUri(vaultA.toBase58()),
-        mintB.symbol,
-        explorer.generateAddressUri(vaultB.toBase58())
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, raydiumPoolId);
@@ -230,7 +221,7 @@ async function swapSolToTokenByHolders(
         await sendAndConfirmVersionedTransaction(
             instructions,
             [holder],
-            `to swap ${formatSol(swapResult.sourceAmountSwapped)} WSOL for ${formatUnits(swapResult.destinationAmountSwapped, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`
+            `to swap ${formatDecimal(swapResult.sourceAmountSwapped.div(new BN(LAMPORTS_PER_SOL)))} WSOL for ${formatDecimal(swapResult.destinationAmountSwapped.div(new BN(10 ** envVars.TOKEN_DECIMALS)))} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`
         );
     }
 }

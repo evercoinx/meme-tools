@@ -7,7 +7,7 @@ import {
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
@@ -37,36 +37,40 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
 
             let wsolBalance: Decimal | null = null;
             try {
-                const account = await getAccount(
+                const { amount } = await getAccount(
                     connection,
                     wsolAssociatedTokenAccount,
                     "confirmed",
                     TOKEN_PROGRAM_ID
                 );
-                wsolBalance = new Decimal(account.amount.toString(10));
+                wsolBalance = new Decimal(amount.toString(10));
             } catch {
                 // Do nothing
             }
 
-            const mintAssociatedTokenAccount = await getAssociatedTokenAddress(
-                mint.publicKey,
-                account.publicKey,
-                false,
-                TOKEN_2022_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
-            );
-
             let mintBalance: Decimal | null = null;
-            try {
-                const account = await getAccount(
-                    connection,
-                    mintAssociatedTokenAccount,
-                    "confirmed",
-                    TOKEN_2022_PROGRAM_ID
+            let mintAssociatedTokenAccount: PublicKey | null = null;
+
+            if (mint) {
+                mintAssociatedTokenAccount = await getAssociatedTokenAddress(
+                    mint.publicKey,
+                    account.publicKey,
+                    false,
+                    TOKEN_2022_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
                 );
-                mintBalance = new Decimal(account.amount.toString(10));
-            } catch {
-                // Do nothing
+
+                try {
+                    const { amount } = await getAccount(
+                        connection,
+                        mintAssociatedTokenAccount,
+                        "confirmed",
+                        TOKEN_2022_PROGRAM_ID
+                    );
+                    mintBalance = new Decimal(amount.toString(10));
+                } catch {
+                    // Do nothing
+                }
             }
 
             logger.info(
@@ -76,7 +80,7 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                 wsolAssociatedTokenAccount.toBase58(),
                 wsolBalance ? formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL)) : "?",
-                mintAssociatedTokenAccount.toBase58(),
+                mintAssociatedTokenAccount ? mintAssociatedTokenAccount.toBase58() : "?",
                 mintBalance ? formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS), 6) : "?",
                 envVars.TOKEN_SYMBOL
             );

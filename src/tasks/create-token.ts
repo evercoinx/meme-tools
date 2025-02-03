@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import minimist from "minimist";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     AuthorityType,
@@ -21,7 +20,6 @@ import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-to
 import {
     connection,
     envVars,
-    explorer,
     IMAGE_DIR,
     ipfs,
     logger,
@@ -48,18 +46,11 @@ interface OffchainTokenMetadata {
 
 const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ipfsHash}`;
 
-const args = minimist(process.argv.slice(2), {
-    boolean: ["force"],
-});
-
 (async () => {
     try {
         const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
-        if (storageExists) {
-            if (!args.force) {
-                throw new Error(`Storage ${storage.cacheId} already exists`);
-            }
-            storage.destroy();
+        if (!storageExists) {
+            throw new Error(`Storage ${storage.cacheId} not exists`);
         }
 
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
@@ -232,10 +223,5 @@ async function createToken(
         instructions,
         [dev, mint],
         `to create token ${mint.publicKey.toBase58()}`
-    );
-    logger.info(
-        "Mint: %s\n\t\tDev Mint ATA: %s",
-        explorer.generateAddressUri(mint.publicKey.toBase58()),
-        explorer.generateAddressUri(associatedTokenAccount.toBase58())
     );
 }

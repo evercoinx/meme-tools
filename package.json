@@ -9,11 +9,9 @@
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
         "clean": "rm -rf dist/*",
-        "start": "yarn distribute-funds && yarn create-token:force && yarn create-pool",
-        "distribute-funds": "ts-node src/tasks/distribute-funds.ts",
-        "create-token": "ts-node src/tasks/create-token.ts",
-        "create-token:force": "ts-node src/tasks/create-token.ts --force",
-        "create-pool": "ts-node src/tasks/create-pool.ts",
+        "distribute-funds": "ts-node src/tasks/distribute-funds.ts && yarn get-funds",
+        "create-token": "ts-node src/tasks/create-token.ts && yarn get-funds",
+        "create-pool": "ts-node src/tasks/create-pool.ts && yarn get-pool && yarn get-funds",
         "get-funds": "ts-node src/tasks/get-funds.ts",
         "get-pool": "ts-node src/tasks/get-pool.ts"
     },
@@ -28,7 +26,6 @@
         "decimal.js": "^10.5.0",
         "dotenv": "^16.4.7",
         "flat-cache": "^6.1.5",
-        "minimist": "^1.2.8",
         "pinata-web3": "^0.5.4",
         "pino": "^9.6.0",
         "pino-pretty": "^13.0.0"
