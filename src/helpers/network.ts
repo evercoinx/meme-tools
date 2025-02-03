@@ -1,17 +1,11 @@
-import fs from "node:fs/promises";
 import {
-    Cluster,
-    Connection,
     Keypair,
-    LAMPORTS_PER_SOL,
     MessageV0,
     TransactionInstruction,
     TransactionMessage,
     VersionedTransaction,
 } from "@solana/web3.js";
-import { Logger } from "pino";
-import { formatSol } from "./format";
-import { explorer } from "../tasks/init";
+import { connection, explorer, logger } from "../tasks/init";
 
 export function versionedMessageToInstructions(
     versionedMessage: MessageV0
@@ -40,34 +34,9 @@ export function versionedMessageToInstructions(
     return instructions;
 }
 
-export async function importDevKeypair(
-    keypairPath: string,
-    connection: Connection,
-    cluster: Cluster,
-    logger: Logger
-): Promise<Keypair> {
-    const secretKey: number[] = JSON.parse(await fs.readFile(keypairPath, "utf8"));
-    const dev = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-
-    if (cluster === "devnet") {
-        const balance = await connection.getBalance(dev.publicKey);
-        if (balance === 0) {
-            const amount = 2 * LAMPORTS_PER_SOL;
-            await connection.requestAirdrop(dev.publicKey, amount);
-            logger.debug(`Payer balance topped up: ${formatSol(amount)} SOL`);
-        }
-    }
-
-    logger.info(`Dev imported: ${dev.publicKey.toBase58()}`);
-
-    return dev;
-}
-
 export async function sendAndConfirmVersionedTransaction(
-    connection: Connection,
     instructions: TransactionInstruction[],
     signers: Keypair[],
-    logger: Logger,
     logMessage: string
 ): Promise<void> {
     const payer = signers[0];

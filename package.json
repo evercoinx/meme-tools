@@ -9,10 +9,10 @@
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
         "clean": "rm -rf dist/*",
-        "start": "yarn create-token:force && yarn distribute-funds && yarn create-pool",
+        "start": "yarn distribute-funds && yarn create-token:force && yarn create-pool",
+        "distribute-funds": "ts-node src/tasks/distribute-funds.ts",
         "create-token": "ts-node src/tasks/create-token.ts",
         "create-token:force": "ts-node src/tasks/create-token.ts --force",
-        "distribute-funds": "ts-node src/tasks/distribute-funds.ts",
         "create-pool": "ts-node src/tasks/create-pool.ts",
         "get-pool": "ts-node src/tasks/get-pool.ts"
     },

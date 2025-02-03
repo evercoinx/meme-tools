@@ -9,18 +9,11 @@ import {
 } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import {
-    connection,
-    encryption,
-    envVars,
-    logger,
-    storage,
-    STORAGE_DIR,
-    STORAGE_HOLDER_SECRET_KEYS,
-} from "./init";
+import { envVars, logger, storage, STORAGE_DIR } from "./init";
+import { generateHolderKeypairs, importDevKeypair } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { decimal } from "../helpers/format";
-import { importDevKeypair, sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 const HOLDER_COMPUTATION_BUDGET_SOL = 0.01;
 
@@ -31,13 +24,8 @@ const HOLDER_COMPUTATION_BUDGET_SOL = 0.01;
             throw new Error(`Storage ${storage.cacheId} not exists`);
         }
 
-        const dev = await importDevKeypair(
-            envVars.DEV_KEYPAIR_PATH,
-            connection,
-            envVars.CLUSTER,
-            logger
-        );
-        const holders = generateOrImportHolderKeypairs();
+        const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
+        const holders = generateHolderKeypairs();
 
         const amount = new Decimal(envVars.INITIAL_POOL_SOL_LIQUIDITY).mul(
             envVars.HOLDER_SHARE_PERCENT_PER_POOL
@@ -49,23 +37,6 @@ const HOLDER_COMPUTATION_BUDGET_SOL = 0.01;
         process.exit(1);
     }
 })();
-
-function generateOrImportHolderKeypairs(): Keypair[] {
-    const holders: Keypair[] = [];
-
-    for (let i = 0; i < envVars.HOLDER_COUNT_PER_POOL; i++) {
-        const holder = Keypair.generate();
-        holders.push(holder);
-        logger.info("Holder %d generated: %s", i, holder.publicKey.toBase58());
-
-        const encryptedHolder = encryption.encrypt(JSON.stringify(Array.from(holder.secretKey)));
-        storage.set(STORAGE_HOLDER_SECRET_KEYS[i], encryptedHolder);
-        storage.save();
-        logger.debug("Holder %d saved to storage as encrypted", i);
-    }
-
-    return holders;
-}
 
 async function distributeSol(dev: Keypair, holders: Keypair[], amount: Decimal): Promise<void> {
     const instructions: TransactionInstruction[] = [];
@@ -83,10 +54,8 @@ async function distributeSol(dev: Keypair, holders: Keypair[], amount: Decimal):
     }
 
     await sendAndConfirmVersionedTransaction(
-        connection,
         instructions,
         [dev],
-        logger,
         `to distribute ${decimal.format(totalAmount.toNumber())} SOL between ${holders.length} holders`
     );
 }
@@ -121,10 +90,8 @@ async function wrapSol(holders: Keypair[], amount: Decimal): Promise<void> {
         );
 
         await sendAndConfirmVersionedTransaction(
-            connection,
             instructions,
             [holder],
-            logger,
             `to wrap ${decimal.format(amount.toNumber())} SOL for ${holder.publicKey.toBase58()}`
         );
     }

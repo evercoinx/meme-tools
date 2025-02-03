@@ -29,20 +29,18 @@ import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
     connection,
-    encryption,
     envVars,
     explorer,
     logger,
     storage,
     STORAGE_DIR,
-    STORAGE_HOLDER_SECRET_KEYS,
-    STORAGE_MINT_SECRET_KEY,
     STORAGE_RAYDIUM_POOL_ID,
 } from "./init";
 import { loadRaydium } from "../modules/raydium";
+import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { formatSol, formatUnits } from "../helpers/format";
-import { importDevKeypair, sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
 
@@ -59,12 +57,7 @@ const SLIPPAGE = 0.03;
             throw new Error(`Storage ${storage.cacheId} not exists`);
         }
 
-        const dev = await importDevKeypair(
-            envVars.DEV_KEYPAIR_PATH,
-            connection,
-            envVars.CLUSTER,
-            logger
-        );
+        const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
         const mint = importMintKeypair();
         const holders = importHolderKeypairs();
 
@@ -81,37 +74,6 @@ const SLIPPAGE = 0.03;
         process.exit(1);
     }
 })();
-
-function importMintKeypair(): Keypair {
-    const encryptedMintSecretKey = storage.get<string>(STORAGE_MINT_SECRET_KEY);
-    if (!encryptedMintSecretKey) {
-        throw new Error("Mint secret key not loaded from storage");
-    }
-
-    const mintSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedMintSecretKey));
-    const mint = Keypair.fromSecretKey(Uint8Array.from(mintSecretKey));
-    logger.info("Mint imported: %s", mint.publicKey.toBase58());
-
-    return mint;
-}
-
-function importHolderKeypairs(): Keypair[] {
-    const holders: Keypair[] = [];
-
-    for (let i = 0; i < envVars.HOLDER_COUNT_PER_POOL; i++) {
-        const encryptedHolderSecretKey = storage.get<string>(STORAGE_HOLDER_SECRET_KEYS[i]);
-        if (!encryptedHolderSecretKey) {
-            throw new Error("Holder secret key not loaded from storage");
-        }
-
-        const holderSecretKey: number[] = JSON.parse(encryption.decrypt(encryptedHolderSecretKey));
-        const holder = Keypair.fromSecretKey(Uint8Array.from(holderSecretKey));
-        holders.push(holder);
-        logger.info("Holder imported: %s", holder.publicKey.toBase58());
-    }
-
-    return holders;
-}
 
 export async function wrapDevSol(amount: number, dev: Keypair): Promise<void> {
     const associatedTokenAccount = await getAssociatedTokenAddress(
@@ -175,10 +137,8 @@ export async function wrapDevSol(amount: number, dev: Keypair): Promise<void> {
     }
 
     await sendAndConfirmVersionedTransaction(
-        connection,
         instructions,
         [dev],
-        logger,
         `to wrap ${formatSol(lamportsToWrap)} SOL for ${dev.publicKey.toBase58()}`
     );
 }
@@ -256,10 +216,8 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
 
     raydiumPoolId = poolId.toBase58();
     await sendAndConfirmVersionedTransaction(
-        connection,
         instructions,
         [dev],
-        logger,
         `to create pool ${raydiumPoolId}`
     );
 
@@ -349,10 +307,8 @@ async function swapSolToTokenByHolders(
         });
 
         await sendAndConfirmVersionedTransaction(
-            connection,
             instructions,
             [holder],
-            logger,
             `to swap ${formatSol(swapResult.sourceAmountSwapped)} WSOL for ${formatUnits(swapResult.destinationAmountSwapped, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`
         );
     }

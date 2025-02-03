@@ -20,7 +20,6 @@ import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import {
     connection,
-    encryption,
     envVars,
     explorer,
     IMAGE_DIR,
@@ -31,10 +30,10 @@ import {
     STORAGE_DIR,
     STORAGE_IMAGE_URI,
     STORAGE_METADATA,
-    STORAGE_MINT_SECRET_KEY,
 } from "./init";
+import { generateMintKeypair, importDevKeypair } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
-import { importDevKeypair, sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 interface OffchainTokenMetadata {
     name: string;
@@ -63,13 +62,8 @@ const args = minimist(process.argv.slice(2), {
             storage.destroy();
         }
 
-        const dev = await importDevKeypair(
-            envVars.DEV_KEYPAIR_PATH,
-            connection,
-            envVars.CLUSTER,
-            logger
-        );
-        const mint = await generateMintKeypair();
+        const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
+        const mint = generateMintKeypair();
 
         const imageUri = await uploadImage();
         const metadata = await uploadMetadata(imageUri);
@@ -80,18 +74,6 @@ const args = minimist(process.argv.slice(2), {
         process.exit(1);
     }
 })();
-
-async function generateMintKeypair(): Promise<Keypair> {
-    const mint = Keypair.generate();
-    logger.info("Mint generated: %s", mint.publicKey.toBase58());
-
-    const encryptedMint = encryption.encrypt(JSON.stringify(Array.from(mint.secretKey)));
-    storage.set(STORAGE_MINT_SECRET_KEY, encryptedMint);
-    storage.save();
-    logger.debug("Mint saved to storage as encrypted");
-
-    return mint;
-}
 
 async function uploadImage(): Promise<string> {
     let imageUri = storage.get<string>(STORAGE_IMAGE_URI);
@@ -247,10 +229,8 @@ async function createToken(
     ];
 
     await sendAndConfirmVersionedTransaction(
-        connection,
         instructions,
         [dev, mint],
-        logger,
         `to create token ${mint.publicKey.toBase58()}`
     );
     logger.info(
