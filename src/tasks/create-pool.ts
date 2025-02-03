@@ -35,7 +35,7 @@ import {
     storage,
     STORAGE_DIR,
     STORAGE_RAYDIUM_POOL_ID,
-} from "./init";
+} from "../modules";
 import { loadRaydium } from "../modules/raydium";
 import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";

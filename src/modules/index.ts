@@ -1,12 +1,12 @@
 import "source-map-support/register";
 import dotenv from "dotenv";
 import { Connection } from "@solana/web3.js";
-import { Encryption } from "../modules/encryption";
-import { extractEnvironmentVariables } from "../modules/environment";
-import { Explorer } from "../modules/explorer";
-import { createIPFS } from "../modules/ipfs";
-import { createLogger } from "../modules/logger";
-import { createStorage } from "../modules/storage";
+import { Encryption } from "./encryption";
+import { extractEnvironmentVariables } from "./environment";
+import { Explorer } from "./explorer";
+import { createIPFS } from "./ipfs";
+import { createLogger } from "./logger";
+import { createStorage } from "./storage";
 
 dotenv.config();
 

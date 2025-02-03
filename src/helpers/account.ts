@@ -7,7 +7,7 @@ import {
     storage,
     STORAGE_HOLDER_SECRET_KEYS,
     STORAGE_MINT_SECRET_KEY,
-} from "../tasks/init";
+} from "../modules";
 
 export async function importDevKeypair(path: string): Promise<Keypair> {
     const secretKey: number[] = JSON.parse(await fs.readFile(path, "utf8"));

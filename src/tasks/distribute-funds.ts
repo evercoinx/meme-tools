@@ -9,7 +9,7 @@ import {
 } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { envVars, logger, storage, STORAGE_DIR } from "./init";
+import { envVars, logger, storage, STORAGE_DIR } from "../modules";
 import { generateHolderKeypairs, importDevKeypair } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { decimal } from "../helpers/format";

@@ -30,7 +30,7 @@ import {
     STORAGE_DIR,
     STORAGE_IMAGE_URI,
     STORAGE_METADATA,
-} from "./init";
+} from "../modules";
 import { generateMintKeypair, importDevKeypair } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";

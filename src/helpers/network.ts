@@ -5,7 +5,7 @@ import {
     TransactionMessage,
     VersionedTransaction,
 } from "@solana/web3.js";
-import { connection, explorer, logger } from "../tasks/init";
+import { connection, explorer, logger } from "../modules";
 
 export function versionedMessageToInstructions(
     versionedMessage: MessageV0
