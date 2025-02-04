@@ -27,6 +27,8 @@ export const STORAGE_HOLDER_SECRET_KEYS: Record<number, string> = {
 export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 export const STORAGE_RAYDIUM_LP_MINT = "raydium_lp_mint";
 
+export const RAYDIUM_LP_MINT_DECIMALS = 9;
+
 export const envVars = extractEnvironmentVariables();
 export const logger = createLogger(envVars.LOG_LEVEL);
 export const connection = new Connection(envVars.RPC_URI, "confirmed");

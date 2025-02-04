@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import {
     encryption,
     envVars,
@@ -7,6 +7,7 @@ import {
     storage,
     STORAGE_HOLDER_SECRET_KEYS,
     STORAGE_MINT_SECRET_KEY,
+    STORAGE_RAYDIUM_LP_MINT,
 } from "../modules";
 
 export async function importDevKeypair(path: string): Promise<Keypair> {
@@ -76,4 +77,15 @@ export function importHolderKeypairs(): Keypair[] {
     }
 
     return holders;
+}
+
+export function importLPMintPublicKey(): PublicKey | null {
+    const lpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
+    if (!lpMint) {
+        logger.debug("LP Mint %s not imported");
+        return null;
+    }
+
+    logger.debug("LP Mint %s imported", lpMint);
+    return new PublicKey(lpMint);
 }

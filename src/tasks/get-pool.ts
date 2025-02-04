@@ -4,6 +4,7 @@ import {
     connection,
     envVars,
     logger,
+    RAYDIUM_LP_MINT_DECIMALS,
     storage,
     STORAGE_DIR,
     STORAGE_RAYDIUM_POOL_ID,
@@ -11,6 +12,7 @@ import {
 import { loadRaydium } from "../modules/raydium";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../helpers/format";
+import Decimal from "decimal.js";
 
 (async () => {
     try {
@@ -34,6 +36,10 @@ import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../hel
         if (raydium.cluster === "devnet") {
             const data = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId);
             poolInfo = data.poolInfo;
+            // Price fix when API returns 5 decimal places
+            poolInfo.price = new Decimal(poolInfo.price.toString().replace(".", ""))
+                .div(10 ** envVars.TOKEN_DECIMALS)
+                .toNumber();
         } else {
             const data = await raydium.api.fetchPoolById({ ids: raydiumPoolId });
             poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
@@ -63,16 +69,19 @@ import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../hel
             poolInfo.lpMint.address,
             poolInfo.type,
             mintASymbol,
-            formatDecimal(poolInfo.price),
+            formatDecimal(poolInfo.price, envVars.TOKEN_DECIMALS),
             mintBSymbol,
             formatPercent(feePercent),
             formatDate(Number(poolInfo.openTime)),
             formatCurrency(poolInfo.tvl),
             mintASymbol,
-            formatDecimal(poolInfo.mintAmountA),
+            formatDecimal(poolInfo.mintAmountA, 9),
             mintBSymbol,
-            formatDecimal(poolInfo.mintAmountB),
-            formatDecimal(poolInfo.lpAmount),
+            formatDecimal(poolInfo.mintAmountB, envVars.TOKEN_DECIMALS),
+            formatDecimal(
+                poolInfo.lpAmount / 10 ** RAYDIUM_LP_MINT_DECIMALS,
+                RAYDIUM_LP_MINT_DECIMALS
+            ),
             formatPercent(poolInfo.burnPercent / 1e2)
         );
     } catch (err) {
