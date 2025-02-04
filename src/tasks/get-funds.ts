@@ -1,7 +1,6 @@
 import path from "node:path";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
-    getAccount,
     getAssociatedTokenAddress,
     NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
@@ -35,22 +34,14 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
                 ASSOCIATED_TOKEN_PROGRAM_ID
             );
 
-            let wsolBalance: Decimal | null = null;
-            try {
-                const { amount } = await getAccount(
-                    connection,
-                    wsolAssociatedTokenAccount,
-                    "confirmed",
-                    TOKEN_PROGRAM_ID
-                );
-                wsolBalance = new Decimal(amount.toString(10));
-            } catch {
-                // Do nothing
-            }
+            const wsolTokenAccountBalance = await connection.getTokenAccountBalance(
+                wsolAssociatedTokenAccount,
+                "confirmed"
+            );
+            const wsolBalance = new Decimal(wsolTokenAccountBalance.value.amount.toString());
 
-            let mintBalance: Decimal | null = null;
             let mintAssociatedTokenAccount: PublicKey | null = null;
-
+            let mintBalance: Decimal | null = null;
             if (mint) {
                 mintAssociatedTokenAccount = await getAssociatedTokenAddress(
                     mint.publicKey,
@@ -60,17 +51,11 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
                     ASSOCIATED_TOKEN_PROGRAM_ID
                 );
 
-                try {
-                    const { amount } = await getAccount(
-                        connection,
-                        mintAssociatedTokenAccount,
-                        "confirmed",
-                        TOKEN_2022_PROGRAM_ID
-                    );
-                    mintBalance = new Decimal(amount.toString(10));
-                } catch {
-                    // Do nothing
-                }
+                const mintTokenAccountBalance = await connection.getTokenAccountBalance(
+                    mintAssociatedTokenAccount,
+                    "confirmed"
+                );
+                mintBalance = new Decimal(mintTokenAccountBalance.value.amount.toString());
             }
 
             logger.info(
