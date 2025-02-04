@@ -25,6 +25,7 @@ export const STORAGE_HOLDER_SECRET_KEYS: Record<number, string> = {
     3: "holder_3_secret_key",
 };
 export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
+export const STORAGE_RAYDIUM_LP_MINT = "raydium_lp_mint";
 
 export const envVars = extractEnvironmentVariables();
 export const logger = createLogger(envVars.LOG_LEVEL);

@@ -12,14 +12,13 @@ import {
     createAssociatedTokenAccountInstruction,
     createSyncNativeInstruction,
     getAccount,
-    getAssociatedTokenAddress,
+    getAssociatedTokenAddressSync,
     NATIVE_MINT,
     TOKEN_PROGRAM_ID,
     TokenAccountNotFoundError,
 } from "@solana/spl-token";
 import Decimal from "decimal.js";
 import { connection, explorer, logger } from "../modules";
-import { formatDecimal } from "./format";
 
 export function versionedMessageToInstructions(
     versionedMessage: MessageV0
@@ -49,7 +48,7 @@ export function versionedMessageToInstructions(
 }
 
 export async function wrapSol(amount: Decimal, owner: Keypair): Promise<void> {
-    const associatedTokenAccount = await getAssociatedTokenAddress(
+    const associatedTokenAccount = getAssociatedTokenAddressSync(
         NATIVE_MINT,
         owner.publicKey,
         false,
@@ -85,32 +84,27 @@ export async function wrapSol(amount: Decimal, owner: Keypair): Promise<void> {
         );
     }
 
-    const lamportsToWrap = amount.mul(LAMPORTS_PER_SOL).sub(wsolBalance);
-    if (lamportsToWrap.gt(0)) {
+    const lamportsToWrap = amount.mul(LAMPORTS_PER_SOL);
+    let residualLamportsToWrap = new Decimal(0);
+    if (wsolBalance.lt(lamportsToWrap)) {
+        residualLamportsToWrap = lamportsToWrap.sub(wsolBalance);
         instructions.push(
             SystemProgram.transfer({
                 fromPubkey: owner.publicKey,
                 toPubkey: associatedTokenAccount,
-                lamports: lamportsToWrap.toNumber(),
+                lamports: residualLamportsToWrap.toNumber(),
             }),
             createSyncNativeInstruction(associatedTokenAccount, TOKEN_PROGRAM_ID)
         );
     }
 
-    if (instructions.length === 0) {
-        logger.warn(
-            "Account %s has sufficient balance: %s WSOL. Skipping",
-            owner.publicKey.toBase58(),
-            formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL))
+    if (instructions.length > 0) {
+        await sendAndConfirmVersionedTransaction(
+            instructions,
+            [owner],
+            `to wrap ${residualLamportsToWrap.div(LAMPORTS_PER_SOL).toNumber()} SOL for ${owner.publicKey.toBase58()}`
         );
-        return;
     }
-
-    await sendAndConfirmVersionedTransaction(
-        instructions,
-        [owner],
-        `to wrap ${lamportsToWrap.div(LAMPORTS_PER_SOL).toNumber()} SOL for ${owner.publicKey.toBase58()}`
-    );
 }
 
 export async function sendAndConfirmVersionedTransaction(

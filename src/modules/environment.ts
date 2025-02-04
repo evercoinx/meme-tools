@@ -14,8 +14,9 @@ interface EnvironmentSchema {
     TOKEN_DECIMALS: number;
     TOKEN_SUPPLY: number;
     INITIAL_POOL_SIZE_PERCENT: number;
-    INITIAL_POOL_SOL_LIQUIDITY: number;
-    HOLDER_SHARE_PERCENT_PER_POOL: number;
+    INITIAL_POOL_LIQUIDITY_SOL: number;
+    HOLDER_SHARE_POOL_PERCENT: number;
+    HOLDER_COMPUTE_BUDGET_SOL: number;
     HOLDER_COUNT_PER_POOL: number;
 }
 
@@ -74,16 +75,21 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(0.0001)
                 .max(1)
                 .description("Initial pool size percent"),
-            INITIAL_POOL_SOL_LIQUIDITY: Joi.number()
+            INITIAL_POOL_LIQUIDITY_SOL: Joi.number()
                 .required()
                 .min(0.0001)
                 .max(10)
-                .description("Initial pool liquidity"),
-            HOLDER_SHARE_PERCENT_PER_POOL: Joi.number()
+                .description("Initial pool liquidity (in SOL)"),
+            HOLDER_SHARE_POOL_PERCENT: Joi.number()
                 .required()
                 .min(0.0001)
                 .max(1)
-                .description("Holder share percent per pool"),
+                .description("Holder share pool (in percent)"),
+            HOLDER_COMPUTE_BUDGET_SOL: Joi.number()
+                .required()
+                .min(0.0001)
+                .max(10)
+                .description("Holder compute budget (in SOL)"),
             HOLDER_COUNT_PER_POOL: Joi.number()
                 .optional()
                 .integer()

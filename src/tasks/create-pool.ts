@@ -22,6 +22,7 @@ import {
     logger,
     storage,
     STORAGE_DIR,
+    STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
 import { loadRaydium } from "../modules/raydium";
@@ -55,12 +56,12 @@ const SLIPPAGE = 0.03;
             throw new Error("Holders not imported");
         }
 
-        await wrapSol(new Decimal(envVars.INITIAL_POOL_SOL_LIQUIDITY), dev);
+        await wrapSol(new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL), dev);
 
         const raydiumPoolId = await createPool(dev, mint);
 
-        const amount = new Decimal(envVars.INITIAL_POOL_SOL_LIQUIDITY).mul(
-            envVars.HOLDER_SHARE_PERCENT_PER_POOL
+        const amount = new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(
+            envVars.HOLDER_SHARE_POOL_PERCENT
         );
         await swapSolToTokenByHolders(raydiumPoolId, amount, SLIPPAGE, holders, mint);
     } catch (err) {
@@ -110,7 +111,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
     const {
         transaction: { instructions },
         extInfo: {
-            address: { poolId },
+            address: { poolId, lpMint },
         },
     } = await raydium.cpmm.createPool<TxVersion.LEGACY>({
         programId:
@@ -124,7 +125,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
         mintA,
         mintB,
         mintAAmount: new BN(
-            new Decimal(envVars.INITIAL_POOL_SOL_LIQUIDITY).mul(LAMPORTS_PER_SOL).toFixed(0)
+            new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(LAMPORTS_PER_SOL).toFixed(0)
         ),
         mintBAmount: new BN(
             new Decimal(envVars.TOKEN_SUPPLY)
@@ -148,8 +149,13 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, raydiumPoolId);
+    storage.set(STORAGE_RAYDIUM_LP_MINT, lpMint.toBase58());
     storage.save();
-    logger.debug("Raydium pool id %s saved to storage", raydiumPoolId);
+    logger.debug(
+        "Raydium pool id %s saved to storage\n\t\tRaydium LP mint %s saved to storage",
+        raydiumPoolId,
+        lpMint.toBase58()
+    );
 
     return raydiumPoolId;
 }

@@ -46,7 +46,7 @@ export function generateHolderKeypairs(): Keypair[] {
 
     for (let i = 0; i < envVars.HOLDER_COUNT_PER_POOL; i++) {
         const holder = Keypair.generate();
-        logger.info("Holder %s generated");
+        logger.info("Holder %s generated", holder.publicKey.toBase58());
 
         const encryptedHolder = encryption.encrypt(JSON.stringify(Array.from(holder.secretKey)));
         storage.set(STORAGE_HOLDER_SECRET_KEYS[i], encryptedHolder);

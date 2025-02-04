@@ -1,7 +1,7 @@
 import path from "node:path";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
-    getAssociatedTokenAddress,
+    getAssociatedTokenAddressSync,
     NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
@@ -26,7 +26,7 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
 
         for (const [i, account] of [dev, ...holders].entries()) {
             const solBalance = new Decimal(await connection.getBalance(account.publicKey));
-            const wsolAssociatedTokenAccount = await getAssociatedTokenAddress(
+            const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
                 NATIVE_MINT,
                 account.publicKey,
                 false,
@@ -43,7 +43,7 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
             let mintAssociatedTokenAccount: PublicKey | null = null;
             let mintBalance: Decimal | null = null;
             if (mint) {
-                mintAssociatedTokenAccount = await getAssociatedTokenAddress(
+                mintAssociatedTokenAccount = getAssociatedTokenAddressSync(
                     mint.publicKey,
                     account.publicKey,
                     false,
@@ -51,11 +51,15 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
                     ASSOCIATED_TOKEN_PROGRAM_ID
                 );
 
-                const mintTokenAccountBalance = await connection.getTokenAccountBalance(
-                    mintAssociatedTokenAccount,
-                    "confirmed"
-                );
-                mintBalance = new Decimal(mintTokenAccountBalance.value.amount.toString());
+                try {
+                    const mintTokenAccountBalance = await connection.getTokenAccountBalance(
+                        mintAssociatedTokenAccount,
+                        "confirmed"
+                    );
+                    mintBalance = new Decimal(mintTokenAccountBalance.value.amount.toString());
+                } catch {
+                    // Ignore Account not found error
+                }
             }
 
             logger.info(
