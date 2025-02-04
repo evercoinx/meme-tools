@@ -47,7 +47,10 @@ export function versionedMessageToInstructions(
     return instructions;
 }
 
-export async function wrapSol(amount: Decimal, owner: Keypair): Promise<void> {
+export async function getWrapSolInsturctions(
+    amount: Decimal,
+    owner: Keypair
+): Promise<[TransactionInstruction[], Decimal]> {
     const associatedTokenAccount = getAssociatedTokenAddressSync(
         NATIVE_MINT,
         owner.publicKey,
@@ -98,13 +101,7 @@ export async function wrapSol(amount: Decimal, owner: Keypair): Promise<void> {
         );
     }
 
-    if (instructions.length > 0) {
-        await sendAndConfirmVersionedTransaction(
-            instructions,
-            [owner],
-            `to wrap ${residualLamportsToWrap.div(LAMPORTS_PER_SOL).toNumber()} SOL for ${owner.publicKey.toBase58()}`
-        );
-    }
+    return [instructions, residualLamportsToWrap];
 }
 
 export async function sendAndConfirmVersionedTransaction(

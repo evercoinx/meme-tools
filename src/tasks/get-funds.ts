@@ -58,7 +58,7 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
                     );
                     mintBalance = new Decimal(mintTokenAccountBalance.value.amount.toString());
                 } catch {
-                    // Ignore Account not found error
+                    // Ignore TokenAccountNotFoundError error
                 }
             }
 
@@ -70,7 +70,12 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
                 wsolAssociatedTokenAccount.toBase58(),
                 wsolBalance ? formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL)) : "?",
                 mintAssociatedTokenAccount ? mintAssociatedTokenAccount.toBase58() : "?",
-                mintBalance ? formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS), 6) : "?",
+                mintBalance
+                    ? formatDecimal(
+                          mintBalance.div(10 ** envVars.TOKEN_DECIMALS),
+                          envVars.TOKEN_DECIMALS
+                      )
+                    : "?",
                 envVars.TOKEN_SYMBOL
             );
         }

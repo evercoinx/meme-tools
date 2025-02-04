@@ -11,7 +11,7 @@ import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
 import { generateHolderKeypairs, importDevKeypair, importHolderKeypairs } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
-import { sendAndConfirmVersionedTransaction, wrapSol } from "../helpers/network";
+import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 (async () => {
     try {
@@ -30,9 +30,24 @@ import { sendAndConfirmVersionedTransaction, wrapSol } from "../helpers/network"
             holders
         );
 
+        const transactions: Promise<void>[] = [];
         for (const holder of holders) {
-            await wrapSol(amountToWrap, holder);
+            const [instructions, lamportsToWrap] = await getWrapSolInsturctions(
+                amountToWrap,
+                holder
+            );
+            if (instructions.length > 0) {
+                transactions.push(
+                    sendAndConfirmVersionedTransaction(
+                        instructions,
+                        [holder],
+                        `to wrap ${formatDecimal(lamportsToWrap.div(LAMPORTS_PER_SOL))} SOL for ${holder.publicKey.toBase58()}`
+                    )
+                );
+            }
         }
+
+        await Promise.all(transactions);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -66,7 +81,7 @@ async function distributeSol(
             );
         } else {
             logger.warn(
-                "Account %s has sufficient balance: %s SOL. Skipping",
+                "Holder %s has sufficient balance: %s SOL. Skipping",
                 holder.publicKey.toBase58(),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
@@ -87,7 +102,7 @@ async function distributeSol(
             );
             wsolBalance = new Decimal(wsolTokenAccountBalance.value.amount.toString());
         } catch {
-            // Ignore Account not found error
+            // Ignore TokenAccountNotFoundError error
         }
 
         let residualLamportsToWrap = new Decimal(0);
@@ -102,7 +117,7 @@ async function distributeSol(
             );
         } else {
             logger.warn(
-                "Account %s has sufficient balance: %s WSOL. Skipping",
+                "Holder %s has sufficient balance: %s WSOL. Skipping",
                 holder.publicKey.toBase58(),
                 formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL))
             );
