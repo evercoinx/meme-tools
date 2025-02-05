@@ -1,15 +1,7 @@
-import path from "node:path";
 import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
-import {
-    connection,
-    envVars,
-    logger,
-    RAYDIUM_LP_MINT_DECIMALS,
-    storage,
-    STORAGE_DIR,
-} from "../modules";
+import { connection, envVars, logger, RAYDIUM_LP_MINT_DECIMALS } from "../modules";
 import { loadRaydium } from "../modules/raydium";
-import { checkIfFileExists } from "../helpers/filesystem";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../helpers/format";
 import Decimal from "decimal.js";
 import { importRaydiumPoolId } from "../helpers/account";
@@ -20,10 +12,7 @@ import { importRaydiumPoolId } from "../helpers/account";
             throw new Error(`Unsupported cluster for Raydium: ${envVars.CLUSTER}`);
         }
 
-        const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
-        if (!storageExists) {
-            throw new Error(`Storage ${storage.cacheId} not exists`);
-        }
+        await checkIfStorageExists();
 
         const raydiumPoolId = importRaydiumPoolId();
         if (!raydiumPoolId) {

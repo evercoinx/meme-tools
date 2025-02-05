@@ -25,12 +25,11 @@ import {
     logger,
     METADATA_DIR,
     storage,
-    STORAGE_DIR,
     STORAGE_IMAGE_URI,
     STORAGE_METADATA,
 } from "../modules";
 import { generateMintKeypair, importDevKeypair } from "../helpers/account";
-import { checkIfFileExists } from "../helpers/filesystem";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 interface OffchainTokenMetadata {
@@ -48,10 +47,7 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
 
 (async () => {
     try {
-        const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
-        if (!storageExists) {
-            throw new Error(`Storage ${storage.cacheId} not exists`);
-        }
+        await checkIfStorageExists();
 
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
         const mint = generateMintKeypair();

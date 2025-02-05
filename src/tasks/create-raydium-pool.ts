@@ -1,4 +1,3 @@
-import path from "node:path";
 import {
     ApiV3PoolInfoStandardItemCpmm,
     ApiV3Token,
@@ -28,7 +27,6 @@ import {
     envVars,
     logger,
     storage,
-    STORAGE_DIR,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
@@ -40,8 +38,8 @@ import {
     importRaydiumLpMintPublicKey,
     importRaydiumPoolId,
 } from "../helpers/account";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
-import { checkIfFileExists } from "../helpers/filesystem";
 import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
@@ -54,10 +52,7 @@ const SLIPPAGE = 0.15;
             throw new Error(`Unsupported cluster for Raydium: ${envVars.CLUSTER}`);
         }
 
-        const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
-        if (!storageExists) {
-            throw new Error(`Storage ${storage.cacheId} not exists`);
-        }
+        await checkIfStorageExists();
 
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
         const mint = importMintKeypair();
@@ -167,11 +162,11 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[PublicKey, Publ
     await sendAndConfirmVersionedTransaction(
         [...wrapSolInstructions, ...createPoolInstructions],
         [dev],
-        `to create pool ${poolId}`
+        `to create pool ${address.poolId}`
     );
 
-    storage.set(STORAGE_RAYDIUM_POOL_ID, poolId);
-    logger.debug("Raydium pool id %s saved to storage", poolId);
+    storage.set(STORAGE_RAYDIUM_POOL_ID, address.poolId);
+    logger.debug("Raydium pool id %s saved to storage", address.poolId);
     storage.set(STORAGE_RAYDIUM_LP_MINT, address.lpMint.toBase58());
     logger.debug("Raydium LP mint %s saved to storage", address.lpMint.toBase58());
     storage.save();

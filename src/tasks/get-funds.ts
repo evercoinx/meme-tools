@@ -1,4 +1,3 @@
-import path from "node:path";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     getAssociatedTokenAddressSync,
@@ -14,23 +13,13 @@ import {
     importMintKeypair,
     importRaydiumLpMintPublicKey,
 } from "../helpers/account";
-import { checkIfFileExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
-import {
-    connection,
-    envVars,
-    logger,
-    RAYDIUM_LP_MINT_DECIMALS,
-    storage,
-    STORAGE_DIR,
-} from "../modules";
+import { connection, envVars, logger, RAYDIUM_LP_MINT_DECIMALS } from "../modules";
+import { checkIfStorageExists } from "../helpers/filesystem";
 
 (async () => {
     try {
-        const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
-        if (!storageExists) {
-            throw new Error(`Storage ${storage.cacheId} not exists`);
-        }
+        await checkIfStorageExists();
 
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
         const holders = importHolderKeypairs();

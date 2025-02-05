@@ -1,4 +1,3 @@
-import path from "node:path";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     getAssociatedTokenAddressSync,
@@ -7,9 +6,9 @@ import {
 } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { connection, envVars, logger, storage, STORAGE_DIR } from "../modules";
+import { connection, envVars, logger } from "../modules";
 import { generateHolderKeypairs, importDevKeypair, importHolderKeypairs } from "../helpers/account";
-import { checkIfFileExists } from "../helpers/filesystem";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
 import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
 
@@ -17,7 +16,7 @@ import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../h
     try {
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
 
-        const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
+        const storageExists = await checkIfStorageExists(true);
         const holders = storageExists ? importHolderKeypairs() : generateHolderKeypairs();
 
         const amountToWrap = new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(
