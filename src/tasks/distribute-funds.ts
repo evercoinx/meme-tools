@@ -19,34 +19,23 @@ import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../h
         const storageExists = await checkIfStorageExists(true);
         const holders = storageExists ? importHolderKeypairs() : generateHolderKeypairs();
 
-        const amountToWrap = new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(
-            envVars.HOLDER_SHARE_POOL_PERCENT
+        const amountsToWrap = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
+            new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
+        if (holders.length !== amountsToWrap.length) {
+            throw new Error(
+                `Holders count and their shares mismatch: ${holders.length} != ${amountsToWrap.length}`
+            );
+        }
+
         await distributeSol(
-            amountToWrap,
+            amountsToWrap,
             new Decimal(envVars.HOLDER_COMPUTE_BUDGET_SOL),
             dev,
             holders
         );
 
-        const transactions: Promise<void>[] = [];
-        for (const holder of holders) {
-            const [instructions, lamportsToWrap] = await getWrapSolInsturctions(
-                amountToWrap,
-                holder
-            );
-            if (instructions.length > 0) {
-                transactions.push(
-                    sendAndConfirmVersionedTransaction(
-                        instructions,
-                        [holder],
-                        `to wrap ${formatDecimal(lamportsToWrap.div(LAMPORTS_PER_SOL))} SOL for ${holder.publicKey.toBase58()}`
-                    )
-                );
-            }
-        }
-
-        await Promise.all(transactions);
+        await wrapSol(amountsToWrap, holders);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -54,17 +43,18 @@ import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../h
 })();
 
 async function distributeSol(
-    amountToWrap: Decimal,
+    amountsToWrap: Decimal[],
     computeBudget: Decimal,
     dev: Keypair,
     holders: Keypair[]
 ): Promise<void> {
-    const lamportsToWrap = amountToWrap.mul(LAMPORTS_PER_SOL);
     const computeBudgetLamports = computeBudget.mul(LAMPORTS_PER_SOL);
     const instructions: TransactionInstruction[] = [];
     let totalLamportsToDistribute = new Decimal(0);
 
-    for (const holder of holders) {
+    for (const [i, holder] of holders.entries()) {
+        const lamportsToWrap = amountsToWrap[i].mul(LAMPORTS_PER_SOL);
+
         const solBalance = new Decimal(await connection.getBalance(holder.publicKey, "confirmed"));
 
         let residualComputeBudgetLamports = new Decimal(0);
@@ -134,4 +124,25 @@ async function distributeSol(
             `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`
         );
     }
+}
+
+async function wrapSol(amountsToWrap: Decimal[], holders: Keypair[]): Promise<void> {
+    const transactions: Promise<void>[] = [];
+    for (const [i, holder] of holders.entries()) {
+        const [instructions, lamportsToWrap] = await getWrapSolInsturctions(
+            amountsToWrap[i],
+            holder
+        );
+        if (instructions.length > 0) {
+            transactions.push(
+                sendAndConfirmVersionedTransaction(
+                    instructions,
+                    [holder],
+                    `to wrap ${formatDecimal(lamportsToWrap.div(LAMPORTS_PER_SOL))} SOL for ${holder.publicKey.toBase58()}`
+                )
+            );
+        }
+    }
+
+    await Promise.all(transactions);
 }

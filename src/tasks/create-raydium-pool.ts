@@ -65,11 +65,17 @@ const SLIPPAGE = 0.15;
             throw new Error("Holders not imported");
         }
 
-        const [poolId, lpMintPublicKey] = await createPool(dev, mint);
-        const amount = new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(
-            envVars.HOLDER_SHARE_POOL_PERCENT
+        const amounts = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
+            new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
-        await swapSolToTokenByHolders(poolId, amount, holders, mint);
+        if (holders.length !== amounts.length) {
+            throw new Error(
+                `Holders count and their shares mismatch: ${holders.length} != ${amounts.length}`
+            );
+        }
+
+        const [poolId, lpMintPublicKey] = await createPool(dev, mint);
+        await swapSolToToken(poolId, amounts, holders, mint);
         await burnLpMint(lpMintPublicKey, dev);
     } catch (err) {
         logger.fatal(err);
@@ -211,9 +217,9 @@ async function burnLpMint(lpMintPublicKey: PublicKey, dev: Keypair): Promise<voi
     );
 }
 
-async function swapSolToTokenByHolders(
+async function swapSolToToken(
     poolId: PublicKey,
-    amount: Decimal,
+    amounts: Decimal[],
     holders: Keypair[],
     mint: Keypair
 ): Promise<void> {
@@ -251,20 +257,20 @@ async function swapSolToTokenByHolders(
         throw new Error(`Invalid pool: ${poolInfo.mintA.address}/${poolInfo.mintB.address}`);
     }
 
-    const lamportsToSwap = new BN(amount.mul(LAMPORTS_PER_SOL).toFixed(0));
-    const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
-
-    const swapResult = CurveCalculator.swap(
-        lamportsToSwap,
-        baseIn ? rpcData.baseReserve : rpcData.quoteReserve,
-        baseIn ? rpcData.quoteReserve : rpcData.baseReserve,
-        rpcData.configInfo.tradeFeeRate
-    );
-    const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10));
-    const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10));
-
     const transactions: Promise<void>[] = [];
-    for (const holder of holders) {
+    for (const [i, holder] of holders.entries()) {
+        const lamportsToSwap = new BN(amounts[i].mul(LAMPORTS_PER_SOL).toFixed(0));
+        const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
+
+        const swapResult = CurveCalculator.swap(
+            lamportsToSwap,
+            baseIn ? rpcData.baseReserve : rpcData.quoteReserve,
+            baseIn ? rpcData.quoteReserve : rpcData.baseReserve,
+            rpcData.configInfo.tradeFeeRate
+        );
+
+        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10));
+        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10));
         const associatedTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
             holder.publicKey,

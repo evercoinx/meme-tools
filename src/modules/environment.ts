@@ -15,9 +15,8 @@ interface EnvironmentSchema {
     TOKEN_SUPPLY: number;
     INITIAL_POOL_SIZE_PERCENT: number;
     INITIAL_POOL_LIQUIDITY_SOL: number;
-    HOLDER_SHARE_POOL_PERCENT: number;
+    HOLDER_SHARE_POOL_PERCENTS: number[];
     HOLDER_COMPUTE_BUDGET_SOL: number;
-    HOLDER_COUNT_PER_POOL: number;
 }
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
@@ -80,23 +79,18 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(0.0001)
                 .max(10)
                 .description("Initial pool liquidity (in SOL)"),
-            HOLDER_SHARE_POOL_PERCENT: Joi.number()
-                .required()
-                .min(0.0001)
-                .max(1)
-                .description("Holder share pool (in percent)"),
             HOLDER_COMPUTE_BUDGET_SOL: Joi.number()
                 .required()
                 .min(0.0001)
                 .max(10)
                 .description("Holder compute budget (in SOL)"),
-            HOLDER_COUNT_PER_POOL: Joi.number()
-                .optional()
-                .integer()
-                .min(0)
+            HOLDER_SHARE_POOL_PERCENTS: Joi.array()
+                .required()
+                .items(Joi.number().min(0.001).max(0.1))
+                .unique()
+                .min(1)
                 .max(4)
-                .default(4)
-                .description("Holder count per pool"),
+                .description("Holder share pool (in percents)"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 
@@ -106,7 +100,10 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 label: "key",
             },
         })
-        .validate(process.env);
+        .validate({
+            ...process.env,
+            HOLDER_SHARE_POOL_PERCENTS: process.env.HOLDER_SHARE_POOL_PERCENTS?.split(","),
+        });
     if (error) {
         throw new Error(error.annotate());
     }

@@ -46,7 +46,7 @@ export function importMintKeypair(): Keypair | null {
 export function generateHolderKeypairs(): Keypair[] {
     const holders: Keypair[] = [];
 
-    for (let i = 0; i < envVars.HOLDER_COUNT_PER_POOL; i++) {
+    for (let i = 0; i < envVars.HOLDER_SHARE_POOL_PERCENTS.length; i++) {
         const holder = Keypair.generate();
         logger.info("Holder %s generated", holder.publicKey.toBase58());
 
@@ -64,7 +64,7 @@ export function generateHolderKeypairs(): Keypair[] {
 export function importHolderKeypairs(): Keypair[] {
     const holders: Keypair[] = [];
 
-    for (let i = 0; i < envVars.HOLDER_COUNT_PER_POOL; i++) {
+    for (let i = 0; i < envVars.HOLDER_SHARE_POOL_PERCENTS.length; i++) {
         const encryptedSecretKey = storage.get<string>(STORAGE_HOLDER_SECRET_KEYS[i]);
         if (!encryptedSecretKey) {
             throw new Error("Holder secret key not loaded from storage");
