@@ -14,12 +14,13 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
+    createBurnInstruction,
     getAssociatedTokenAddressSync,
     NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
@@ -32,7 +33,12 @@ import {
     STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
 import { loadRaydium } from "../modules/raydium";
-import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
+import {
+    importDevKeypair,
+    importHolderKeypairs,
+    importLPMintPublicKey,
+    importMintKeypair,
+} from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
@@ -63,22 +69,30 @@ const SLIPPAGE = 0.15;
             throw new Error("Holders not imported");
         }
 
-        const raydiumPoolId = await createPool(dev, mint);
+        const [raydiumPoolId, lpMintPublicKey] = await createPool(dev, mint);
         const amount = new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(
             envVars.HOLDER_SHARE_POOL_PERCENT
         );
         await swapSolToTokenByHolders(raydiumPoolId, amount, holders, mint);
+        await burnLpMint(lpMintPublicKey, dev);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
+async function createPool(dev: Keypair, mint: Keypair): Promise<[PublicKey, PublicKey]> {
     let raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
     if (raydiumPoolId) {
-        logger.info("Raydium pool id %s loaded from storage", raydiumPoolId);
-        return raydiumPoolId;
+        logger.debug("Raydium pool id %s loaded from storage", raydiumPoolId);
+
+        const lpMintPublicKey = importLPMintPublicKey();
+        if (!lpMintPublicKey) {
+            throw new Error("LP mint not imported");
+        }
+        logger.debug("LP mint %s loaded from storage", lpMintPublicKey);
+
+        return [new PublicKey(raydiumPoolId), new PublicKey(lpMintPublicKey)];
     }
 
     const raydium = await loadRaydium(envVars.CLUSTER, connection, dev);
@@ -159,19 +173,53 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<string> {
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, raydiumPoolId);
+    logger.debug("Raydium pool id %s saved to storage", raydiumPoolId);
     storage.set(STORAGE_RAYDIUM_LP_MINT, lpMint.toBase58());
+    logger.debug("Raydium LP mint %s saved to storage", lpMint.toBase58());
     storage.save();
-    logger.debug(
-        "Raydium pool id %s saved to storage\n\t\tRaydium LP mint %s saved to storage",
-        raydiumPoolId,
-        lpMint.toBase58()
+
+    return [poolId, lpMint];
+}
+
+async function burnLpMint(lpMintPublicKey: PublicKey, dev: Keypair): Promise<void> {
+    const lpMintAssociatedTokenAccount = getAssociatedTokenAddressSync(
+        lpMintPublicKey,
+        dev.publicKey,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
-    return raydiumPoolId;
+    const mintTokenAccountBalance = await connection.getTokenAccountBalance(
+        lpMintAssociatedTokenAccount,
+        "confirmed"
+    );
+    const lpMintBalance = new Decimal(mintTokenAccountBalance.value.amount);
+    if (lpMintBalance.lte(0)) {
+        logger.warn(`LP mint ${lpMintPublicKey} already burned`);
+        return;
+    }
+
+    const instructions = [
+        createBurnInstruction(
+            lpMintAssociatedTokenAccount,
+            lpMintPublicKey,
+            dev.publicKey,
+            lpMintBalance.toNumber(),
+            [],
+            TOKEN_PROGRAM_ID
+        ),
+    ];
+
+    await sendAndConfirmVersionedTransaction(
+        instructions,
+        [dev],
+        `to burn LP mint ${lpMintPublicKey.toBase58()}`
+    );
 }
 
 async function swapSolToTokenByHolders(
-    raydiumPoolId: string,
+    raydiumPoolId: PublicKey,
     amount: Decimal,
     holders: Keypair[],
     mint: Keypair
@@ -182,7 +230,7 @@ async function swapSolToTokenByHolders(
     let rpcData: CpmmRpcData;
 
     if (raydium.cluster === "devnet") {
-        const data = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId);
+        const data = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId.toBase58());
         poolInfo = data.poolInfo;
         if (poolInfo.programId !== DEV_CREATE_CPMM_POOL_PROGRAM.toBase58()) {
             throw new Error(`Not CPMM pool. Program id: ${poolInfo.programId}`);
@@ -190,7 +238,7 @@ async function swapSolToTokenByHolders(
         poolKeys = data.poolKeys;
         rpcData = data.rpcData;
     } else {
-        const data = await raydium.api.fetchPoolById({ ids: raydiumPoolId });
+        const data = await raydium.api.fetchPoolById({ ids: raydiumPoolId.toBase58() });
         poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
         if (poolInfo.programId !== CREATE_CPMM_POOL_PROGRAM.toBase58()) {
             throw new Error(`Not CPMM pool. Program id: ${poolInfo.programId}`);
