@@ -25,8 +25,8 @@ import {
     logger,
     METADATA_DIR,
     storage,
-    STORAGE_IMAGE_URI,
-    STORAGE_METADATA,
+    STORAGE_MINT_IMAGE_URI,
+    STORAGE_MINT_METADATA,
 } from "../modules";
 import { generateMintKeypair, importDevKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
@@ -63,38 +63,38 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
 })();
 
 async function uploadImage(): Promise<string> {
-    let imageUri = storage.get<string>(STORAGE_IMAGE_URI);
+    let imageUri = storage.get<string>(STORAGE_MINT_IMAGE_URI);
     if (imageUri) {
-        logger.info("Image loaded from storage");
+        logger.info("Mint image URI loaded from storage");
         return imageUri;
     }
 
-    logger.debug("Uploading image to IPFS...");
-    const imageFileName = `${envVars.TOKEN_SYMBOL}.webp`;
+    logger.debug("Uploading mint image to IPFS");
+    const imageFileName = `${envVars.TOKEN_SYMBOL.toLowerCase()}.webp`;
     const imageBlob = new Blob([await fs.readFile(path.join(IMAGE_DIR, imageFileName))]);
 
     const imageFile = new File([imageBlob], imageFileName, { type: "image/webp" });
     const upload = await ipfs.upload.file(imageFile);
 
     imageUri = generateIpfsUri(upload.IpfsHash);
-    logger.info("Image uploaded to IPFS: %s", imageUri);
+    logger.info("Mint image uploaded to IPFS: %s", imageUri);
 
-    storage.set(STORAGE_IMAGE_URI, imageUri);
+    storage.set(STORAGE_MINT_IMAGE_URI, imageUri);
     storage.save();
-    logger.debug("Image URI saved to storage");
+    logger.debug("Mint image URI saved to storage");
 
     return imageUri;
 }
 
 async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> {
-    let metadata = storage.get<OffchainTokenMetadata>(STORAGE_METADATA);
+    let metadata = storage.get<OffchainTokenMetadata>(STORAGE_MINT_METADATA);
     if (metadata) {
-        logger.info("Metadata loaded from storage");
+        logger.info("Mint metadata loaded from storage");
         return metadata;
     }
 
-    logger.debug(`Uploading metadata to IPFS...`);
-    const metadataFilename = `${envVars.TOKEN_SYMBOL}.json`;
+    logger.debug("Uploading mint metadata to IPFS");
+    const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
     metadata = {
         ...JSON.parse(await fs.readFile(path.join(METADATA_DIR, metadataFilename), "utf8")),
         image: imageUri,
@@ -110,11 +110,11 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
         ...metadata,
         uri: metadataUri,
     };
-    logger.info("Metadata uploaded to IPFS: %s", metadataUri);
+    logger.info("Mint metadata uploaded to IPFS: %s", metadataUri);
 
-    storage.set(STORAGE_METADATA, metadata);
+    storage.set(STORAGE_MINT_METADATA, metadata);
     storage.save();
-    logger.debug("Metadata saved to storage");
+    logger.debug("Mint metadata saved to storage");
 
     return metadata;
 }
@@ -152,7 +152,7 @@ async function createToken(
     );
 
     const instructions = [
-        // Invoke the System program to create a new account
+        // Create a new mint account
         SystemProgram.createAccount({
             fromPubkey: dev.publicKey,
             newAccountPubkey: mint.publicKey,
@@ -160,14 +160,14 @@ async function createToken(
             lamports: mintLamports,
             programId: TOKEN_2022_PROGRAM_ID,
         }),
-        // Initialize the MetadataPointer extension
+        // Initialize the metadata pointer extension
         createInitializeMetadataPointerInstruction(
             mint.publicKey,
             null,
             mint.publicKey,
             TOKEN_2022_PROGRAM_ID
         ),
-        // Initialize Mint account data
+        // Initialize mint account with data
         createInitializeMintInstruction(
             mint.publicKey,
             envVars.TOKEN_DECIMALS,
@@ -175,7 +175,7 @@ async function createToken(
             null,
             TOKEN_2022_PROGRAM_ID
         ),
-        // Initialize Metadata account data
+        // Initialize metadata account with data
         createInitializeInstruction({
             mint: mint.publicKey,
             mintAuthority: dev.publicKey,
@@ -186,7 +186,7 @@ async function createToken(
             uri: metadata.uri,
             programId: TOKEN_2022_PROGRAM_ID,
         }),
-        // Create the Associated token account connecting the Owner account with the Mint account
+        // Create the associated token account of the owner
         createAssociatedTokenAccountInstruction(
             dev.publicKey,
             associatedTokenAccount,
@@ -195,7 +195,7 @@ async function createToken(
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         ),
-        // Mint tokens to the Owner's Associated token account
+        // Mint tokens to the associated token account of the owner
         createMintToInstruction(
             mint.publicKey,
             associatedTokenAccount,
@@ -204,7 +204,7 @@ async function createToken(
             [],
             TOKEN_2022_PROGRAM_ID
         ),
-        // Revoke the MintTokens authority from the Owner account
+        // Revoke the MintTokens authority from the owner
         createSetAuthorityInstruction(
             mint.publicKey,
             dev.publicKey,

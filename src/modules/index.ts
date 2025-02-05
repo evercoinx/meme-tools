@@ -15,8 +15,8 @@ export const IMAGE_DIR = `${cwd}/input/images`;
 export const METADATA_DIR = `${cwd}/input/metadata`;
 export const STORAGE_DIR = `${cwd}/storage`;
 
-export const STORAGE_METADATA = "metadata";
-export const STORAGE_IMAGE_URI = "image_uri";
+export const STORAGE_MINT_IMAGE_URI = "mint_image_uri";
+export const STORAGE_MINT_METADATA = "mint_metadata";
 export const STORAGE_MINT_SECRET_KEY = "mint_secret_key";
 export const STORAGE_HOLDER_SECRET_KEYS: Record<number, string> = {
     0: "holder_0_secret_key",
@@ -24,8 +24,8 @@ export const STORAGE_HOLDER_SECRET_KEYS: Record<number, string> = {
     2: "holder_2_secret_key",
     3: "holder_3_secret_key",
 };
-export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 export const STORAGE_RAYDIUM_LP_MINT = "raydium_lp_mint";
+export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 
 export const RAYDIUM_LP_MINT_DECIMALS = 9;
 
