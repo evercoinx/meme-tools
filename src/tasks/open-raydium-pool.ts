@@ -48,11 +48,11 @@ const SLIPPAGE = 0.15;
 
 (async () => {
     try {
+        await checkIfStorageExists();
+
         if (!["devnet", "mainnet-beta"].includes(envVars.CLUSTER)) {
             throw new Error(`Unsupported cluster for Raydium: ${envVars.CLUSTER}`);
         }
-
-        await checkIfStorageExists();
 
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
         const mint = importMintKeypair();

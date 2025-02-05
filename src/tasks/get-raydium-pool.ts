@@ -8,11 +8,11 @@ import { importRaydiumPoolId } from "../helpers/account";
 
 (async () => {
     try {
+        await checkIfStorageExists();
+
         if (!["devnet", "mainnet-beta"].includes(envVars.CLUSTER)) {
             throw new Error(`Unsupported cluster for Raydium: ${envVars.CLUSTER}`);
         }
-
-        await checkIfStorageExists();
 
         const raydiumPoolId = importRaydiumPoolId();
         if (!raydiumPoolId) {
