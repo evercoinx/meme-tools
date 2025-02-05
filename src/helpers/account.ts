@@ -8,6 +8,7 @@ import {
     STORAGE_HOLDER_SECRET_KEYS,
     STORAGE_MINT_SECRET_KEY,
     STORAGE_RAYDIUM_LP_MINT,
+    STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
 
 export async function importDevKeypair(path: string): Promise<Keypair> {
@@ -79,13 +80,24 @@ export function importHolderKeypairs(): Keypair[] {
     return holders;
 }
 
-export function importLPMintPublicKey(): PublicKey | null {
-    const lpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
-    if (!lpMint) {
-        logger.debug("LP Mint %s not imported");
+export function importRaydiumPoolId(): PublicKey | null {
+    const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
+    if (!raydiumPoolId) {
+        logger.debug("Raydium pool id not imported");
         return null;
     }
 
-    logger.debug("LP Mint %s imported", lpMint);
-    return new PublicKey(lpMint);
+    logger.debug("Raydium pool id %s imported", raydiumPoolId);
+    return new PublicKey(raydiumPoolId);
+}
+
+export function importRaydiumLpMintPublicKey(): PublicKey | null {
+    const raydimLpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
+    if (!raydimLpMint) {
+        logger.debug("Raydium LP mint not imported");
+        return null;
+    }
+
+    logger.debug("Raydium LP mint %s imported", raydimLpMint);
+    return new PublicKey(raydimLpMint);
 }

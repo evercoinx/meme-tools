@@ -7,12 +7,12 @@ import {
     RAYDIUM_LP_MINT_DECIMALS,
     storage,
     STORAGE_DIR,
-    STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
 import { loadRaydium } from "../modules/raydium";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../helpers/format";
 import Decimal from "decimal.js";
+import { importRaydiumPoolId } from "../helpers/account";
 
 (async () => {
     try {
@@ -25,23 +25,23 @@ import Decimal from "decimal.js";
             throw new Error(`Storage ${storage.cacheId} not exists`);
         }
 
-        const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
+        const raydiumPoolId = importRaydiumPoolId();
         if (!raydiumPoolId) {
-            throw new Error(`Raydium pool not found: ${raydiumPoolId}`);
+            throw new Error("Raydium pool not imported");
         }
 
         const raydium = await loadRaydium(envVars.CLUSTER, connection);
 
         let poolInfo: ApiV3PoolInfoStandardItemCpmm;
         if (raydium.cluster === "devnet") {
-            const data = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId);
+            const data = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId.toBase58());
             poolInfo = data.poolInfo;
             // Price fix when API returns 5 decimal places
             poolInfo.price = new Decimal(poolInfo.price.toString().replace(".", ""))
                 .div(10 ** envVars.TOKEN_DECIMALS)
                 .toNumber();
         } else {
-            const data = await raydium.api.fetchPoolById({ ids: raydiumPoolId });
+            const data = await raydium.api.fetchPoolById({ ids: raydiumPoolId.toBase58() });
             poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
         }
 

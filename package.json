@@ -11,9 +11,9 @@
         "clean": "rm -rf dist/*",
         "distribute-funds": "ts-node src/tasks/distribute-funds.ts && yarn get-funds",
         "create-token": "ts-node src/tasks/create-token.ts && yarn get-funds",
-        "create-pool": "ts-node src/tasks/create-pool.ts && yarn get-pool && yarn get-funds",
+        "create-raydium-pool": "ts-node src/tasks/create-raydium-pool.ts && yarn get-raydium-pool && yarn get-funds",
         "get-funds": "ts-node src/tasks/get-funds.ts",
-        "get-pool": "ts-node src/tasks/get-pool.ts"
+        "get-raydium-pool": "ts-node src/tasks/get-raydium-pool.ts"
     },
     "keywords": [],
     "author": "",

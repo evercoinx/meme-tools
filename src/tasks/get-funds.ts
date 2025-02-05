@@ -11,8 +11,8 @@ import Decimal from "decimal.js";
 import {
     importDevKeypair,
     importHolderKeypairs,
-    importLPMintPublicKey,
     importMintKeypair,
+    importRaydiumLpMintPublicKey,
 } from "../helpers/account";
 import { checkIfFileExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
@@ -35,7 +35,7 @@ import {
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
         const holders = importHolderKeypairs();
         const mint = importMintKeypair();
-        const lpMintPublicKey = importLPMintPublicKey();
+        const lpMintPublicKey = importRaydiumLpMintPublicKey();
 
         for (const [i, account] of [dev, ...holders].entries()) {
             const isDev = i === 0;
