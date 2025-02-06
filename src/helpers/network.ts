@@ -2,6 +2,7 @@ import {
     Keypair,
     LAMPORTS_PER_SOL,
     MessageV0,
+    SendOptions,
     SystemProgram,
     TransactionInstruction,
     TransactionMessage,
@@ -107,7 +108,8 @@ export async function getWrapSolInsturctions(
 export async function sendAndConfirmVersionedTransaction(
     instructions: TransactionInstruction[],
     signers: Keypair[],
-    logMessage: string
+    logMessage: string,
+    sendOptions?: SendOptions
 ): Promise<void> {
     const payer = signers[0];
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
@@ -120,10 +122,14 @@ export async function sendAndConfirmVersionedTransaction(
     const transaction = new VersionedTransaction(messageV0);
     transaction.sign(signers);
 
-    logger.debug(`Sending transaction ${logMessage}`);
-    const signature = await connection.sendTransaction(transaction, {
-        preflightCommitment: "confirmed",
-    });
+    logger.info(`Sending transaction ${logMessage}`);
+    const signature = await connection.sendTransaction(
+        transaction,
+        sendOptions ?? {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+        }
+    );
 
     const confirmation = await connection.confirmTransaction({
         signature,

@@ -190,7 +190,11 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[PublicKey, Publ
     await sendAndConfirmVersionedTransaction(
         [...wrapSolInstructions, ...createPoolInstructions],
         [dev],
-        `to create pool ${poolId.toBase58()}`
+        `to create pool ${poolId.toBase58()}`,
+        {
+            skipPreflight: true,
+            preflightCommitment: "single",
+        }
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, poolId.toBase58());
@@ -213,7 +217,7 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<void> {
 
     const mintTokenAccountBalance = await connection.getTokenAccountBalance(
         lpMintAssociatedTokenAccount,
-        "confirmed"
+        "processed"
     );
     const lpMintBalance = new Decimal(mintTokenAccountBalance.value.amount);
     if (lpMintBalance.lte(0)) {
@@ -239,7 +243,11 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<void> {
     await sendAndConfirmVersionedTransaction(
         instructions,
         [dev],
-        `to burn LP mint ${lpMint.toBase58()} for ${dev.publicKey.toBase58()}`
+        `to burn LP mint ${lpMint.toBase58()} for ${dev.publicKey.toBase58()}`,
+        {
+            skipPreflight: true,
+            preflightCommitment: "processed",
+        }
     );
 }
 
@@ -287,7 +295,11 @@ async function swapSolToToken(
             sendAndConfirmVersionedTransaction(
                 instructions,
                 [holder],
-                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`
+                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`,
+                {
+                    skipPreflight: true,
+                    preflightCommitment: "single",
+                }
             )
         );
     }

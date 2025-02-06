@@ -15,7 +15,7 @@
         "create-mint": "ts-node src/tasks/create-mint.ts",
         "create-mint:view": "yarn create-mint && yarn get-funds",
         "open-raydium-pool": "ts-node src/tasks/open-raydium-pool.ts",
-        "open-raydium-pool:view": "yarn oper-raydium-pool && yarn get-raydium-pool && yarn get-funds",
+        "open-raydium-pool:view": "yarn open-raydium-pool && yarn get-raydium-pool && yarn get-funds",
         "get-funds": "ts-node src/tasks/get-funds.ts",
         "get-raydium-pool": "ts-node src/tasks/get-raydium-pool.ts"
     },
