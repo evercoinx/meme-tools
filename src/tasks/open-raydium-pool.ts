@@ -38,6 +38,14 @@ import { loadRaydium } from "../modules/raydium";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
 
+interface CpmmPoolInfo {
+    poolInfo: ApiV3PoolInfoStandardItemCpmm;
+    poolKeys?: CpmmKeys;
+    baseReserve: BN;
+    quoteReserve: BN;
+    tradeFee: BN;
+}
+
 const SLIPPAGE = 0.15;
 
 (async () => {
@@ -53,27 +61,61 @@ const SLIPPAGE = 0.15;
         }
 
         const holders = importHolderKeypairs();
-        if (holders.length === 0) {
-            throw new Error("Holders not imported");
-        }
-
         const amounts = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
-        if (holders.length !== amounts.length) {
-            throw new Error(
-                `Holders count and their shares mismatch: ${holders.length} != ${amounts.length}`
-            );
-        }
+        const eligibleHolders = await findEligibleHolders(holders, mint);
 
-        const [poolId, lpMintPublicKey] = await createPool(dev, mint);
-        await swapSolToToken(poolId, amounts, holders, mint);
-        await burnLpMint(lpMintPublicKey, dev);
+        const [poolId, lpMint] = await createPool(dev, mint);
+        const poolInfo = await loadPoolInfo(poolId, mint);
+
+        await swapSolToToken(poolInfo, amounts, eligibleHolders);
+
+        await burnLpMint(lpMint, dev);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
+
+async function findEligibleHolders(holders: Keypair[], mint: Keypair): Promise<(Keypair | null)[]> {
+    const eligibleHolders: (Keypair | null)[] = [];
+
+    for (const holder of holders) {
+        const associatedTokenAccount = getAssociatedTokenAddressSync(
+            mint.publicKey,
+            holder.publicKey,
+            false,
+            TOKEN_2022_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        );
+
+        let balance = new Decimal(0);
+        try {
+            const tokenAccountBalance = await connection.getTokenAccountBalance(
+                associatedTokenAccount,
+                "confirmed"
+            );
+            balance = new Decimal(tokenAccountBalance.value.amount.toString());
+        } catch {
+            // Ignore TokenAccountNotFoundError error
+        }
+
+        if (balance.gt(0)) {
+            eligibleHolders.push(null);
+
+            logger.warn(
+                "Holder %s not eligible. His token balance: %s",
+                holder.publicKey.toBase58(),
+                formatDecimal(balance.div(10 ** envVars.TOKEN_DECIMALS))
+            );
+        } else {
+            eligibleHolders.push(holder);
+        }
+    }
+
+    return eligibleHolders;
+}
 
 async function createPool(dev: Keypair, mint: Keypair): Promise<[PublicKey, PublicKey]> {
     const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
@@ -126,7 +168,10 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[PublicKey, Publ
         .mul(10 ** envVars.TOKEN_DECIMALS)
         .mul(envVars.INITIAL_POOL_SIZE_PERCENT);
 
-    const [wrapSolInstructions] = await getWrapSolInsturctions(mintAAmount, dev);
+    const wrapSolInstructions = await getWrapSolInsturctions(
+        new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL),
+        dev
+    );
 
     const {
         transaction: { instructions: createPoolInstructions },
@@ -169,9 +214,9 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[PublicKey, Publ
     return [poolId, lpMint];
 }
 
-async function burnLpMint(lpMintPublicKey: PublicKey, dev: Keypair): Promise<void> {
+async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<void> {
     const lpMintAssociatedTokenAccount = getAssociatedTokenAddressSync(
-        lpMintPublicKey,
+        lpMint,
         dev.publicKey,
         false,
         TOKEN_PROGRAM_ID,
@@ -184,14 +229,18 @@ async function burnLpMint(lpMintPublicKey: PublicKey, dev: Keypair): Promise<voi
     );
     const lpMintBalance = new Decimal(mintTokenAccountBalance.value.amount);
     if (lpMintBalance.lte(0)) {
-        logger.warn(`LP mint ${lpMintPublicKey} already burned`);
+        logger.warn(
+            "LP mint %s for %s already burned",
+            lpMint.toBase58(),
+            dev.publicKey.toBase58()
+        );
         return;
     }
 
     const instructions = [
         createBurnInstruction(
             lpMintAssociatedTokenAccount,
-            lpMintPublicKey,
+            lpMint,
             dev.publicKey,
             lpMintBalance.toNumber(),
             [],
@@ -202,91 +251,81 @@ async function burnLpMint(lpMintPublicKey: PublicKey, dev: Keypair): Promise<voi
     await sendAndConfirmVersionedTransaction(
         instructions,
         [dev],
-        `to burn LP mint ${lpMintPublicKey.toBase58()}`
+        `to burn LP mint ${lpMint.toBase58()} for ${dev.publicKey.toBase58()}`
     );
 }
 
-async function swapSolToToken(
-    poolId: PublicKey,
-    amounts: Decimal[],
-    holders: Keypair[],
-    mint: Keypair
-): Promise<void> {
+async function loadPoolInfo(poolId: PublicKey, mint: Keypair): Promise<CpmmPoolInfo> {
     const raydium = await loadRaydium(connection, envVars.CLUSTER);
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
     let poolKeys: CpmmKeys | undefined;
     let rpcData: CpmmRpcData;
+    let programId: string;
 
     if (raydium.cluster === "devnet") {
         const data = await raydium.cpmm.getPoolInfoFromRpc(poolId.toBase58());
         poolInfo = data.poolInfo;
-        if (poolInfo.programId !== DEV_CREATE_CPMM_POOL_PROGRAM.toBase58()) {
-            throw new Error(`Not CPMM pool. Program id: ${poolInfo.programId}`);
-        }
         poolKeys = data.poolKeys;
         rpcData = data.rpcData;
+        programId = DEV_CREATE_CPMM_POOL_PROGRAM.toBase58();
     } else {
-        const data = await raydium.api.fetchPoolById({ ids: poolId.toBase58() });
-        poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
-        if (poolInfo.programId !== CREATE_CPMM_POOL_PROGRAM.toBase58()) {
-            throw new Error(`Not CPMM pool. Program id: ${poolInfo.programId}`);
-        }
-        rpcData = await raydium.cpmm.getRpcPoolInfo(poolInfo.id, true);
+        const results = await Promise.all([
+            raydium.api.fetchPoolById({ ids: poolId.toBase58() }),
+            raydium.cpmm.getRpcPoolInfo(poolId.toBase58(), true),
+        ]);
+        poolInfo = results[0][0] as ApiV3PoolInfoStandardItemCpmm;
+        rpcData = results[1];
+        programId = CREATE_CPMM_POOL_PROGRAM.toBase58();
+    }
+
+    if (programId !== poolInfo.programId) {
+        throw new Error(`Not Raydium CPMM pool. Program id: ${poolInfo.programId}`);
+    }
+
+    const poolMints = [NATIVE_MINT.toBase58(), mint.publicKey.toBase58()];
+    if (
+        !poolMints.includes(poolInfo.mintA.address) ||
+        !poolMints.includes(poolInfo.mintB.address)
+    ) {
+        throw new Error(
+            `Invalid mints in Raydium pool: ${poolInfo.mintA.address}/${poolInfo.mintB.address}`
+        );
     }
 
     if (typeof rpcData.configInfo === "undefined") {
-        throw new Error("Missing config info");
+        throw new Error("Missing Raydium config info");
     }
 
-    const poolPairAddresses = [NATIVE_MINT.toBase58(), mint.publicKey.toBase58()];
-    if (
-        !poolPairAddresses.includes(poolInfo.mintA.address) ||
-        !poolPairAddresses.includes(poolInfo.mintB.address)
-    ) {
-        throw new Error(`Invalid pool: ${poolInfo.mintA.address}/${poolInfo.mintB.address}`);
-    }
+    return {
+        poolInfo,
+        poolKeys,
+        baseReserve: rpcData.baseReserve,
+        quoteReserve: rpcData.quoteReserve,
+        tradeFee: rpcData.configInfo.tradeFeeRate,
+    };
+}
 
+async function swapSolToToken(
+    { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
+    amounts: Decimal[],
+    holders: (Keypair | null)[]
+): Promise<void> {
+    const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
     const transactions: Promise<void>[] = [];
+
     for (const [i, holder] of holders.entries()) {
+        if (holder === null) {
+            continue;
+        }
+
         const lamportsToSwap = new BN(amounts[i].mul(LAMPORTS_PER_SOL).toFixed(0));
-        const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
 
         const swapResult = CurveCalculator.swap(
             lamportsToSwap,
-            baseIn ? rpcData.baseReserve : rpcData.quoteReserve,
-            baseIn ? rpcData.quoteReserve : rpcData.baseReserve,
-            rpcData.configInfo.tradeFeeRate
+            baseIn ? baseReserve : quoteReserve,
+            baseIn ? quoteReserve : baseReserve,
+            tradeFee
         );
-
-        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10));
-        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10));
-        const associatedTokenAccount = getAssociatedTokenAddressSync(
-            mint.publicKey,
-            holder.publicKey,
-            false,
-            TOKEN_2022_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
-
-        let balance = new Decimal(0);
-        try {
-            const tokenAccountBalance = await connection.getTokenAccountBalance(
-                associatedTokenAccount,
-                "confirmed"
-            );
-            balance = new Decimal(tokenAccountBalance.value.amount.toString());
-        } catch {
-            // Ignore TokenAccountNotFoundError error
-        }
-
-        if (balance.gt(0)) {
-            logger.warn(
-                "Holder %s has non zero token balance: %s",
-                holder.publicKey.toBase58(),
-                formatDecimal(balance.div(LAMPORTS_PER_SOL))
-            );
-            continue;
-        }
 
         const raydium = await loadRaydium(connection, envVars.CLUSTER, holder);
         const {
@@ -300,11 +339,17 @@ async function swapSolToToken(
             baseIn,
         });
 
+        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
+            LAMPORTS_PER_SOL
+        );
+        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
+            10 ** envVars.TOKEN_DECIMALS
+        );
         transactions.push(
             sendAndConfirmVersionedTransaction(
                 instructions,
                 [holder],
-                `to swap ${formatDecimal(sourceAmount.div(LAMPORTS_PER_SOL))} WSOL for ${formatDecimal(destinationAmount.div(10 ** envVars.TOKEN_DECIMALS), envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`
+                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`
             )
         );
     }

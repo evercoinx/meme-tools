@@ -126,19 +126,16 @@ async function distributeSol(
     }
 }
 
-async function wrapSol(amountsToWrap: Decimal[], holders: Keypair[]): Promise<void> {
+async function wrapSol(amounts: Decimal[], holders: Keypair[]): Promise<void> {
     const transactions: Promise<void>[] = [];
     for (const [i, holder] of holders.entries()) {
-        const [instructions, lamportsToWrap] = await getWrapSolInsturctions(
-            amountsToWrap[i],
-            holder
-        );
+        const instructions = await getWrapSolInsturctions(amounts[i], holder);
         if (instructions.length > 0) {
             transactions.push(
                 sendAndConfirmVersionedTransaction(
                     instructions,
                     [holder],
-                    `to wrap ${formatDecimal(lamportsToWrap.div(LAMPORTS_PER_SOL))} SOL for ${holder.publicKey.toBase58()}`
+                    `to wrap ${formatDecimal(amounts[i])} SOL for ${holder.publicKey.toBase58()}`
                 )
             );
         }

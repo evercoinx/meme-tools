@@ -50,7 +50,7 @@ export function versionedMessageToInstructions(
 export async function getWrapSolInsturctions(
     amount: Decimal,
     owner: Keypair
-): Promise<[TransactionInstruction[], Decimal]> {
+): Promise<TransactionInstruction[]> {
     const associatedTokenAccount = getAssociatedTokenAddressSync(
         NATIVE_MINT,
         owner.publicKey,
@@ -87,21 +87,21 @@ export async function getWrapSolInsturctions(
         );
     }
 
-    const lamportsToWrap = amount.mul(LAMPORTS_PER_SOL);
-    let residualLamportsToWrap = new Decimal(0);
-    if (wsolBalance.lt(lamportsToWrap)) {
-        residualLamportsToWrap = lamportsToWrap.sub(wsolBalance);
+    const lamports = amount.mul(LAMPORTS_PER_SOL);
+    let residualLamports = new Decimal(0);
+    if (wsolBalance.lt(lamports)) {
+        residualLamports = lamports.sub(wsolBalance);
         instructions.push(
             SystemProgram.transfer({
                 fromPubkey: owner.publicKey,
                 toPubkey: associatedTokenAccount,
-                lamports: residualLamportsToWrap.toNumber(),
+                lamports: residualLamports.toNumber(),
             }),
             createSyncNativeInstruction(associatedTokenAccount, TOKEN_PROGRAM_ID)
         );
     }
 
-    return [instructions, residualLamportsToWrap];
+    return instructions;
 }
 
 export async function sendAndConfirmVersionedTransaction(
