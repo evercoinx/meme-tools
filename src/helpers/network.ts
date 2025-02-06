@@ -158,7 +158,7 @@ export async function sendAndConfirmVersionedTransaction(
         lastValidBlockHeight,
     });
     if (confirmation.value.err !== null) {
-        throw new Error(confirmation.value.err.toString());
+        throw new Error(JSON.stringify(confirmation.value.err, null, 4));
     }
 
     logger.info("Transaction confirmed: %s", explorer.generateTransactionUri(signature));
