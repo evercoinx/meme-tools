@@ -7,15 +7,19 @@ import {
 } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import {
-    importDevKeypair,
-    importHolderKeypairs,
-    importMintKeypair,
-    importRaydiumLpMintPublicKey,
-} from "../helpers/account";
+import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
-import { connection, envVars, logger, RAYDIUM_LP_MINT_DECIMALS } from "../modules";
-import { checkIfStorageExists } from "../helpers/filesystem";
+import { checkIfStorageExists } from "../helpers/validation";
+import {
+    connection,
+    envVars,
+    logger,
+    RAYDIUM_LP_MINT_DECIMALS,
+    storage,
+    STORAGE_RAYDIUM_LP_MINT,
+} from "../modules";
+
+const UNKNOWN_ADDRESS = "?".repeat(44);
 
 (async () => {
     try {
@@ -24,7 +28,6 @@ import { checkIfStorageExists } from "../helpers/filesystem";
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
         const holders = importHolderKeypairs();
         const mint = importMintKeypair();
-        const lpMintPublicKey = importRaydiumLpMintPublicKey();
 
         for (const [i, account] of [dev, ...holders].entries()) {
             const isDev = i === 0;
@@ -70,7 +73,9 @@ import { checkIfStorageExists } from "../helpers/filesystem";
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                 wsolAssociatedTokenAccount.toBase58(),
                 wsolBalance ? formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL)) : "?",
-                mintAssociatedTokenAccount ? mintAssociatedTokenAccount.toBase58() : "?",
+                mintAssociatedTokenAccount
+                    ? mintAssociatedTokenAccount.toBase58()
+                    : UNKNOWN_ADDRESS,
                 mintBalance
                     ? formatDecimal(
                           mintBalance.div(10 ** envVars.TOKEN_DECIMALS),
@@ -84,9 +89,10 @@ import { checkIfStorageExists } from "../helpers/filesystem";
                 let lpMintAssociatedTokenAccount: PublicKey | null = null;
                 let lpMintBalance: Decimal | null = null;
 
-                if (lpMintPublicKey) {
+                const lpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
+                if (lpMint) {
                     lpMintAssociatedTokenAccount = getAssociatedTokenAddressSync(
-                        lpMintPublicKey,
+                        new PublicKey(lpMint),
                         account.publicKey,
                         false,
                         TOKEN_PROGRAM_ID,
@@ -107,10 +113,12 @@ import { checkIfStorageExists } from "../helpers/filesystem";
                 }
 
                 logger.info(
-                    "Funds info (%s)\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s",
+                    "Funds (%s)\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s",
                     "Dev",
                     ...logParams,
-                    lpMintAssociatedTokenAccount ? lpMintAssociatedTokenAccount.toBase58() : "?",
+                    lpMintAssociatedTokenAccount
+                        ? lpMintAssociatedTokenAccount.toBase58()
+                        : UNKNOWN_ADDRESS,
                     lpMintBalance
                         ? formatDecimal(
                               lpMintBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),

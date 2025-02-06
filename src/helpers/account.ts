@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import {
     encryption,
     envVars,
@@ -7,8 +7,6 @@ import {
     storage,
     STORAGE_HOLDER_SECRET_KEYS,
     STORAGE_MINT_SECRET_KEY,
-    STORAGE_RAYDIUM_LP_MINT,
-    STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
 
 export async function importDevKeypair(path: string): Promise<Keypair> {
@@ -25,7 +23,7 @@ export function generateMintKeypair(): Keypair {
     const encryptedMint = encryption.encrypt(JSON.stringify(Array.from(mint.secretKey)));
     storage.set(STORAGE_MINT_SECRET_KEY, encryptedMint);
     storage.save();
-    logger.debug("Mint %s saved to storage as encrypted", mint.publicKey.toBase58());
+    logger.debug("Mint %s saved to storage", mint.publicKey.toBase58());
 
     return mint;
 }
@@ -78,26 +76,4 @@ export function importHolderKeypairs(): Keypair[] {
     }
 
     return holders;
-}
-
-export function importRaydiumPoolId(): PublicKey | null {
-    const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
-    if (!raydiumPoolId) {
-        logger.debug("Raydium pool id not imported");
-        return null;
-    }
-
-    logger.debug("Raydium pool id %s imported", raydiumPoolId);
-    return new PublicKey(raydiumPoolId);
-}
-
-export function importRaydiumLpMintPublicKey(): PublicKey | null {
-    const raydimLpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
-    if (!raydimLpMint) {
-        logger.debug("Raydium LP mint not imported");
-        return null;
-    }
-
-    logger.debug("Raydium LP mint %s imported", raydimLpMint);
-    return new PublicKey(raydimLpMint);
 }

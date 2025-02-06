@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     AuthorityType,
@@ -16,7 +17,9 @@ import {
     TYPE_SIZE,
 } from "@solana/spl-token";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
+import { generateMintKeypair, importDevKeypair, importMintKeypair } from "../helpers/account";
+import { sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { checkIfStorageExists } from "../helpers/validation";
 import {
     connection,
     envVars,
@@ -28,9 +31,6 @@ import {
     STORAGE_MINT_IMAGE_URI,
     STORAGE_MINT_METADATA,
 } from "../modules";
-import { generateMintKeypair, importDevKeypair } from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/filesystem";
-import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 
 interface OffchainTokenMetadata {
     name: string;
@@ -49,13 +49,18 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
     try {
         await checkIfStorageExists();
 
+        let mint = importMintKeypair();
+        if (mint) {
+            throw new Error(`Mint ${mint.publicKey.toBase58()} already created`);
+        }
+
         const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
-        const mint = generateMintKeypair();
+        mint = generateMintKeypair();
 
         const imageUri = await uploadImage();
         const metadata = await uploadMetadata(imageUri);
 
-        await createToken(metadata, dev, mint);
+        await createMint(metadata, dev, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -65,7 +70,7 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
 async function uploadImage(): Promise<string> {
     let imageUri = storage.get<string>(STORAGE_MINT_IMAGE_URI);
     if (imageUri) {
-        logger.info("Mint image URI loaded from storage");
+        logger.debug("Mint image URI loaded from storage");
         return imageUri;
     }
 
@@ -89,7 +94,7 @@ async function uploadImage(): Promise<string> {
 async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> {
     let metadata = storage.get<OffchainTokenMetadata>(STORAGE_MINT_METADATA);
     if (metadata) {
-        logger.info("Mint metadata loaded from storage");
+        logger.debug("Mint metadata loaded from storage");
         return metadata;
     }
 
@@ -119,7 +124,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
     return metadata;
 }
 
-async function createToken(
+async function createMint(
     offchainMetadata: OffchainTokenMetadata,
     dev: Keypair,
     mint: Keypair
@@ -160,14 +165,14 @@ async function createToken(
             lamports: mintLamports,
             programId: TOKEN_2022_PROGRAM_ID,
         }),
-        // Initialize the metadata pointer extension
+        // Initialize the metadata pointer for the mint account
         createInitializeMetadataPointerInstruction(
             mint.publicKey,
             null,
             mint.publicKey,
             TOKEN_2022_PROGRAM_ID
         ),
-        // Initialize mint account with data
+        // Initialize the mint account
         createInitializeMintInstruction(
             mint.publicKey,
             envVars.TOKEN_DECIMALS,
@@ -175,7 +180,7 @@ async function createToken(
             null,
             TOKEN_2022_PROGRAM_ID
         ),
-        // Initialize metadata account with data
+        // Initialize the metadata account
         createInitializeInstruction({
             mint: mint.publicKey,
             mintAuthority: dev.publicKey,
@@ -195,7 +200,7 @@ async function createToken(
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         ),
-        // Mint tokens to the associated token account of the owner
+        // Mint to the associated token account of the owner
         createMintToInstruction(
             mint.publicKey,
             associatedTokenAccount,
@@ -218,6 +223,6 @@ async function createToken(
     await sendAndConfirmVersionedTransaction(
         instructions,
         [dev, mint],
-        `to create token ${mint.publicKey.toBase58()}`
+        `to create mint ${mint.publicKey.toBase58()}`
     );
 }

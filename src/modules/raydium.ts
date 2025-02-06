@@ -2,8 +2,8 @@ import { Cluster, clusterApiUrl, Connection, Keypair } from "@solana/web3.js";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 
 export async function loadRaydium(
-    cluster: Cluster,
     connection: Connection,
+    cluster: Cluster,
     owner?: Keypair
 ): Promise<Raydium> {
     if (cluster !== "devnet" && cluster !== "mainnet-beta") {
@@ -20,7 +20,7 @@ export async function loadRaydium(
         disableFeatureCheck: true,
         disableLoadToken: true,
         blockhashCommitment: "confirmed",
-        apiRequestInterval: 0, // use fresh data
-        apiRequestTimeout: 30_000, // ms
+        apiRequestInterval: 0,
+        apiRequestTimeout: 30_000,
     });
 }

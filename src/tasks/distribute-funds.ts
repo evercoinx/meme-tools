@@ -6,11 +6,11 @@ import {
 } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { connection, envVars, logger } from "../modules";
 import { generateHolderKeypairs, importDevKeypair, importHolderKeypairs } from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
 import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { checkIfStorageExists } from "../helpers/validation";
+import { connection, envVars, logger } from "../modules";
 
 (async () => {
     try {
