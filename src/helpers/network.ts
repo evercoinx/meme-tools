@@ -2,8 +2,10 @@ import {
     Keypair,
     LAMPORTS_PER_SOL,
     MessageV0,
+    sendAndConfirmTransaction,
     SendOptions,
     SystemProgram,
+    Transaction,
     TransactionInstruction,
     TransactionMessage,
     VersionedTransaction,
@@ -103,6 +105,25 @@ export async function getWrapSolInsturctions(
     }
 
     return instructions;
+}
+
+export async function sendAndConfirmLegacyTransaction(
+    instructions: TransactionInstruction[],
+    signers: Keypair[],
+    logMessage: string,
+    sendOptions?: SendOptions
+): Promise<void> {
+    const transaction = new Transaction();
+    transaction.add(...instructions);
+
+    logger.info(`Sending transaction ${logMessage}`);
+    const signature = await sendAndConfirmTransaction(
+        connection,
+        transaction,
+        signers,
+        sendOptions
+    );
+    logger.info("Transaction confirmed: %s", explorer.generateTransactionUri(signature));
 }
 
 export async function sendAndConfirmVersionedTransaction(

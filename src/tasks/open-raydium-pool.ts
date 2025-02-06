@@ -20,7 +20,7 @@ import BN from "bn.js";
 import Decimal from "decimal.js";
 import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
-import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { getWrapSolInsturctions, sendAndConfirmLegacyTransaction } from "../helpers/network";
 import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
 import {
     connection,
@@ -187,7 +187,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[PublicKey, Publ
         },
     });
 
-    await sendAndConfirmVersionedTransaction(
+    await sendAndConfirmLegacyTransaction(
         [...wrapSolInstructions, ...createPoolInstructions],
         [dev],
         `to create pool ${poolId.toBase58()}`,
@@ -240,7 +240,7 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<void> {
         ),
     ];
 
-    await sendAndConfirmVersionedTransaction(
+    await sendAndConfirmLegacyTransaction(
         instructions,
         [dev],
         `to burn LP mint ${lpMint.toBase58()} for ${dev.publicKey.toBase58()}`,
@@ -292,7 +292,7 @@ async function swapSolToToken(
             10 ** envVars.TOKEN_DECIMALS
         );
         transactions.push(
-            sendAndConfirmVersionedTransaction(
+            sendAndConfirmLegacyTransaction(
                 instructions,
                 [holder],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`,
