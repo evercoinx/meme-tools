@@ -1,12 +1,8 @@
 import {
-    ApiV3PoolInfoStandardItemCpmm,
     ApiV3Token,
-    CpmmKeys,
-    CpmmRpcData,
     CREATE_CPMM_POOL_FEE_ACC,
     CREATE_CPMM_POOL_PROGRAM,
     CurveCalculator,
-    DEV_CREATE_CPMM_POOL_PROGRAM,
     DEVNET_PROGRAM_ID,
     getCpmmPdaAmmConfigId,
     TxVersion,
@@ -34,17 +30,9 @@ import {
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
-import { loadRaydium } from "../modules/raydium";
+import { CpmmPoolInfo, loadRaydiumPoolInfo, loadRaydium } from "../modules/raydium";
 
 type Token = Pick<ApiV3Token, "address" | "programId" | "symbol" | "name" | "decimals">;
-
-interface CpmmPoolInfo {
-    poolInfo: ApiV3PoolInfoStandardItemCpmm;
-    poolKeys?: CpmmKeys;
-    baseReserve: BN;
-    quoteReserve: BN;
-    tradeFee: BN;
-}
 
 const SLIPPAGE = 0.15;
 
@@ -67,7 +55,7 @@ const SLIPPAGE = 0.15;
         const eligibleHolders = await findEligibleHolders(holders, mint);
 
         const [poolId, lpMint] = await createPool(dev, mint);
-        const poolInfo = await loadPoolInfo(poolId, mint);
+        const poolInfo = await loadRaydiumPoolInfo(poolId, mint);
 
         await swapSolToToken(poolInfo, amounts, eligibleHolders);
 
@@ -253,56 +241,6 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<void> {
         [dev],
         `to burn LP mint ${lpMint.toBase58()} for ${dev.publicKey.toBase58()}`
     );
-}
-
-async function loadPoolInfo(poolId: PublicKey, mint: Keypair): Promise<CpmmPoolInfo> {
-    const raydium = await loadRaydium(connection, envVars.CLUSTER);
-    let poolInfo: ApiV3PoolInfoStandardItemCpmm;
-    let poolKeys: CpmmKeys | undefined;
-    let rpcData: CpmmRpcData;
-    let programId: string;
-
-    if (raydium.cluster === "devnet") {
-        const data = await raydium.cpmm.getPoolInfoFromRpc(poolId.toBase58());
-        poolInfo = data.poolInfo;
-        poolKeys = data.poolKeys;
-        rpcData = data.rpcData;
-        programId = DEV_CREATE_CPMM_POOL_PROGRAM.toBase58();
-    } else {
-        const results = await Promise.all([
-            raydium.api.fetchPoolById({ ids: poolId.toBase58() }),
-            raydium.cpmm.getRpcPoolInfo(poolId.toBase58(), true),
-        ]);
-        poolInfo = results[0][0] as ApiV3PoolInfoStandardItemCpmm;
-        rpcData = results[1];
-        programId = CREATE_CPMM_POOL_PROGRAM.toBase58();
-    }
-
-    if (programId !== poolInfo.programId) {
-        throw new Error(`Not Raydium CPMM pool. Program id: ${poolInfo.programId}`);
-    }
-
-    const poolMints = [NATIVE_MINT.toBase58(), mint.publicKey.toBase58()];
-    if (
-        !poolMints.includes(poolInfo.mintA.address) ||
-        !poolMints.includes(poolInfo.mintB.address)
-    ) {
-        throw new Error(
-            `Invalid mints in Raydium pool: ${poolInfo.mintA.address}/${poolInfo.mintB.address}`
-        );
-    }
-
-    if (typeof rpcData.configInfo === "undefined") {
-        throw new Error("Missing Raydium config info");
-    }
-
-    return {
-        poolInfo,
-        poolKeys,
-        baseReserve: rpcData.baseReserve,
-        quoteReserve: rpcData.quoteReserve,
-        tradeFee: rpcData.configInfo.tradeFeeRate,
-    };
 }
 
 async function swapSolToToken(
