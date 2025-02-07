@@ -6,7 +6,11 @@ import {
 } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { generateHolderKeypairs, importDevKeypair, importHolderKeypairs } from "../helpers/account";
+import {
+    generateHolderKeypairs,
+    importHolderKeypairs,
+    importLocalKeypair,
+} from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
 import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists } from "../helpers/validation";
@@ -14,24 +18,24 @@ import { connection, envVars, logger } from "../modules";
 
 (async () => {
     try {
-        const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
+        const distributor = await importLocalKeypair(
+            envVars.DISTRIBUTOR_KEYPAIR_PATH,
+            "distributor"
+        );
 
         const storageExists = await checkIfStorageExists(true);
-        const holders = storageExists ? importHolderKeypairs() : generateHolderKeypairs();
+        const holders = storageExists
+            ? importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length)
+            : generateHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
 
         const amountsToWrap = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
-        if (holders.length !== amountsToWrap.length) {
-            throw new Error(
-                `Holders count and their shares mismatch: ${holders.length} != ${amountsToWrap.length}`
-            );
-        }
 
         await distributeSol(
             amountsToWrap,
             new Decimal(envVars.HOLDER_COMPUTE_BUDGET_SOL),
-            dev,
+            distributor,
             holders
         );
 
@@ -45,7 +49,7 @@ import { connection, envVars, logger } from "../modules";
 async function distributeSol(
     amountsToWrap: Decimal[],
     computeBudget: Decimal,
-    dev: Keypair,
+    distributor: Keypair,
     holders: Keypair[]
 ): Promise<void> {
     const computeBudgetLamports = computeBudget.mul(LAMPORTS_PER_SOL);
@@ -63,7 +67,7 @@ async function distributeSol(
                 computeBudgetLamports.sub(solBalance);
             instructions.push(
                 SystemProgram.transfer({
-                    fromPubkey: dev.publicKey,
+                    fromPubkey: distributor.publicKey,
                     toPubkey: holder.publicKey,
                     lamports: residualComputeBudgetLamports.toNumber(),
                 })
@@ -99,7 +103,7 @@ async function distributeSol(
             residualLamportsToWrap = lamportsToWrap.sub(wsolBalance);
             instructions.push(
                 SystemProgram.transfer({
-                    fromPubkey: dev.publicKey,
+                    fromPubkey: distributor.publicKey,
                     toPubkey: holder.publicKey,
                     lamports: residualLamportsToWrap.toNumber(),
                 })
@@ -120,7 +124,7 @@ async function distributeSol(
     if (instructions.length > 0) {
         await sendAndConfirmVersionedTransaction(
             instructions,
-            [dev],
+            [distributor],
             `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`
         );
     }

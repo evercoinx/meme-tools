@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     AuthorityType,
@@ -16,8 +15,9 @@ import {
     TOKEN_2022_PROGRAM_ID,
     TYPE_SIZE,
 } from "@solana/spl-token";
+import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import { generateMintKeypair, importDevKeypair, importMintKeypair } from "../helpers/account";
+import { generateMintKeypair, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists } from "../helpers/validation";
 import {
@@ -54,7 +54,7 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
             throw new Error(`Mint ${mint.publicKey.toBase58()} already created`);
         }
 
-        const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
+        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
         mint = generateMintKeypair();
 
         const imageUri = await uploadImage();

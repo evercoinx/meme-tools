@@ -2,18 +2,22 @@ import fs from "node:fs/promises";
 import { Keypair } from "@solana/web3.js";
 import {
     encryption,
-    envVars,
     logger,
     storage,
     STORAGE_HOLDER_SECRET_KEYS,
     STORAGE_MINT_SECRET_KEY,
 } from "../modules";
 
-export async function importDevKeypair(path: string): Promise<Keypair> {
+export async function importLocalKeypair(path: string, id: string): Promise<Keypair> {
     const secretKey: number[] = JSON.parse(await fs.readFile(path, "utf8"));
-    const dev = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-    logger.debug("Dev %s imported", dev.publicKey.toBase58());
-    return dev;
+    const account = Keypair.fromSecretKey(Uint8Array.from(secretKey));
+    logger.debug(
+        "%s%s %s imported",
+        id.slice(0, 1).toUpperCase(),
+        id.slice(1),
+        account.publicKey.toBase58()
+    );
+    return account;
 }
 
 export function generateMintKeypair(): Keypair {
@@ -41,10 +45,10 @@ export function importMintKeypair(): Keypair | null {
     return mint;
 }
 
-export function generateHolderKeypairs(): Keypair[] {
+export function generateHolderKeypairs(holderCount: number): Keypair[] {
     const holders: Keypair[] = [];
 
-    for (let i = 0; i < envVars.HOLDER_SHARE_POOL_PERCENTS.length; i++) {
+    for (let i = 0; i < holderCount; i++) {
         const holder = Keypair.generate();
         logger.info("Holder %s generated", holder.publicKey.toBase58());
 
@@ -59,10 +63,10 @@ export function generateHolderKeypairs(): Keypair[] {
     return holders;
 }
 
-export function importHolderKeypairs(): Keypair[] {
+export function importHolderKeypairs(holderCount: number): Keypair[] {
     const holders: Keypair[] = [];
 
-    for (let i = 0; i < envVars.HOLDER_SHARE_POOL_PERCENTS.length; i++) {
+    for (let i = 0; i < holderCount; i++) {
         const encryptedSecretKey = storage.get<string>(STORAGE_HOLDER_SECRET_KEYS[i]);
         if (!encryptedSecretKey) {
             throw new Error("Holder secret key not loaded from storage");

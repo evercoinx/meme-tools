@@ -7,7 +7,7 @@ import {
 } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
+import { importLocalKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
 import { checkIfStorageExists } from "../helpers/validation";
 import {
@@ -25,11 +25,15 @@ const UNKNOWN_ADDRESS = "?".repeat(44);
     try {
         await checkIfStorageExists();
 
-        const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
-        const holders = importHolderKeypairs();
+        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
+        const distributor = await importLocalKeypair(
+            envVars.DISTRIBUTOR_KEYPAIR_PATH,
+            "distributor"
+        );
+        const holders = importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
         const mint = importMintKeypair();
 
-        for (const [i, account] of [dev, ...holders].entries()) {
+        for (const [i, account] of [dev, distributor, ...holders].entries()) {
             const isDev = i === 0;
             const solBalance = new Decimal(await connection.getBalance(account.publicKey));
             const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(

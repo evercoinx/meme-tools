@@ -1,4 +1,4 @@
-import { FlatCache, create } from "flat-cache";
+import { create, FlatCache } from "flat-cache";
 
 export function createStorage(dirPath: string, id: string): FlatCache {
     return create({

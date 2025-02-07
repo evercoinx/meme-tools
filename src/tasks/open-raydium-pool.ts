@@ -20,7 +20,7 @@ import {
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { importDevKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
+import { importHolderKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
 import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
@@ -42,13 +42,13 @@ const SLIPPAGE = 0.15;
 
         await checkIfStorageExists();
 
-        const dev = await importDevKeypair(envVars.DEV_KEYPAIR_PATH);
+        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
         const mint = importMintKeypair();
         if (!mint) {
             throw new Error("Mint not imported");
         }
 
-        const holders = importHolderKeypairs();
+        const holders = importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
         const amounts = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
@@ -67,7 +67,7 @@ const SLIPPAGE = 0.15;
         );
 
         await Promise.all([sendCreatePoolTransaction]);
-        await Promise.all([sendSwapSolToTokenTransactions, sendBurnLpMintTransaction]);
+        await Promise.all([...sendSwapSolToTokenTransactions, sendBurnLpMintTransaction]);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);

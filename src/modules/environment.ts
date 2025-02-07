@@ -9,6 +9,7 @@ interface EnvironmentSchema {
     CLUSTER: Cluster;
     EXPLORER_URI: string;
     DEV_KEYPAIR_PATH: string;
+    DISTRIBUTOR_KEYPAIR_PATH: string;
     KEYRING_SECRET: string;
     TOKEN_SYMBOL: string;
     TOKEN_DECIMALS: number;
@@ -18,6 +19,8 @@ interface EnvironmentSchema {
     HOLDER_SHARE_POOL_PERCENTS: number[];
     HOLDER_COMPUTE_BUDGET_SOL: number;
 }
+
+const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()
@@ -48,8 +51,12 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Solana explorer URI"),
             DEV_KEYPAIR_PATH: Joi.string()
                 .required()
-                .pattern(/^\/([\w.-]+\/?)*$/)
+                .pattern(FILE_PATH_PATTERN)
                 .description("Dev keypair path"),
+            DISTRIBUTOR_KEYPAIR_PATH: Joi.string()
+                .required()
+                .pattern(FILE_PATH_PATTERN)
+                .description("Distributor keypair path"),
             KEYRING_SECRET: Joi.string()
                 .required()
                 .pattern(/^[0-9a-z]{32}$/)
