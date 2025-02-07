@@ -32,10 +32,10 @@ export function generateMintKeypair(): Keypair {
     return mint;
 }
 
-export function importMintKeypair(): Keypair | null {
+export function importMintKeypair(): Keypair | undefined {
     const encryptedSecretKey = storage.get<string>(STORAGE_MINT_SECRET_KEY);
     if (!encryptedSecretKey) {
-        return null;
+        return;
     }
 
     const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
