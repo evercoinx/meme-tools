@@ -125,7 +125,8 @@ async function distributeSol(
         await sendAndConfirmVersionedTransaction(
             instructions,
             [distributor],
-            `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`
+            `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`,
+            envVars.PRIORITY_FEE_MICROLAMPORTS
         );
     }
 }
@@ -139,7 +140,8 @@ async function wrapSol(amounts: Decimal[], holders: Keypair[]): Promise<void> {
                 sendAndConfirmVersionedTransaction(
                     instructions,
                     [holder],
-                    `to wrap ${formatDecimal(amounts[i])} SOL for ${holder.publicKey.toBase58()}`
+                    `to wrap ${formatDecimal(amounts[i])} SOL for ${holder.publicKey.toBase58()}`,
+                    envVars.PRIORITY_FEE_MICROLAMPORTS
                 )
             );
         }

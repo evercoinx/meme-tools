@@ -223,6 +223,7 @@ async function createMint(
     await sendAndConfirmVersionedTransaction(
         instructions,
         [dev, mint],
-        `to create mint ${mint.publicKey.toBase58()}`
+        `to create mint ${mint.publicKey.toBase58()}`,
+        envVars.PRIORITY_FEE_MICROLAMPORTS
     );
 }
