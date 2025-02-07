@@ -43,6 +43,8 @@ const UNKNOWN_ADDRESS = "?".repeat(44);
 async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
     for (const [i, account] of accounts.entries()) {
         const isDev = i === 0;
+        const isDistributor = i === 1;
+
         const solBalance = new Decimal(await connection.getBalance(account.publicKey));
         const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
             NATIVE_MINT,
@@ -137,8 +139,8 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             );
         } else {
             logger.info(
-                "Funds info (%s)\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s",
-                `Holder #${i - 1}`,
+                "Funds (%s)\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s",
+                isDistributor ? "Distributor" : `Holder #${i - 2}`,
                 ...logParams
             );
         }

@@ -19,7 +19,7 @@ export function formatCurrency(value: NumberLike) {
     }).format(value);
 }
 
-export function formatDecimal(value: NumberLike, decimalPlaces = 4) {
+export function formatDecimal(value: NumberLike, decimalPlaces = 9) {
     if (Decimal.isDecimal(value)) {
         value = value.toNumber();
     } else if (value instanceof BN) {
