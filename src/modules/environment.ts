@@ -103,7 +103,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .optional()
                 .integer()
                 .min(0)
-                .max(100_00)
+                .max(1_000_000)
                 .default(0)
                 .description("Priority fee (in microlamports"),
         })

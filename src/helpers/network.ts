@@ -21,7 +21,7 @@ import {
 import Decimal from "decimal.js";
 import { connection, explorer, logger } from "../modules";
 
-export async function getWrapSolInsturctions(
+export async function getWrapSolInstructions(
     amount: Decimal,
     owner: Keypair
 ): Promise<TransactionInstruction[]> {

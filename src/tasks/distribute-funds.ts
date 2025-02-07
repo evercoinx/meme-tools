@@ -12,7 +12,7 @@ import {
     importLocalKeypair,
 } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
-import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { getWrapSolInstructions, sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists } from "../helpers/validation";
 import { connection, envVars, logger } from "../modules";
 
@@ -32,14 +32,17 @@ import { connection, envVars, logger } from "../modules";
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
 
-        await distributeSol(
+        const sendDistrubuteSolTransaction = await distributeSol(
             amountsToWrap,
             new Decimal(envVars.HOLDER_COMPUTE_BUDGET_SOL),
             distributor,
             holders
         );
 
-        await wrapSol(amountsToWrap, holders);
+        const sendWrapSolTransactions = await wrapSol(amountsToWrap, holders);
+
+        await Promise.all([sendDistrubuteSolTransaction]);
+        await Promise.all(sendWrapSolTransactions);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -51,7 +54,7 @@ async function distributeSol(
     computeBudget: Decimal,
     distributor: Keypair,
     holders: Keypair[]
-): Promise<void> {
+): Promise<Promise<void>> {
     const computeBudgetLamports = computeBudget.mul(LAMPORTS_PER_SOL);
     const instructions: TransactionInstruction[] = [];
     let totalLamportsToDistribute = new Decimal(0);
@@ -121,20 +124,21 @@ async function distributeSol(
             .add(residualLamportsToWrap);
     }
 
-    if (instructions.length > 0) {
-        await sendAndConfirmVersionedTransaction(
-            instructions,
-            [distributor],
-            `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`,
-            envVars.PRIORITY_FEE_MICROLAMPORTS
-        );
-    }
+    return instructions.length > 0
+        ? sendAndConfirmVersionedTransaction(
+              instructions,
+              [distributor],
+              `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`,
+              envVars.PRIORITY_FEE_MICROLAMPORTS
+          )
+        : Promise.resolve();
 }
 
-async function wrapSol(amounts: Decimal[], holders: Keypair[]): Promise<void> {
+async function wrapSol(amounts: Decimal[], holders: Keypair[]): Promise<Promise<void>[]> {
     const transactions: Promise<void>[] = [];
+
     for (const [i, holder] of holders.entries()) {
-        const instructions = await getWrapSolInsturctions(amounts[i], holder);
+        const instructions = await getWrapSolInstructions(amounts[i], holder);
         if (instructions.length > 0) {
             transactions.push(
                 sendAndConfirmVersionedTransaction(
@@ -147,5 +151,5 @@ async function wrapSol(amounts: Decimal[], holders: Keypair[]): Promise<void> {
         }
     }
 
-    await Promise.all(transactions);
+    return transactions;
 }

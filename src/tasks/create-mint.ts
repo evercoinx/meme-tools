@@ -53,14 +53,15 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
         if (mint) {
             throw new Error(`Mint ${mint.publicKey.toBase58()} already created`);
         }
+        mint = generateMintKeypair();
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
-        mint = generateMintKeypair();
 
         const imageUri = await uploadImage();
         const metadata = await uploadMetadata(imageUri);
 
-        await createMint(metadata, dev, mint);
+        const sendCreateMintTransaction = await createMint(metadata, dev, mint);
+        await Promise.all([sendCreateMintTransaction]);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -128,7 +129,7 @@ async function createMint(
     offchainMetadata: OffchainTokenMetadata,
     dev: Keypair,
     mint: Keypair
-): Promise<void> {
+): Promise<Promise<void>> {
     const metadata: TokenMetadata = {
         mint: mint.publicKey,
         updateAuthority: PublicKey.default,
@@ -220,7 +221,7 @@ async function createMint(
         ),
     ];
 
-    await sendAndConfirmVersionedTransaction(
+    return sendAndConfirmVersionedTransaction(
         instructions,
         [dev, mint],
         `to create mint ${mint.publicKey.toBase58()}`,

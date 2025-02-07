@@ -22,7 +22,7 @@ import BN from "bn.js";
 import Decimal from "decimal.js";
 import { importHolderKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
-import { getWrapSolInsturctions, sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { getWrapSolInstructions, sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
 import {
     connection,
@@ -175,7 +175,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
             .toFixed(0)
     );
 
-    const wrapSolInstructions = await getWrapSolInsturctions(
+    const wrapSolInstructions = await getWrapSolInstructions(
         new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL),
         dev
     );
