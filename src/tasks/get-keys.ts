@@ -25,20 +25,29 @@ import { envVars, logger, UNKNOWN_KEY } from "../modules";
 })();
 
 function getKeys(dev: Keypair, distributor: Keypair, holders: Keypair[], mint?: Keypair): void {
-    const holderOutputs = [];
+    logger.info(
+        "Dev keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
+        dev.publicKey.toBase58(),
+        bs58.encode(dev.secretKey)
+    );
+
+    logger.info(
+        "Distributor keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
+        distributor.publicKey.toBase58(),
+        bs58.encode(distributor.secretKey)
+    );
+
     for (const [i, holder] of holders.entries()) {
-        holderOutputs.push(
-            `Holder #${i} (storage)\n\t\tPublic key: ${holder.publicKey.toBase58()}\n\t\tSecret key: ${bs58.encode(holder.secretKey)}\n\n\t\t`
+        logger.info(
+            "Holder #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n\n\t\t",
+            i,
+            holder.publicKey.toBase58(),
+            bs58.encode(holder.secretKey)
         );
     }
 
     logger.info(
-        "Keys\n\t\tDev (local)\n\t\tPublic key: %s\n\t\tSecret key: %s\n\n\t\tDistributor (local)\n\t\tPublic key: %s\n\t\tSecret key: %s\n\n\t\t%sMint (storage)\n\t\tPublic key: %s\n\t\tSecret key: %s\n",
-        dev.publicKey.toBase58(),
-        bs58.encode(dev.secretKey),
-        distributor.publicKey.toBase58(),
-        bs58.encode(distributor.secretKey),
-        holderOutputs.join(""),
+        "Mint keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         mint ? mint.publicKey.toBase58() : UNKNOWN_KEY,
         mint ? bs58.encode(mint.secretKey) : UNKNOWN_KEY
     );

@@ -53,11 +53,16 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
 
-        const wsolTokenAccountBalance = await connection.getTokenAccountBalance(
-            wsolAssociatedTokenAccount,
-            "confirmed"
-        );
-        const wsolBalance = new Decimal(wsolTokenAccountBalance.value.amount.toString());
+        let wsolBalance: Decimal | null = null;
+        try {
+            const wsolTokenAccountBalance = await connection.getTokenAccountBalance(
+                wsolAssociatedTokenAccount,
+                "confirmed"
+            );
+            wsolBalance = new Decimal(wsolTokenAccountBalance.value.amount.toString());
+        } catch {
+            // Ignore TokenAccountNotFoundError error
+        }
 
         let mintAssociatedTokenAccount: PublicKey | null = null;
         let mintBalance: Decimal | null = null;
@@ -122,8 +127,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             }
 
             logger.info(
-                "Funds (%s)\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s",
-                "Dev",
+                "Dev funds\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s\n",
                 ...logParams,
                 lpMintAssociatedTokenAccount
                     ? lpMintAssociatedTokenAccount.toBase58()
@@ -138,7 +142,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             );
         } else {
             logger.info(
-                "Funds (%s)\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s",
+                "%s funds\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n",
                 isDistributor ? "Distributor" : `Holder #${i - 2}`,
                 ...logParams
             );
