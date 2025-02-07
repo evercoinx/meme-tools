@@ -55,6 +55,8 @@ const SLIPPAGE = 0.15;
         );
         const eligibleHolders = await findEligibleHolders(holders, mint);
 
+        await prioritizationFees.fetchFees();
+
         const [sendCreatePoolTransaction, poolInfo] = await createPool(dev, mint);
 
         const sendSwapSolToTokenTransactions = await swapSolToToken(
@@ -62,15 +64,16 @@ const SLIPPAGE = 0.15;
             amounts,
             eligibleHolders
         );
+
+        await Promise.all([sendCreatePoolTransaction]);
+        await Promise.all([...sendSwapSolToTokenTransactions]);
+
         const sendBurnLpMintTransaction = await burnLpMint(
             new PublicKey(poolInfo.poolInfo.lpMint.address),
             dev
         );
 
-        await prioritizationFees.fetchFees();
-
-        await Promise.all([sendCreatePoolTransaction]);
-        await Promise.all([...sendSwapSolToTokenTransactions, sendBurnLpMintTransaction]);
+        await Promise.all([sendBurnLpMintTransaction]);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);

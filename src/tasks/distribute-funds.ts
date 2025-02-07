@@ -32,6 +32,8 @@ import { connection, envVars, logger, prioritizationFees } from "../modules";
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
 
+        await prioritizationFees.fetchFees();
+
         const sendDistrubuteSolTransaction = await distributeSol(
             amountsToWrap,
             new Decimal(envVars.HOLDER_COMPUTE_BUDGET_SOL),
@@ -39,8 +41,6 @@ import { connection, envVars, logger, prioritizationFees } from "../modules";
             holders
         );
         const sendWrapSolTransactions = await wrapSol(amountsToWrap, holders);
-
-        await prioritizationFees.fetchFees();
 
         await Promise.all([sendDistrubuteSolTransaction]);
         await Promise.all(sendWrapSolTransactions);

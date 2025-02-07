@@ -85,18 +85,15 @@ export async function sendAndConfirmVersionedTransaction(
     prioritizationFee: number,
     sendOptions?: SendOptions
 ): Promise<void> {
-    logger.info(`Sending transaction ${logMessage}`);
-
     if (prioritizationFee > 0) {
         instructions.unshift(
             ComputeBudgetProgram.setComputeUnitPrice({
                 microLamports: prioritizationFee,
             })
         );
-        logger.debug("Prioritization fee set to %s microlamports", prioritizationFee);
-    } else {
-        logger.debug("Prioritization fee not set");
     }
+
+    logger.info("Sending transaction %s. Prioritization fee: %d", logMessage, prioritizationFee);
 
     const payer = signers[0];
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();

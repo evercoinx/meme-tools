@@ -61,10 +61,9 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
         const imageUri = await uploadImage();
         const metadata = await uploadMetadata(imageUri);
 
-        const sendCreateMintTransaction = await createMint(metadata, dev, mint);
-
         await prioritizationFees.fetchFees();
 
+        const sendCreateMintTransaction = await createMint(metadata, dev, mint);
         await Promise.all([sendCreateMintTransaction]);
     } catch (err) {
         logger.fatal(err);
