@@ -17,9 +17,8 @@ import {
     RAYDIUM_LP_MINT_DECIMALS,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
+    UNKNOWN_KEY,
 } from "../modules";
-
-const UNKNOWN_ADDRESS = "?".repeat(44);
 
 (async () => {
     try {
@@ -87,7 +86,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
             wsolAssociatedTokenAccount.toBase58(),
             wsolBalance ? formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL)) : "?",
-            mintAssociatedTokenAccount ? mintAssociatedTokenAccount.toBase58() : UNKNOWN_ADDRESS,
+            mintAssociatedTokenAccount ? mintAssociatedTokenAccount.toBase58() : UNKNOWN_KEY,
             mintBalance
                 ? formatDecimal(
                       mintBalance.div(10 ** envVars.TOKEN_DECIMALS),
@@ -128,7 +127,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
                 ...logParams,
                 lpMintAssociatedTokenAccount
                     ? lpMintAssociatedTokenAccount.toBase58()
-                    : UNKNOWN_ADDRESS,
+                    : UNKNOWN_KEY,
                 lpMintBalance
                     ? formatDecimal(
                           lpMintBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),

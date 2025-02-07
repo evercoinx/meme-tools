@@ -29,11 +29,12 @@ export const STORAGE_RAYDIUM_LP_MINT = "raydium_lp_mint";
 export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 
 export const RAYDIUM_LP_MINT_DECIMALS = 9;
+export const UNKNOWN_KEY = "?".repeat(44);
 
 export const envVars = extractEnvironmentVariables();
 export const logger = createLogger(envVars.LOG_LEVEL);
 export const connection = new Connection(envVars.RPC_URI, "confirmed");
-export const encryption = new Encryption("aes-256-cbc", envVars.KEYRING_SECRET);
+export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
 export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.CLUSTER);
 export const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
 export const prioritizationFees = new PrioritizationFees();

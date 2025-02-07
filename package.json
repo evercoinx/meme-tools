@@ -16,6 +16,7 @@
         "create-mint:view": "yarn create-mint && yarn get-mint",
         "open-raydium-pool": "ts-node src/tasks/open-raydium-pool.ts",
         "open-raydium-pool:view": "yarn open-raydium-pool && yarn get-raydium-pool && yarn get-funds",
+        "get-keys": "ts-node src/tasks/get-keys.ts",
         "get-funds": "ts-node src/tasks/get-funds.ts",
         "get-mint": "ts-node src/tasks/get-mint.ts",
         "get-raydium-pool": "ts-node src/tasks/get-raydium-pool.ts"
@@ -28,6 +29,7 @@
         "@raydium-io/raydium-sdk-v2": "^0.1.111-alpha",
         "@solana/spl-token": "^0.4.9",
         "@solana/web3.js": "^1.98.0",
+        "bs58": "^6.0.0",
         "decimal.js": "^10.5.0",
         "dotenv": "^16.4.7",
         "flat-cache": "^6.1.5",
