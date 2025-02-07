@@ -6,6 +6,7 @@ import { extractEnvironmentVariables } from "./environment";
 import { Explorer } from "./explorer";
 import { createIPFS } from "./ipfs";
 import { createLogger } from "./logger";
+import { PrioritizationFees } from "./prioritization-fees";
 import { createStorage } from "./storage";
 
 dotenv.config();
@@ -35,4 +36,5 @@ export const connection = new Connection(envVars.RPC_URI, "confirmed");
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYRING_SECRET);
 export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.CLUSTER);
 export const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
+export const prioritizationFees = new PrioritizationFees();
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);

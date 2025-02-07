@@ -18,7 +18,6 @@ interface EnvironmentSchema {
     INITIAL_POOL_LIQUIDITY_SOL: number;
     HOLDER_SHARE_POOL_PERCENTS: number[];
     HOLDER_COMPUTE_BUDGET_SOL: number;
-    PRIORITY_FEE_MICROLAMPORTS: number;
 }
 
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
@@ -99,13 +98,6 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(1)
                 .max(4)
                 .description("Holder share pool (in percents)"),
-            PRIORITY_FEE_MICROLAMPORTS: Joi.number()
-                .optional()
-                .integer()
-                .min(0)
-                .max(1_000_000)
-                .default(0)
-                .description("Priority fee (in microlamports"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 

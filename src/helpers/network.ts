@@ -82,20 +82,20 @@ export async function sendAndConfirmVersionedTransaction(
     instructions: TransactionInstruction[],
     signers: Keypair[],
     logMessage: string,
-    priorityFeeMicrolamports: number,
+    prioritizationFee: number,
     sendOptions?: SendOptions
 ): Promise<void> {
     logger.info(`Sending transaction ${logMessage}`);
 
-    if (priorityFeeMicrolamports > 0) {
+    if (prioritizationFee > 0) {
         instructions.unshift(
             ComputeBudgetProgram.setComputeUnitPrice({
-                microLamports: priorityFeeMicrolamports,
+                microLamports: prioritizationFee,
             })
         );
-        logger.debug("Priority fee set to %s microlamports", priorityFeeMicrolamports);
+        logger.debug("Prioritization fee set to %s microlamports", prioritizationFee);
     } else {
-        logger.debug("Priority fee not set");
+        logger.debug("Prioritization fee not set");
     }
 
     const payer = signers[0];

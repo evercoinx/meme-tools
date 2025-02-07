@@ -28,6 +28,7 @@ import {
     connection,
     envVars,
     logger,
+    prioritizationFees,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
@@ -65,6 +66,8 @@ const SLIPPAGE = 0.15;
             new PublicKey(poolInfo.poolInfo.lpMint.address),
             dev
         );
+
+        await prioritizationFees.fetchFees();
 
         await Promise.all([sendCreatePoolTransaction]);
         await Promise.all([...sendSwapSolToTokenTransactions, sendBurnLpMintTransaction]);
@@ -207,7 +210,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
         [...wrapSolInstructions, ...createPoolInstructions],
         [dev],
         `to create pool ${poolId.toBase58()}`,
-        envVars.PRIORITY_FEE_MICROLAMPORTS,
+        prioritizationFees.averageFeeExcludingZeros,
         {
             skipPreflight: true,
             preflightCommitment: "single",
@@ -295,7 +298,7 @@ async function swapSolToToken(
                 instructions,
                 [holder],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`,
-                envVars.PRIORITY_FEE_MICROLAMPORTS,
+                prioritizationFees.averageFeeExcludingZeros,
                 {
                     skipPreflight: true,
                     preflightCommitment: "single",
@@ -345,7 +348,7 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
         instructions,
         [dev],
         `to burn LP mint ${lpMint.toBase58()} for ${dev.publicKey.toBase58()}`,
-        envVars.PRIORITY_FEE_MICROLAMPORTS,
+        prioritizationFees.medianFee,
         {
             skipPreflight: true,
             preflightCommitment: "processed",

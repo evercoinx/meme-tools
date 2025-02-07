@@ -33,9 +33,10 @@ async function getMint(mint: Keypair): Promise<void> {
     const supply = new Decimal(mintInfo.supply.toString(10)).div(10 ** mintInfo.decimals);
 
     logger.info(
-        "Mint (%s)\n\t\tAddress: %s\n\t\tSymbol: %s\n\t\tDecimals: %d\nt\tSupply: %s\n\t\tMint authority: %s\n\t\tFreeze authority: %s",
+        "Mint (%s)\n\t\tAddress: %s\n\t\tSymbol: %s\n\t\tDecimals: %d\n\t\tSupply: %s\n\t\tMint authority: %s\n\t\tFreeze authority: %s",
         envVars.CLUSTER,
         mintInfo.address,
+        envVars.TOKEN_SYMBOL,
         mintInfo.decimals,
         formatDecimal(supply, mintInfo.decimals),
         mintInfo.mintAuthority ? mintInfo.mintAuthority.toBase58() : "n/a",

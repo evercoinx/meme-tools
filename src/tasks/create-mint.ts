@@ -27,6 +27,7 @@ import {
     ipfs,
     logger,
     METADATA_DIR,
+    prioritizationFees,
     storage,
     STORAGE_MINT_IMAGE_URI,
     STORAGE_MINT_METADATA,
@@ -61,6 +62,9 @@ const generateIpfsUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ip
         const metadata = await uploadMetadata(imageUri);
 
         const sendCreateMintTransaction = await createMint(metadata, dev, mint);
+
+        await prioritizationFees.fetchFees();
+
         await Promise.all([sendCreateMintTransaction]);
     } catch (err) {
         logger.fatal(err);
@@ -225,6 +229,6 @@ async function createMint(
         instructions,
         [dev, mint],
         `to create mint ${mint.publicKey.toBase58()}`,
-        envVars.PRIORITY_FEE_MICROLAMPORTS
+        prioritizationFees.averageFeeIncludingZeros
     );
 }

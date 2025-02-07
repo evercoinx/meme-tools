@@ -14,7 +14,7 @@ import {
 import { formatDecimal } from "../helpers/format";
 import { getWrapSolInstructions, sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists } from "../helpers/validation";
-import { connection, envVars, logger } from "../modules";
+import { connection, envVars, logger, prioritizationFees } from "../modules";
 
 (async () => {
     try {
@@ -38,8 +38,9 @@ import { connection, envVars, logger } from "../modules";
             distributor,
             holders
         );
-
         const sendWrapSolTransactions = await wrapSol(amountsToWrap, holders);
+
+        await prioritizationFees.fetchFees();
 
         await Promise.all([sendDistrubuteSolTransaction]);
         await Promise.all(sendWrapSolTransactions);
@@ -129,7 +130,7 @@ async function distributeSol(
               instructions,
               [distributor],
               `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`,
-              envVars.PRIORITY_FEE_MICROLAMPORTS
+              prioritizationFees.averageFeeIncludingZeros
           )
         : Promise.resolve();
 }
@@ -145,7 +146,7 @@ async function wrapSol(amounts: Decimal[], holders: Keypair[]): Promise<Promise<
                     instructions,
                     [holder],
                     `to wrap ${formatDecimal(amounts[i])} SOL for ${holder.publicKey.toBase58()}`,
-                    envVars.PRIORITY_FEE_MICROLAMPORTS
+                    prioritizationFees.averageFeeIncludingZeros
                 )
             );
         }
