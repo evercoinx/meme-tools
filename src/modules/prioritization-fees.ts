@@ -7,11 +7,11 @@ export class PrioritizationFees {
     public medianFee: number;
     private readonly publicKey: PublicKey;
 
-    constructor(publicKey?: PublicKey) {
+    constructor(publicKey: PublicKey) {
         this.averageFeeIncludingZeros = 0;
         this.averageFeeExcludingZeros = 0;
         this.medianFee = 0;
-        this.publicKey = publicKey ?? new PublicKey("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"); // Jupiter aggregator
+        this.publicKey = publicKey;
     }
 
     public async fetchFees(): Promise<void> {

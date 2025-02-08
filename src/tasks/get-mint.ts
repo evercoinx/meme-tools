@@ -4,7 +4,7 @@ import Decimal from "decimal.js";
 import { importMintKeypair } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
 import { checkIfStorageExists } from "../helpers/validation";
-import { connection, envVars, logger } from "../modules";
+import { connection, envVars, logger, prioritizationFees } from "../modules";
 
 (async () => {
     try {
@@ -16,6 +16,10 @@ import { connection, envVars, logger } from "../modules";
         }
 
         await getMint(mint);
+        await prioritizationFees.fetchFees();
+        logger.info(prioritizationFees.averageFeeExcludingZeros);
+        logger.info(prioritizationFees.averageFeeIncludingZeros);
+        logger.info(prioritizationFees.medianFee);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);

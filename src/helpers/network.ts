@@ -19,7 +19,8 @@ import {
     VersionedTransaction,
 } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { connection, explorer, logger } from "../modules";
+import { connection, envVars, explorer, logger } from "../modules";
+import { formatDecimal } from "./format";
 
 export async function getWrapSolInstructions(
     amount: Decimal,
@@ -85,15 +86,22 @@ export async function sendAndConfirmVersionedTransaction(
     prioritizationFee: number,
     sendOptions?: SendOptions
 ): Promise<void> {
-    if (prioritizationFee > 0) {
+    const adjustedPrioritizationFee = new Decimal(prioritizationFee).mul(
+        envVars.PRIORITIZATION_FEE_ADJUSTMENT_PERCENT
+    );
+    if (adjustedPrioritizationFee.gt(0)) {
         instructions.unshift(
             ComputeBudgetProgram.setComputeUnitPrice({
-                microLamports: prioritizationFee,
+                microLamports: adjustedPrioritizationFee.toNumber(),
             })
         );
     }
 
-    logger.info("Sending transaction %s. Prioritization fee: %d", logMessage, prioritizationFee);
+    logger.info(
+        "Sending transaction %s. Prioritization fee: %s microlamports",
+        logMessage,
+        formatDecimal(adjustedPrioritizationFee, 0)
+    );
 
     const payer = signers[0];
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
