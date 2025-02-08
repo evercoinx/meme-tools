@@ -44,7 +44,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         const isDev = i === 0;
         const isDistributor = i === 1;
 
-        const solBalance = new Decimal(await connection.getBalance(account.publicKey));
+        const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
         const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
             NATIVE_MINT,
             account.publicKey,

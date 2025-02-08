@@ -7,7 +7,13 @@ import {
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, TransactionInstruction } from "@solana/web3.js";
+import {
+    Keypair,
+    LAMPORTS_PER_SOL,
+    PublicKey,
+    SystemProgram,
+    TransactionInstruction,
+} from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { importHolderKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
@@ -18,6 +24,7 @@ import {
     connection,
     envVars,
     logger,
+    MIN_REMAINING_BALANCE_LAMPORTS,
     prioritizationFees,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
@@ -35,6 +42,10 @@ const ZERO_BN = new BN(0);
         await checkIfStorageExists();
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
+        const distributor = await importLocalKeypair(
+            envVars.DISTRIBUTOR_KEYPAIR_PATH,
+            "distributor"
+        );
 
         const mint = importMintKeypair();
         if (!mint) {
@@ -45,11 +56,11 @@ const ZERO_BN = new BN(0);
 
         const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {
-            throw new Error("Raydium pool id not loaded");
+            throw new Error("Raydium pool id not loaded from storage");
         }
 
-        const raydimLpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
-        if (!raydimLpMint) {
+        const raydiumLpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
+        if (!raydiumLpMint) {
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
@@ -57,16 +68,23 @@ const ZERO_BN = new BN(0);
 
         const poolInfo = await loadRaydiumPoolInfo(new PublicKey(raydiumPoolId), mint);
         const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, holders, mint);
-        const sendCloseDevTokenAccountsTransaction = await closeDevTokenAccounts(
-            dev,
-            mint,
-            new PublicKey(raydimLpMint)
-        );
+
+        const sendCloseDevAssociatedTokenAccountsTransaction =
+            await closeDevAssociatedTokenAccounts(dev, mint, new PublicKey(raydiumLpMint));
+
+        const sendCloseHolderAssociatedTokenAccountsTransactions =
+            await closeHolderAssociatedTokenAccounts(holders, mint);
+
+        const sendHolderTransferSolTransactions = await transferHolderSol(holders, distributor);
+
+        await Promise.all(sendSwapTokenToSolTransactions);
 
         await Promise.all([
-            ...sendSwapTokenToSolTransactions,
-            sendCloseDevTokenAccountsTransaction,
+            sendCloseDevAssociatedTokenAccountsTransaction,
+            ...sendCloseHolderAssociatedTokenAccountsTransactions,
         ]);
+
+        await Promise.all(sendHolderTransferSolTransactions);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -78,10 +96,10 @@ async function swapTokenToSol(
     holders: Keypair[],
     mint: Keypair
 ): Promise<Promise<void>[]> {
-    const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
     const sendTransactions: Promise<void>[] = [];
+    const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
 
-    for (const holder of holders) {
+    for (const [i, holder] of holders.entries()) {
         const mintAssociatedTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
             holder.publicKey,
@@ -99,14 +117,21 @@ async function swapTokenToSol(
             mintBalance = new BN(mintTokenAccountBalance.value.amount.toString());
         } catch {
             logger.warn(
-                "Mint associated token account %s not exists for holder %s",
+                "%s ATA (%s) not exists for holder #%d (%s)",
+                envVars.TOKEN_SYMBOL,
                 mintAssociatedTokenAccount.toBase58(),
+                i,
                 holder.publicKey.toBase58()
             );
             continue;
         }
         if (mintBalance.eq(ZERO_BN)) {
-            logger.warn("Holder %s has 0 mint balance", holder.publicKey.toBase58());
+            logger.warn(
+                "Holder #%d (%s) has 0 %s",
+                i,
+                holder.publicKey.toBase58(),
+                envVars.TOKEN_SYMBOL
+            );
             continue;
         }
 
@@ -146,11 +171,42 @@ async function swapTokenToSol(
             )
         );
 
+        const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
+            NATIVE_MINT,
+            holder.publicKey,
+            false,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        );
+
+        const wsolAccountInfo = await connection.getAccountInfo(
+            wsolAssociatedTokenAccount,
+            "confirmed"
+        );
+        if (wsolAccountInfo) {
+            instructions.push(
+                createCloseAccountInstruction(
+                    wsolAssociatedTokenAccount,
+                    holder.publicKey,
+                    holder.publicKey,
+                    [],
+                    TOKEN_PROGRAM_ID
+                )
+            );
+        } else {
+            logger.warn(
+                "WSOL ATA (%s) not exists for holder #%d (%s)",
+                i,
+                wsolAssociatedTokenAccount.toBase58(),
+                holder.publicKey.toBase58()
+            );
+        }
+
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 instructions,
                 [holder],
-                `to swap ~${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ${formatDecimal(destinationAmount)} WSOL for ${holder.publicKey.toBase58()}`,
+                `to swap ~${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ${formatDecimal(destinationAmount)} WSOL for holder #${i} (${holder.publicKey.toBase58()})`,
                 prioritizationFees.medianFee
             )
         );
@@ -159,7 +215,7 @@ async function swapTokenToSol(
     return sendTransactions;
 }
 
-async function closeDevTokenAccounts(
+async function closeDevAssociatedTokenAccounts(
     dev: Keypair,
     mint: Keypair,
     lpMintPublicKey: PublicKey
@@ -190,7 +246,9 @@ async function closeDevTokenAccounts(
         );
     } else {
         logger.warn(
-            "Mint associated token account not exists for dev %s",
+            "%s ATA (%s) not exists for dev (%s)",
+            envVars.TOKEN_SYMBOL,
+            mint.publicKey.toBase58(),
             dev.publicKey.toBase58()
         );
     }
@@ -219,7 +277,7 @@ async function closeDevTokenAccounts(
         );
     } else {
         logger.warn(
-            "LP mint associated token account %s not exists for dev %s",
+            "LP mint ATA (%s) not exists for dev (%s)",
             lpMintAssociatedTokenAccount.toBase58(),
             dev.publicKey.toBase58()
         );
@@ -230,7 +288,133 @@ async function closeDevTokenAccounts(
         : sendAndConfirmVersionedTransaction(
               instructions,
               [dev],
-              `to close associated token accounts for dev ${dev.publicKey.toBase58()}`,
+              `to close ATAs for dev ${dev.publicKey.toBase58()}`,
               PrioritizationFees.NO_FEES
           );
+}
+
+async function closeHolderAssociatedTokenAccounts(
+    holders: Keypair[],
+    mint: Keypair
+): Promise<Promise<void>[]> {
+    const sendTransactions: Promise<void>[] = [];
+
+    for (const [i, holder] of holders.entries()) {
+        const instructions: TransactionInstruction[] = [];
+
+        const mintAssociatedTokenAccount = getAssociatedTokenAddressSync(
+            mint.publicKey,
+            holder.publicKey,
+            false,
+            TOKEN_2022_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        );
+        const mintAccountInfo = await connection.getAccountInfo(
+            mintAssociatedTokenAccount,
+            "confirmed"
+        );
+        if (mintAccountInfo) {
+            instructions.push(
+                createCloseAccountInstruction(
+                    mintAssociatedTokenAccount,
+                    holder.publicKey,
+                    holder.publicKey,
+                    [],
+                    TOKEN_2022_PROGRAM_ID
+                )
+            );
+        } else {
+            logger.warn(
+                "%s ATA (%s) not exists for holder #%d (%s)",
+                envVars.TOKEN_SYMBOL,
+                mintAssociatedTokenAccount.toBase58(),
+                i,
+                holder.publicKey.toBase58()
+            );
+        }
+
+        const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
+            NATIVE_MINT,
+            holder.publicKey,
+            false,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        );
+
+        const wsolAccountInfo = await connection.getAccountInfo(
+            wsolAssociatedTokenAccount,
+            "confirmed"
+        );
+        if (wsolAccountInfo) {
+            instructions.push(
+                createCloseAccountInstruction(
+                    wsolAssociatedTokenAccount,
+                    holder.publicKey,
+                    holder.publicKey,
+                    [],
+                    TOKEN_PROGRAM_ID
+                )
+            );
+        } else {
+            logger.warn(
+                "WSOL ATA (%s0 not exists for holder #%d (%s)",
+                wsolAssociatedTokenAccount.toBase58(),
+                i,
+                holder.publicKey.toBase58()
+            );
+        }
+
+        if (instructions.length > 0) {
+            sendTransactions.push(
+                sendAndConfirmVersionedTransaction(
+                    instructions,
+                    [holder],
+                    `to close ATAs for holder #${i} (${holder.publicKey.toBase58()})`,
+                    PrioritizationFees.NO_FEES
+                )
+            );
+        }
+    }
+
+    return sendTransactions;
+}
+
+async function transferHolderSol(
+    holders: Keypair[],
+    distributor: Keypair
+): Promise<Promise<void>[]> {
+    const sendTransactions: Promise<void>[] = [];
+
+    for (const [i, holder] of holders.entries()) {
+        const solBalance = await connection.getBalance(holder.publicKey, "confirmed");
+        if (solBalance <= MIN_REMAINING_BALANCE_LAMPORTS) {
+            logger.warn(
+                "Holder #%d (%s) has insufficient balance: %s SOL",
+                i,
+                holder.publicKey.toBase58(),
+                formatDecimal(solBalance)
+            );
+            continue;
+        }
+
+        const lamports = solBalance - MIN_REMAINING_BALANCE_LAMPORTS;
+        const instructions = [
+            SystemProgram.transfer({
+                fromPubkey: holder.publicKey,
+                toPubkey: distributor.publicKey,
+                lamports,
+            }),
+        ];
+
+        sendTransactions.push(
+            sendAndConfirmVersionedTransaction(
+                instructions,
+                [holder],
+                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from holder #${i} (${holder.publicKey.toBase58()}) to distributor (${distributor.publicKey.toBase58()})`,
+                PrioritizationFees.NO_FEES
+            )
+        );
+    }
+
+    return sendTransactions;
 }

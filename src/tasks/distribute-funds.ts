@@ -1,5 +1,6 @@
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
+    createAssociatedTokenAccountInstruction,
     getAssociatedTokenAddressSync,
     NATIVE_MINT,
     TOKEN_PROGRAM_ID,
@@ -12,7 +13,7 @@ import {
     importLocalKeypair,
 } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
-import { getWrapSolInstructions, sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists } from "../helpers/validation";
 import { connection, envVars, logger, prioritizationFees } from "../modules";
 
@@ -40,10 +41,11 @@ import { connection, envVars, logger, prioritizationFees } from "../modules";
             distributor,
             holders
         );
-        const sendWrapSolTransactions = await wrapSol(amountsToWrap, holders);
+        const sendCreateWsolAssociatedTokenAccountsTransactions =
+            await createWsolAssociatedTokenAccounts(holders);
 
         await Promise.all([sendDistrubuteSolTransaction]);
-        await Promise.all(sendWrapSolTransactions);
+        await Promise.all(sendCreateWsolAssociatedTokenAccountsTransactions);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -137,21 +139,48 @@ async function distributeSol(
         : Promise.resolve();
 }
 
-async function wrapSol(amounts: Decimal[], holders: Keypair[]): Promise<Promise<void>[]> {
+async function createWsolAssociatedTokenAccounts(holders: Keypair[]): Promise<Promise<void>[]> {
     const transactions: Promise<void>[] = [];
 
-    for (const [i, holder] of holders.entries()) {
-        const instructions = await getWrapSolInstructions(amounts[i], holder);
-        if (instructions.length > 0) {
-            transactions.push(
-                sendAndConfirmVersionedTransaction(
-                    instructions,
-                    [holder],
-                    `to wrap ${formatDecimal(amounts[i])} SOL for ${holder.publicKey.toBase58()}`,
-                    prioritizationFees.averageFeeWithZeros
-                )
+    for (const holder of holders) {
+        const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
+            NATIVE_MINT,
+            holder.publicKey,
+            false,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        );
+
+        const wsolAccountInfo = await connection.getAccountInfo(
+            wsolAssociatedTokenAccount,
+            "confirmed"
+        );
+        if (wsolAccountInfo) {
+            logger.warn(
+                "Associated token account %s exists for holder %s",
+                wsolAssociatedTokenAccount.toBase58(),
+                holder.publicKey.toBase58()
             );
+            continue;
         }
+
+        transactions.push(
+            sendAndConfirmVersionedTransaction(
+                [
+                    createAssociatedTokenAccountInstruction(
+                        holder.publicKey,
+                        wsolAssociatedTokenAccount,
+                        holder.publicKey,
+                        NATIVE_MINT,
+                        TOKEN_PROGRAM_ID,
+                        ASSOCIATED_TOKEN_PROGRAM_ID
+                    ),
+                ],
+                [holder],
+                `to create associated token account ${wsolAssociatedTokenAccount} for holder ${holder.publicKey.toBase58()}`,
+                prioritizationFees.averageFeeWithZeros
+            )
+        );
     }
 
     return transactions;

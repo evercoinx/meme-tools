@@ -29,6 +29,7 @@ export const STORAGE_HOLDER_SECRET_KEYS: Record<number, string> = {
 export const STORAGE_RAYDIUM_LP_MINT = "raydium_lp_mint";
 export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 
+export const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
 export const RAYDIUM_LP_MINT_DECIMALS = 9;
 export const UNKNOWN_KEY = "?".repeat(44);
 

@@ -43,9 +43,11 @@ export class PrioritizationFees {
         const orderedFees = nonZeroFees.sort((a, b) => a - b);
         const midIndex = Math.floor(orderedFees.length / 2);
 
-        this.medianFee =
-            orderedFees.length % 2 === 0
-                ? Math.floor((orderedFees[midIndex - 1] + orderedFees[midIndex]) / 2)
-                : orderedFees[midIndex];
+        if (orderedFees.length > 0) {
+            this.medianFee =
+                orderedFees.length % 2 === 0
+                    ? Math.floor((orderedFees[midIndex - 1] + orderedFees[midIndex]) / 2)
+                    : orderedFees[midIndex];
+        }
     }
 }
