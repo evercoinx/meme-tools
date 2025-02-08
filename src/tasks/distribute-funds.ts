@@ -16,6 +16,7 @@ import { formatDecimal } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists } from "../helpers/validation";
 import { connection, envVars, logger, prioritizationFees } from "../modules";
+import { PrioritizationFees } from "../modules/prioritization-fees";
 
 (async () => {
     try {
@@ -29,159 +30,88 @@ import { connection, envVars, logger, prioritizationFees } from "../modules";
             ? importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length)
             : generateHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
 
-        const amountsToWrap = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
-            new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
+        const amounts = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
+            new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL)
+                .mul(percent)
+                .plus(envVars.HOLDER_COMPUTE_BUDGET_SOL)
         );
 
         await prioritizationFees.fetchFees();
 
-        const sendDistrubuteSolTransaction = await distributeSol(
-            amountsToWrap,
-            new Decimal(envVars.HOLDER_COMPUTE_BUDGET_SOL),
-            distributor,
-            holders
-        );
-        const sendCreateWsolAssociatedTokenAccountsTransactions =
-            await createWsolAssociatedTokenAccounts(holders);
+        const sendDistrubuteFundsTransaction = await distributeFunds(amounts, distributor, holders);
 
-        await Promise.all([sendDistrubuteSolTransaction]);
-        await Promise.all(sendCreateWsolAssociatedTokenAccountsTransactions);
+        await Promise.all([sendDistrubuteFundsTransaction]);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-async function distributeSol(
-    amountsToWrap: Decimal[],
-    computeBudget: Decimal,
+async function distributeFunds(
+    amounts: Decimal[],
     distributor: Keypair,
     holders: Keypair[]
 ): Promise<Promise<void>> {
-    const computeBudgetLamports = computeBudget.mul(LAMPORTS_PER_SOL);
     const instructions: TransactionInstruction[] = [];
-    let totalLamportsToDistribute = new Decimal(0);
 
     for (const [i, holder] of holders.entries()) {
-        const lamportsToWrap = amountsToWrap[i].mul(LAMPORTS_PER_SOL);
-
+        const lamports = amounts[i].mul(LAMPORTS_PER_SOL);
         const solBalance = new Decimal(await connection.getBalance(holder.publicKey, "confirmed"));
 
-        let residualComputeBudgetLamports = new Decimal(0);
-        if (solBalance.lt(computeBudgetLamports)) {
-            residualComputeBudgetLamports = residualComputeBudgetLamports =
-                computeBudgetLamports.sub(solBalance);
+        if (solBalance.gte(lamports)) {
+            logger.warn(
+                "Holder #%d (%s) has sufficient balance: %s SOL",
+                i,
+                holder.publicKey.toBase58(),
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
+            );
+        } else {
+            const residualLamports = lamports.sub(solBalance);
             instructions.push(
                 SystemProgram.transfer({
                     fromPubkey: distributor.publicKey,
                     toPubkey: holder.publicKey,
-                    lamports: residualComputeBudgetLamports.toNumber(),
+                    lamports: residualLamports.toNumber(),
                 })
-            );
-        } else {
-            logger.warn(
-                "Holder %s has sufficient balance: %s SOL. Skipping",
-                holder.publicKey.toBase58(),
-                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
         }
 
-        const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
+        const wsolTokenAccount = getAssociatedTokenAddressSync(
             NATIVE_MINT,
             holder.publicKey,
             false,
             TOKEN_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
-        let wsolBalance = new Decimal(0);
 
-        try {
-            const wsolTokenAccountBalance = await connection.getTokenAccountBalance(
-                wsolAssociatedTokenAccount,
-                "confirmed"
-            );
-            wsolBalance = new Decimal(wsolTokenAccountBalance.value.amount.toString());
-        } catch {
-            // Ignore TokenAccountNotFoundError error
-        }
-
-        let residualLamportsToWrap = new Decimal(0);
-        if (wsolBalance.lt(lamportsToWrap)) {
-            residualLamportsToWrap = lamportsToWrap.sub(wsolBalance);
-
-            instructions.push(
-                SystemProgram.transfer({
-                    fromPubkey: distributor.publicKey,
-                    toPubkey: holder.publicKey,
-                    lamports: residualLamportsToWrap.toNumber(),
-                })
+        const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
+        if (wsolAccountInfo) {
+            logger.warn(
+                "WSOL ATA (%s) exists for holder #%d (%s)",
+                wsolTokenAccount.toBase58(),
+                i,
+                holder.publicKey.toBase58()
             );
         } else {
-            logger.warn(
-                "Holder %s has sufficient balance: %s WSOL",
-                holder.publicKey.toBase58(),
-                formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL))
+            instructions.push(
+                createAssociatedTokenAccountInstruction(
+                    distributor.publicKey,
+                    wsolTokenAccount,
+                    holder.publicKey,
+                    NATIVE_MINT,
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                )
             );
         }
-
-        totalLamportsToDistribute = totalLamportsToDistribute
-            .add(residualComputeBudgetLamports)
-            .add(residualLamportsToWrap);
     }
 
     return instructions.length > 0
         ? sendAndConfirmVersionedTransaction(
               instructions,
               [distributor],
-              `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`,
-              prioritizationFees.averageFeeWithZeros
+              `to distribute funds from distributor (${distributor.publicKey.toBase58()}) to ${holders.length} holders`,
+              PrioritizationFees.NO_FEES
           )
         : Promise.resolve();
-}
-
-async function createWsolAssociatedTokenAccounts(holders: Keypair[]): Promise<Promise<void>[]> {
-    const transactions: Promise<void>[] = [];
-
-    for (const holder of holders) {
-        const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
-            NATIVE_MINT,
-            holder.publicKey,
-            false,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
-
-        const wsolAccountInfo = await connection.getAccountInfo(
-            wsolAssociatedTokenAccount,
-            "confirmed"
-        );
-        if (wsolAccountInfo) {
-            logger.warn(
-                "Associated token account %s exists for holder %s",
-                wsolAssociatedTokenAccount.toBase58(),
-                holder.publicKey.toBase58()
-            );
-            continue;
-        }
-
-        transactions.push(
-            sendAndConfirmVersionedTransaction(
-                [
-                    createAssociatedTokenAccountInstruction(
-                        holder.publicKey,
-                        wsolAssociatedTokenAccount,
-                        holder.publicKey,
-                        NATIVE_MINT,
-                        TOKEN_PROGRAM_ID,
-                        ASSOCIATED_TOKEN_PROGRAM_ID
-                    ),
-                ],
-                [holder],
-                `to create associated token account ${wsolAssociatedTokenAccount} for holder ${holder.publicKey.toBase58()}`,
-                prioritizationFees.averageFeeWithZeros
-            )
-        );
-    }
-
-    return transactions;
 }

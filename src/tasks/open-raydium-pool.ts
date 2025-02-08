@@ -11,18 +11,28 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
+    createAssociatedTokenAccountInstruction,
     createBurnInstruction,
+    createSyncNativeInstruction,
+    getAccount,
     getAssociatedTokenAddressSync,
     NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
+    TokenAccountNotFoundError,
 } from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import {
+    Keypair,
+    LAMPORTS_PER_SOL,
+    PublicKey,
+    SystemProgram,
+    TransactionInstruction,
+} from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { importHolderKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
-import { getWrapSolInstructions, sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
 import {
     connection,
@@ -248,6 +258,63 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
             tradeFee: new BN(feeConfig.tradeFeeRate),
         },
     ];
+}
+
+async function getWrapSolInstructions(
+    amount: Decimal,
+    owner: Keypair
+): Promise<TransactionInstruction[]> {
+    const associatedTokenAccount = getAssociatedTokenAddressSync(
+        NATIVE_MINT,
+        owner.publicKey,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    const instructions: TransactionInstruction[] = [];
+    let wsolBalance = new Decimal(0);
+
+    try {
+        const account = await getAccount(
+            connection,
+            associatedTokenAccount,
+            "confirmed",
+            TOKEN_PROGRAM_ID
+        );
+        wsolBalance = new Decimal(account.amount.toString(10));
+    } catch (err) {
+        if (!(err instanceof TokenAccountNotFoundError)) {
+            throw err;
+        }
+
+        instructions.push(
+            createAssociatedTokenAccountInstruction(
+                owner.publicKey,
+                associatedTokenAccount,
+                owner.publicKey,
+                NATIVE_MINT,
+                TOKEN_PROGRAM_ID,
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+        );
+    }
+
+    const lamports = amount.mul(LAMPORTS_PER_SOL);
+    let residualLamports = new Decimal(0);
+    if (wsolBalance.lt(lamports)) {
+        residualLamports = lamports.sub(wsolBalance);
+        instructions.push(
+            SystemProgram.transfer({
+                fromPubkey: owner.publicKey,
+                toPubkey: associatedTokenAccount,
+                lamports: residualLamports.toNumber(),
+            }),
+            createSyncNativeInstruction(associatedTokenAccount, TOKEN_PROGRAM_ID)
+        );
+    }
+
+    return instructions;
 }
 
 async function swapSolToToken(

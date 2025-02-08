@@ -1,19 +1,7 @@
 import {
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    createAssociatedTokenAccountInstruction,
-    createSyncNativeInstruction,
-    getAccount,
-    getAssociatedTokenAddressSync,
-    NATIVE_MINT,
-    TOKEN_PROGRAM_ID,
-    TokenAccountNotFoundError,
-} from "@solana/spl-token";
-import {
     ComputeBudgetProgram,
     Keypair,
-    LAMPORTS_PER_SOL,
     SendOptions,
-    SystemProgram,
     TransactionInstruction,
     TransactionMessage,
     VersionedTransaction,
@@ -21,63 +9,6 @@ import {
 import Decimal from "decimal.js";
 import { connection, envVars, explorer, logger } from "../modules";
 import { formatDecimal } from "./format";
-
-export async function getWrapSolInstructions(
-    amount: Decimal,
-    owner: Keypair
-): Promise<TransactionInstruction[]> {
-    const associatedTokenAccount = getAssociatedTokenAddressSync(
-        NATIVE_MINT,
-        owner.publicKey,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    const instructions: TransactionInstruction[] = [];
-    let wsolBalance = new Decimal(0);
-
-    try {
-        const account = await getAccount(
-            connection,
-            associatedTokenAccount,
-            "confirmed",
-            TOKEN_PROGRAM_ID
-        );
-        wsolBalance = new Decimal(account.amount.toString(10));
-    } catch (err) {
-        if (!(err instanceof TokenAccountNotFoundError)) {
-            throw err;
-        }
-
-        instructions.push(
-            createAssociatedTokenAccountInstruction(
-                owner.publicKey,
-                associatedTokenAccount,
-                owner.publicKey,
-                NATIVE_MINT,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
-            )
-        );
-    }
-
-    const lamports = amount.mul(LAMPORTS_PER_SOL);
-    let residualLamports = new Decimal(0);
-    if (wsolBalance.lt(lamports)) {
-        residualLamports = lamports.sub(wsolBalance);
-        instructions.push(
-            SystemProgram.transfer({
-                fromPubkey: owner.publicKey,
-                toPubkey: associatedTokenAccount,
-                lamports: residualLamports.toNumber(),
-            }),
-            createSyncNativeInstruction(associatedTokenAccount, TOKEN_PROGRAM_ID)
-        );
-    }
-
-    return instructions;
-}
 
 export async function sendAndConfirmVersionedTransaction(
     instructions: TransactionInstruction[],
