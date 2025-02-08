@@ -87,7 +87,7 @@ export async function sendAndConfirmVersionedTransaction(
     sendOptions?: SendOptions
 ): Promise<void> {
     const adjustedPrioritizationFee = new Decimal(prioritizationFee).mul(
-        envVars.PRIORITIZATION_FEE_ADJUSTMENT_PERCENT
+        envVars.PRIORITIZATION_FEE_MULTIPLIER
     );
     if (adjustedPrioritizationFee.gt(0)) {
         instructions.unshift(

@@ -130,7 +130,7 @@ async function distributeSol(
               instructions,
               [distributor],
               `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL between holders`,
-              prioritizationFees.averageFeeIncludingZeros
+              prioritizationFees.averageFeeWithZeros
           )
         : Promise.resolve();
 }
@@ -146,7 +146,7 @@ async function wrapSol(amounts: Decimal[], holders: Keypair[]): Promise<Promise<
                     instructions,
                     [holder],
                     `to wrap ${formatDecimal(amounts[i])} SOL for ${holder.publicKey.toBase58()}`,
-                    prioritizationFees.averageFeeIncludingZeros
+                    prioritizationFees.averageFeeWithZeros
                 )
             );
         }

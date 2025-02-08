@@ -58,7 +58,6 @@ const SLIPPAGE = 0.15;
         await prioritizationFees.fetchFees();
 
         const [sendCreatePoolTransaction, poolInfo] = await createPool(dev, mint);
-
         const sendSwapSolToTokenTransactions = await swapSolToToken(
             poolInfo,
             amounts,
@@ -66,7 +65,7 @@ const SLIPPAGE = 0.15;
         );
 
         await Promise.all([sendCreatePoolTransaction]);
-        await Promise.all([...sendSwapSolToTokenTransactions]);
+        await Promise.all(sendSwapSolToTokenTransactions);
 
         const sendBurnLpMintTransaction = await burnLpMint(
             new PublicKey(poolInfo.poolInfo.lpMint.address),
@@ -213,11 +212,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
         [...wrapSolInstructions, ...createPoolInstructions],
         [dev],
         `to create pool ${poolId.toBase58()}`,
-        prioritizationFees.averageFeeExcludingZeros,
-        {
-            skipPreflight: true,
-            preflightCommitment: "single",
-        }
+        prioritizationFees.averageFeeWithZeros
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, poolId.toBase58());
@@ -301,10 +296,10 @@ async function swapSolToToken(
                 instructions,
                 [holder],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`,
-                prioritizationFees.averageFeeExcludingZeros,
+                prioritizationFees.medianFee,
                 {
                     skipPreflight: true,
-                    preflightCommitment: "single",
+                    preflightCommitment: "confirmed",
                 }
             )
         );
@@ -351,10 +346,6 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
         instructions,
         [dev],
         `to burn LP mint ${lpMint.toBase58()} for ${dev.publicKey.toBase58()}`,
-        prioritizationFees.medianFee,
-        {
-            skipPreflight: true,
-            preflightCommitment: "processed",
-        }
+        prioritizationFees.averageFeeWithZeros
     );
 }

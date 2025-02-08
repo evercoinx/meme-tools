@@ -8,7 +8,7 @@ interface EnvironmentSchema {
     RPC_URI: string;
     CLUSTER: Cluster;
     EXPLORER_URI: string;
-    PRIORITIZATION_FEE_ADJUSTMENT_PERCENT: number;
+    PRIORITIZATION_FEE_MULTIPLIER: number;
     DEV_KEYPAIR_PATH: string;
     DISTRIBUTOR_KEYPAIR_PATH: string;
     KEYPAIR_SECRET: string;
@@ -51,12 +51,12 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .default("https://solana.fm")
                 .description("Solana explorer URI"),
-            PRIORITIZATION_FEE_ADJUSTMENT_PERCENT: Joi.number()
+            PRIORITIZATION_FEE_MULTIPLIER: Joi.number()
                 .optional()
                 .min(0.0001)
                 .max(10)
                 .default(1)
-                .description("Prioritization fee adjustment percent"),
+                .description("Prioritization fee multiplier"),
             DEV_KEYPAIR_PATH: Joi.string()
                 .required()
                 .pattern(FILE_PATH_PATTERN)

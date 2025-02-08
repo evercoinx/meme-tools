@@ -228,6 +228,6 @@ async function createMint(
         instructions,
         [dev, mint],
         `to create mint ${mint.publicKey.toBase58()}`,
-        prioritizationFees.averageFeeIncludingZeros
+        prioritizationFees.averageFeeWithZeros
     );
 }

@@ -38,9 +38,9 @@ export const connection = new Connection(envVars.RPC_URI, "confirmed");
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
 export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.CLUSTER);
 export const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
-export const prioritizationFees = new PrioritizationFees(
+export const prioritizationFees = new PrioritizationFees([
     envVars.CLUSTER === "devnet"
         ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM
-        : CREATE_CPMM_POOL_PROGRAM
-);
+        : CREATE_CPMM_POOL_PROGRAM,
+]);
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);

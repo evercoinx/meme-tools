@@ -16,8 +16,8 @@ async function getFees(): Promise<void> {
     logger.info(
         "Prioritization fees (%s)\n\t\tAverage fee with 0s:\t%s\n\t\tAverage fee without 0s: %s\n\t\tMedian fee:\t\t%s",
         envVars.CLUSTER,
-        formatDecimal(prioritizationFees.averageFeeIncludingZeros, 0),
-        formatDecimal(prioritizationFees.averageFeeExcludingZeros, 0),
+        formatDecimal(prioritizationFees.averageFeeWithZeros, 0),
+        formatDecimal(prioritizationFees.averageFeeWithoutZeros, 0),
         formatDecimal(prioritizationFees.medianFee, 0)
     );
 }
