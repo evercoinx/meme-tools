@@ -40,10 +40,10 @@ const SLIPPAGE = 0.15;
 (async () => {
     try {
         checkIfSupportedByRaydium(envVars.CLUSTER);
-
         await checkIfStorageExists();
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
+
         const mint = importMintKeypair();
         if (!mint) {
             throw new Error("Mint not imported");
@@ -125,9 +125,9 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
 
         const raydimLpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
         if (!raydimLpMint) {
-            throw new Error("LP mint not loaded from storage");
+            throw new Error("Raydium LP mint not loaded from storage");
         }
-        logger.debug("LP mint %s loaded from storage", raydimLpMint);
+        logger.debug("Raydium LP mint %s loaded from storage", raydimLpMint);
 
         const poolInfo = await loadRaydiumPoolInfo(new PublicKey(raydiumPoolId), mint);
         return [Promise.resolve(), poolInfo];
