@@ -23,6 +23,7 @@ import {
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
+import { PrioritizationFees } from "../modules/prioritization-fees";
 import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo } from "../modules/raydium";
 
 const SLIPPAGE = 0.3;
@@ -98,7 +99,8 @@ async function swapTokenToSol(
             mintBalance = new BN(mintTokenAccountBalance.value.amount.toString());
         } catch {
             logger.warn(
-                "Mint associated token account not exists for holder %s",
+                "Mint associated token account %s not exists for holder %s",
+                mintAssociatedTokenAccount.toBase58(),
                 holder.publicKey.toBase58()
             );
             continue;
@@ -200,6 +202,7 @@ async function closeDevTokenAccounts(
         TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
+
     const lpMintAccountInfo = await connection.getAccountInfo(
         lpMintAssociatedTokenAccount,
         "confirmed"
@@ -216,7 +219,8 @@ async function closeDevTokenAccounts(
         );
     } else {
         logger.warn(
-            "LP mint associated token account not exists for dev %s",
+            "LP mint associated token account %s not exists for dev %s",
+            lpMintAssociatedTokenAccount.toBase58(),
             dev.publicKey.toBase58()
         );
     }
@@ -227,6 +231,6 @@ async function closeDevTokenAccounts(
               instructions,
               [dev],
               `to close associated token accounts for dev ${dev.publicKey.toBase58()}`,
-              prioritizationFees.averageFeeWithZeros
+              PrioritizationFees.NO_FEES
           );
 }

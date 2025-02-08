@@ -84,7 +84,6 @@ async function distributeSol(
             );
         }
 
-        let wsolBalance = new Decimal(0);
         const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
             NATIVE_MINT,
             holder.publicKey,
@@ -92,6 +91,8 @@ async function distributeSol(
             TOKEN_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
+        let wsolBalance = new Decimal(0);
+
         try {
             const wsolTokenAccountBalance = await connection.getTokenAccountBalance(
                 wsolAssociatedTokenAccount,
@@ -105,6 +106,7 @@ async function distributeSol(
         let residualLamportsToWrap = new Decimal(0);
         if (wsolBalance.lt(lamportsToWrap)) {
             residualLamportsToWrap = lamportsToWrap.sub(wsolBalance);
+
             instructions.push(
                 SystemProgram.transfer({
                     fromPubkey: distributor.publicKey,
@@ -114,7 +116,7 @@ async function distributeSol(
             );
         } else {
             logger.warn(
-                "Holder %s has sufficient balance: %s WSOL. Skipping",
+                "Holder %s has sufficient balance: %s WSOL",
                 holder.publicKey.toBase58(),
                 formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL))
             );

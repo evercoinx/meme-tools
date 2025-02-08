@@ -2,6 +2,8 @@ import { PublicKey } from "@solana/web3.js";
 import { connection } from ".";
 
 export class PrioritizationFees {
+    public static NO_FEES = 0;
+
     public averageFeeWithZeros: number;
     public averageFeeWithoutZeros: number;
     public medianFee: number;

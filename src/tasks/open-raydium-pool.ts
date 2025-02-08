@@ -316,18 +316,25 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
         TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
+    let lpMintBalance = new Decimal(0);
 
-    const mintTokenAccountBalance = await connection.getTokenAccountBalance(
-        lpMintAssociatedTokenAccount,
-        "processed"
-    );
-    const lpMintBalance = new Decimal(mintTokenAccountBalance.value.amount);
-    if (lpMintBalance.lte(0)) {
+    try {
+        const lpMintTokenAccountBalance = await connection.getTokenAccountBalance(
+            lpMintAssociatedTokenAccount,
+            "confirmed"
+        );
+        lpMintBalance = new Decimal(lpMintTokenAccountBalance.value.amount);
+    } catch {
         logger.warn(
-            "LP mint %s for %s already burned",
-            lpMint.toBase58(),
+            "LP mint associated token account %s not exists for dev %s",
+            lpMintAssociatedTokenAccount.toBase58(),
             dev.publicKey.toBase58()
         );
+        return;
+    }
+
+    if (lpMintBalance.lte(0)) {
+        logger.warn("Dev %s has 0 LP mint balance", dev.publicKey.toBase58());
         return;
     }
 
