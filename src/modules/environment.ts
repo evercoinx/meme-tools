@@ -9,6 +9,7 @@ interface EnvironmentSchema {
     CLUSTER: Cluster;
     EXPLORER_URI: string;
     PRIORITIZATION_FEE_MULTIPLIER: number;
+    MAX_TRANSACTION_CONFIRMATION_RETRIES: number;
     DEV_KEYPAIR_PATH: string;
     DISTRIBUTOR_KEYPAIR_PATH: string;
     KEYPAIR_SECRET: string;
@@ -57,6 +58,13 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(10)
                 .default(1)
                 .description("Prioritization fee multiplier"),
+            MAX_TRANSACTION_CONFIRMATION_RETRIES: Joi.number()
+                .optional()
+                .integer()
+                .min(1)
+                .max(10)
+                .default(5)
+                .description("Maximum transaction confirmation retries"),
             DEV_KEYPAIR_PATH: Joi.string()
                 .required()
                 .pattern(FILE_PATH_PATTERN)

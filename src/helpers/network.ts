@@ -9,10 +9,10 @@ import {
 } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { connection, envVars, explorer, logger } from "../modules";
-import { formatDecimal } from "./format";
+import { formatDecimal, formatPublicKey, formatSignature } from "./format";
 
 interface TransactionOptions extends SendOptions {
-    commitment: Commitment;
+    commitment?: Commitment;
 }
 
 export async function sendAndConfirmVersionedTransaction(
@@ -33,41 +33,69 @@ export async function sendAndConfirmVersionedTransaction(
         );
     }
 
-    logger.info(
-        "Sending transaction %s. Prioritization fee: %s microlamports",
-        logMessage,
-        formatDecimal(adjustedPrioritizationFee, 0)
-    );
-
     const payer = signers[0];
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+    let { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
         payerKey: payer.publicKey,
         recentBlockhash: blockhash,
         instructions,
-    }).compileToV0Message();
-
-    const transaction = new VersionedTransaction(messageV0);
-    transaction.sign(signers);
-
-    const signature = await connection.sendTransaction(transaction, {
-        skipPreflight: options?.skipPreflight ?? false,
-        preflightCommitment: options?.preflightCommitment ?? "confirmed",
-        maxRetries: options?.maxRetries,
-        minContextSlot: options?.minContextSlot,
     });
 
-    const confirmation = await connection.confirmTransaction(
-        {
-            signature,
-            blockhash,
-            lastValidBlockHeight,
-        },
-        options?.commitment ?? "confirmed"
-    );
-    if (confirmation.value.err !== null) {
-        throw new Error(JSON.stringify(confirmation.value.err, null, 4));
+    let signature: string | undefined;
+    let latestErrorMessage: string | undefined;
+    let totalRetries = 0;
+
+    do {
+        const transaction = new VersionedTransaction(messageV0.compileToV0Message());
+        transaction.sign(signers);
+
+        signature = await connection.sendTransaction(transaction, {
+            skipPreflight: options?.skipPreflight ?? false,
+            preflightCommitment: options?.preflightCommitment ?? "confirmed",
+            maxRetries: options?.maxRetries,
+            minContextSlot: options?.minContextSlot,
+        });
+
+        logger.info(
+            "Transaction (%s) sent %s. Prioritization fee: %s microlamports",
+            formatSignature(signature),
+            logMessage,
+            formatDecimal(adjustedPrioritizationFee, 0)
+        );
+
+        const confirmation = await connection.confirmTransaction(
+            {
+                signature,
+                blockhash,
+                lastValidBlockHeight,
+            },
+            options?.commitment ?? "confirmed"
+        );
+        if (confirmation.value.err === null) {
+            latestErrorMessage = undefined;
+            break;
+        }
+
+        ({ blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash());
+        messageV0.recentBlockhash = blockhash;
+        latestErrorMessage = JSON.stringify(confirmation.value.err, null, 4);
+        totalRetries++;
+
+        logger.warn(
+            "Transaction (%s) failed. Retry: %d/%d",
+            formatPublicKey(signature, 8),
+            totalRetries,
+            envVars.MAX_TRANSACTION_CONFIRMATION_RETRIES
+        );
+    } while (totalRetries < envVars.MAX_TRANSACTION_CONFIRMATION_RETRIES);
+
+    if (latestErrorMessage) {
+        throw new Error(latestErrorMessage);
     }
 
-    logger.info("Transaction confirmed: %s", explorer.generateTransactionUri(signature));
+    logger.info(
+        "Transaction (%s) confirmed: %s",
+        formatPublicKey(signature, 8),
+        explorer.generateTransactionUri(signature)
+    );
 }

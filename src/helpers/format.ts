@@ -6,7 +6,7 @@ type NumberLike = number | bigint | Decimal | BN;
 
 const LOCALE = "en-US";
 
-export function formatCurrency(value: NumberLike) {
+export function formatCurrency(value: NumberLike): string {
     if (Decimal.isDecimal(value)) {
         value = value.toNumber();
     } else if (value instanceof BN) {
@@ -20,7 +20,19 @@ export function formatCurrency(value: NumberLike) {
     }).format(value);
 }
 
-export function formatDecimal(value: NumberLike, decimalPlaces = 9) {
+export function formatDate(value: Date | number): string {
+    if (typeof value === "number") {
+        value = new Date(value * 1e3);
+    }
+
+    return new Intl.DateTimeFormat(LOCALE, {
+        dateStyle: "full",
+        timeStyle: "long",
+        timeZone: "UTC",
+    }).format(value);
+}
+
+export function formatDecimal(value: NumberLike, decimalPlaces = 9): string {
     if (Decimal.isDecimal(value)) {
         value = value.toNumber();
     } else if (value instanceof BN) {
@@ -34,19 +46,7 @@ export function formatDecimal(value: NumberLike, decimalPlaces = 9) {
     }).format(value);
 }
 
-export function formatDate(value: Date | number) {
-    if (typeof value === "number") {
-        value = new Date(value * 1e3);
-    }
-
-    return new Intl.DateTimeFormat(LOCALE, {
-        dateStyle: "full",
-        timeStyle: "long",
-        timeZone: "UTC",
-    }).format(value);
-}
-
-export function formatPercent(value: NumberLike) {
+export function formatPercent(value: NumberLike): string {
     if (Decimal.isDecimal(value)) {
         value = value.toNumber();
     } else if (value instanceof BN) {
@@ -59,7 +59,11 @@ export function formatPercent(value: NumberLike) {
     }).format(value);
 }
 
-export function formatPublicKey(publicKey: string | PublicKey): string {
+export function formatPublicKey(publicKey: string | PublicKey, length = 4): string {
     const publicKeyStr = typeof publicKey === "string" ? publicKey : publicKey.toBase58();
-    return `${publicKeyStr.slice(0, 4)}...${publicKeyStr.slice(-4)}`;
+    return `${publicKeyStr.slice(0, length)}...${publicKeyStr.slice(-length)}`;
+}
+
+export function formatSignature(signature: string, length = 8): string {
+    return `${signature.slice(0, length)}...${signature.slice(-length)}`;
 }
