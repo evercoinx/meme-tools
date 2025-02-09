@@ -19,7 +19,6 @@ import {
     NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
-    TokenAccountNotFoundError,
 } from "@solana/spl-token";
 import {
     Keypair,
@@ -73,7 +72,6 @@ const SLIPPAGE = 0.15;
             amounts,
             eligibleHolders
         );
-
         await Promise.all([sendCreatePoolTransaction]);
         await Promise.all(sendSwapSolToTokenTransactions);
 
@@ -81,7 +79,6 @@ const SLIPPAGE = 0.15;
             new PublicKey(poolInfo.poolInfo.lpMint.address),
             dev
         );
-
         await Promise.all([sendBurnLpMintTransaction]);
     } catch (err) {
         logger.fatal(err);
@@ -92,8 +89,8 @@ const SLIPPAGE = 0.15;
 async function findEligibleHolders(holders: Keypair[], mint: Keypair): Promise<(Keypair | null)[]> {
     const eligibleHolders: (Keypair | null)[] = [];
 
-    for (const holder of holders) {
-        const tokenAccount = getAssociatedTokenAddressSync(
+    for (const [i, holder] of holders.entries()) {
+        const mintTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
             holder.publicKey,
             false,
@@ -101,27 +98,26 @@ async function findEligibleHolders(holders: Keypair[], mint: Keypair): Promise<(
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
 
-        let balance = new Decimal(0);
+        let mintBalance = new Decimal(0);
         try {
             const tokenAccountBalance = await connection.getTokenAccountBalance(
-                tokenAccount,
+                mintTokenAccount,
                 "confirmed"
             );
-            balance = new Decimal(tokenAccountBalance.value.amount.toString());
+            mintBalance = new Decimal(tokenAccountBalance.value.amount.toString());
         } catch {
             // Ignore TokenAccountNotFoundError error
         }
 
-        if (balance.gt(0)) {
-            eligibleHolders.push(null);
-
-            logger.warn(
-                "Holder %s not eligible. His token balance: %s",
-                holder.publicKey.toBase58(),
-                formatDecimal(balance.div(10 ** envVars.TOKEN_DECIMALS))
-            );
+        if (mintBalance.eq(0)) {
+            eligibleHolders[i] = holder;
         } else {
-            eligibleHolders.push(holder);
+            eligibleHolders[i] = null;
+            logger.warn(
+                `Holder #${i} (%s) not eligible with token balance: %s`,
+                formatPublicKey(holder.publicKey),
+                formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS))
+            );
         }
     }
 
@@ -278,11 +274,7 @@ async function getWrapSolInstructions(
     try {
         const account = await getAccount(connection, tokenAccount, "confirmed", TOKEN_PROGRAM_ID);
         wsolBalance = new Decimal(account.amount.toString(10));
-    } catch (err) {
-        if (!(err instanceof TokenAccountNotFoundError)) {
-            throw err;
-        }
-
+    } catch {
         instructions.push(
             createAssociatedTokenAccountInstruction(
                 owner.publicKey,
@@ -357,7 +349,7 @@ async function swapSolToToken(
             sendAndConfirmVersionedTransaction(
                 instructions,
                 [holder],
-                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for ${holder.publicKey.toBase58()}`,
+                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for holder #${i} (${formatPublicKey(holder.publicKey)})`,
                 prioritizationFees.medianFee,
                 {
                     skipPreflight: true,

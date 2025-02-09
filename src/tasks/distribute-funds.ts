@@ -29,16 +29,18 @@ import { connection, envVars, logger, prioritizationFees } from "../modules";
             ? importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length)
             : generateHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
 
-        const amounts = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
+        const amountsToDistribute = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL)
                 .mul(percent)
                 .plus(envVars.HOLDER_COMPUTE_BUDGET_SOL)
         );
 
         await prioritizationFees.fetchFees();
-
-        const sendDistrubuteFundsTransaction = await distributeFunds(amounts, distributor, holders);
-
+        const sendDistrubuteFundsTransaction = await distributeFunds(
+            amountsToDistribute,
+            distributor,
+            holders
+        );
         await Promise.all([sendDistrubuteFundsTransaction]);
     } catch (err) {
         logger.fatal(err);
@@ -47,21 +49,21 @@ import { connection, envVars, logger, prioritizationFees } from "../modules";
 })();
 
 async function distributeFunds(
-    amounts: Decimal[],
+    amountsToDistribute: Decimal[],
     distributor: Keypair,
     holders: Keypair[]
 ): Promise<Promise<void>> {
     const instructions: TransactionInstruction[] = [];
 
     for (const [i, holder] of holders.entries()) {
-        const lamports = amounts[i].mul(LAMPORTS_PER_SOL);
+        const lamports = amountsToDistribute[i].mul(LAMPORTS_PER_SOL);
         const solBalance = new Decimal(await connection.getBalance(holder.publicKey, "confirmed"));
 
         if (solBalance.gte(lamports)) {
             logger.warn(
                 "Holder #%d (%s) has sufficient balance: %s SOL",
                 i,
-                holder.publicKey.toBase58(),
+                formatPublicKey(holder.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
         } else {

@@ -64,32 +64,28 @@ const ZERO_BN = new BN(0);
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        await prioritizationFees.fetchFees();
-
         const poolInfo = await loadRaydiumPoolInfo(new PublicKey(raydiumPoolId), mint);
-        const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, holders, mint);
+        const unitsToSwap = await getUnitsToSwap(holders, mint);
+        await prioritizationFees.fetchFees();
+        const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, unitsToSwap, holders);
+        await Promise.all(sendSwapTokenToSolTransactions);
 
         const sendCloseDevTokenAccountsTransaction = await closeDevTokenAccounts(
             dev,
             mint,
             new PublicKey(raydiumLpMint)
         );
-
         const sendCloseHolderTokenAccountsTransactions = await closeHolderTokenAccounts(
             holders,
             mint
         );
-
-        const sendHolderTransferSolTransactions = await transferHolderSol(holders, distributor);
-
-        await Promise.all(sendSwapTokenToSolTransactions);
-
         await Promise.all([
             sendCloseDevTokenAccountsTransaction,
             ...sendCloseHolderTokenAccountsTransactions,
         ]);
 
-        await Promise.all(sendHolderTransferSolTransactions);
+        const sendCollectSolTransactions = await collectSol(holders, distributor);
+        await Promise.all(sendCollectSolTransactions);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -98,11 +94,62 @@ const ZERO_BN = new BN(0);
 
 async function swapTokenToSol(
     { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
-    holders: Keypair[],
-    mint: Keypair
+    unitsToSwap: (BN | null)[],
+    holders: Keypair[]
 ): Promise<Promise<void>[]> {
     const sendTransactions: Promise<void>[] = [];
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
+
+    for (const [i, holder] of holders.entries()) {
+        if (unitsToSwap[i] === null) {
+            continue;
+        }
+
+        const swapResult = CurveCalculator.swap(
+            unitsToSwap[i],
+            baseIn ? baseReserve : quoteReserve,
+            baseIn ? quoteReserve : baseReserve,
+            tradeFee
+        );
+
+        const raydium = await loadRaydium(connection, envVars.CLUSTER, holder);
+        const {
+            transaction: { instructions },
+        } = await raydium.cpmm.swap<TxVersion.LEGACY>({
+            poolInfo,
+            poolKeys,
+            inputAmount: unitsToSwap[i],
+            swapResult,
+            slippage: SLIPPAGE,
+            baseIn,
+        });
+
+        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
+            10 ** envVars.TOKEN_DECIMALS
+        );
+        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
+            LAMPORTS_PER_SOL
+        );
+
+        sendTransactions.push(
+            sendAndConfirmVersionedTransaction(
+                instructions,
+                [holder],
+                `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for holder #${i} (${formatPublicKey(holder.publicKey)})`,
+                prioritizationFees.medianFee,
+                {
+                    skipPreflight: true,
+                    preflightCommitment: "confirmed",
+                }
+            )
+        );
+    }
+
+    return sendTransactions;
+}
+
+async function getUnitsToSwap(holders: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
+    const unitsToSwap: (BN | null)[] = [];
 
     for (const [i, holder] of holders.entries()) {
         const mintTokenAccount = getAssociatedTokenAddressSync(
@@ -112,8 +159,8 @@ async function swapTokenToSol(
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
-
         let mintBalance = ZERO_BN;
+
         try {
             const mintTokenAccountBalance = await connection.getTokenAccountBalance(
                 mintTokenAccount,
@@ -130,91 +177,21 @@ async function swapTokenToSol(
             );
             continue;
         }
-        if (mintBalance.eq(ZERO_BN)) {
+
+        if (mintBalance.gt(ZERO_BN)) {
+            unitsToSwap[i] = mintBalance;
+        } else {
+            unitsToSwap[i] = null;
             logger.warn(
                 "Holder #%d (%s) has 0 %s",
                 i,
                 formatPublicKey(holder.publicKey),
                 envVars.TOKEN_SYMBOL
             );
-            continue;
         }
-
-        const swapResult = CurveCalculator.swap(
-            mintBalance,
-            baseIn ? baseReserve : quoteReserve,
-            baseIn ? quoteReserve : baseReserve,
-            tradeFee
-        );
-
-        const raydium = await loadRaydium(connection, envVars.CLUSTER, holder);
-        const {
-            transaction: { instructions },
-        } = await raydium.cpmm.swap<TxVersion.LEGACY>({
-            poolInfo,
-            poolKeys,
-            inputAmount: mintBalance,
-            swapResult,
-            slippage: SLIPPAGE,
-            baseIn,
-        });
-
-        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
-            LAMPORTS_PER_SOL
-        );
-        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
-            10 ** envVars.TOKEN_DECIMALS
-        );
-
-        instructions.push(
-            createCloseAccountInstruction(
-                mintTokenAccount,
-                holder.publicKey,
-                holder.publicKey,
-                [],
-                TOKEN_2022_PROGRAM_ID
-            )
-        );
-
-        const wsolTokenAccount = getAssociatedTokenAddressSync(
-            NATIVE_MINT,
-            holder.publicKey,
-            false,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
-
-        const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
-        if (wsolAccountInfo) {
-            instructions.push(
-                createCloseAccountInstruction(
-                    wsolTokenAccount,
-                    holder.publicKey,
-                    holder.publicKey,
-                    [],
-                    TOKEN_PROGRAM_ID
-                )
-            );
-        } else {
-            logger.warn(
-                "WSOL ATA (%s) not exists for holder #%d (%s)",
-                i,
-                formatPublicKey(wsolTokenAccount),
-                formatPublicKey(holder.publicKey)
-            );
-        }
-
-        sendTransactions.push(
-            sendAndConfirmVersionedTransaction(
-                instructions,
-                [holder],
-                `to swap ~${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ${formatDecimal(destinationAmount)} WSOL for holder #${i} (${formatPublicKey(holder.publicKey)})`,
-                prioritizationFees.medianFee
-            )
-        );
     }
 
-    return sendTransactions;
+    return unitsToSwap;
 }
 
 async function closeDevTokenAccounts(
@@ -284,7 +261,7 @@ async function closeDevTokenAccounts(
         : sendAndConfirmVersionedTransaction(
               instructions,
               [dev],
-              `to close ATAs for dev ${formatPublicKey(dev.publicKey)}`,
+              `to close ATAs for dev (${formatPublicKey(dev.publicKey)})`,
               PrioritizationFees.NO_FEES
           );
 }
@@ -305,6 +282,7 @@ async function closeHolderTokenAccounts(
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
+
         const mintAccountInfo = await connection.getAccountInfo(mintTokenAccount, "confirmed");
         if (mintAccountInfo) {
             instructions.push(
@@ -347,7 +325,7 @@ async function closeHolderTokenAccounts(
             );
         } else {
             logger.warn(
-                "WSOL ATA (%s0 not exists for holder #%d (%s)",
+                "WSOL ATA (%s) not exists for holder #%d (%s)",
                 formatPublicKey(wsolTokenAccount),
                 i,
                 formatPublicKey(holder.publicKey)
@@ -369,10 +347,7 @@ async function closeHolderTokenAccounts(
     return sendTransactions;
 }
 
-async function transferHolderSol(
-    holders: Keypair[],
-    distributor: Keypair
-): Promise<Promise<void>[]> {
+async function collectSol(holders: Keypair[], distributor: Keypair): Promise<Promise<void>[]> {
     const sendTransactions: Promise<void>[] = [];
 
     for (const [i, holder] of holders.entries()) {
