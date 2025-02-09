@@ -79,15 +79,22 @@ async function uploadImage(): Promise<string> {
         return imageUri;
     }
 
-    logger.debug("Uploading mint image to IPFS");
     const imageFileName = `${envVars.TOKEN_SYMBOL.toLowerCase()}.webp`;
-    const imageBlob = new Blob([await fs.readFile(path.join(IMAGE_DIR, imageFileName))]);
+    const pinnedFiles = await ipfs.listFiles().name(imageFileName);
 
-    const imageFile = new File([imageBlob], imageFileName, { type: "image/webp" });
-    const upload = await ipfs.upload.file(imageFile);
+    if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === imageFileName) {
+        imageUri = generateIpfsUri(pinnedFiles[0].ipfs_pin_hash);
+        logger.warn("Mint image file already uploaded to IPFS: %s", imageUri);
+    } else {
+        logger.debug("Uploading mint image file to IPFS");
+        const imageBlob = new Blob([await fs.readFile(path.join(IMAGE_DIR, imageFileName))]);
 
-    imageUri = generateIpfsUri(upload.IpfsHash);
-    logger.info("Mint image uploaded to IPFS: %s", imageUri);
+        const imageFile = new File([imageBlob], imageFileName, { type: "image/webp" });
+        const upload = await ipfs.upload.file(imageFile);
+
+        imageUri = generateIpfsUri(upload.IpfsHash);
+        logger.info("Mint image file uploaded to IPFS: %s", imageUri);
+    }
 
     storage.set(STORAGE_MINT_IMAGE_URI, imageUri);
     storage.save();
@@ -99,28 +106,38 @@ async function uploadImage(): Promise<string> {
 async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> {
     let metadata = storage.get<OffchainTokenMetadata>(STORAGE_MINT_METADATA);
     if (metadata) {
-        logger.debug("Mint metadata loaded from storage");
+        logger.debug("Mint metadata file loaded from storage");
         return metadata;
     }
 
-    logger.debug("Uploading mint metadata to IPFS");
     const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
+    const metadataContents = await fs.readFile(path.join(METADATA_DIR, metadataFilename), "utf8");
     metadata = {
-        ...JSON.parse(await fs.readFile(path.join(METADATA_DIR, metadataFilename), "utf8")),
+        ...JSON.parse(metadataContents),
         image: imageUri,
     };
 
-    const metadataFile = new File([JSON.stringify(metadata)], metadataFilename, {
-        type: "text/plain",
-    });
-    const upload = await ipfs.upload.file(metadataFile);
+    let metadataUri = "";
+    const pinnedFiles = await ipfs.listFiles().name(metadataFilename);
 
-    const metadataUri = generateIpfsUri(upload.IpfsHash);
+    if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === metadataFilename) {
+        metadataUri = generateIpfsUri(pinnedFiles[0].ipfs_pin_hash);
+        logger.warn("Mint metadata file already uploaded to IPFS: %s", metadataUri);
+    } else {
+        logger.debug("Uploading mint metadata file to IPFS");
+        const metadataFile = new File([JSON.stringify(metadata)], metadataFilename, {
+            type: "text/plain",
+        });
+        const upload = await ipfs.upload.file(metadataFile);
+
+        metadataUri = generateIpfsUri(upload.IpfsHash);
+        logger.info("Mint metadata file uploaded to IPFS: %s", metadataUri);
+    }
+
     metadata = {
         ...metadata,
         uri: metadataUri,
     };
-    logger.info("Mint metadata uploaded to IPFS: %s", metadataUri);
 
     storage.set(STORAGE_MINT_METADATA, metadata);
     storage.save();
