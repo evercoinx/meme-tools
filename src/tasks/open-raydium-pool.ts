@@ -218,7 +218,11 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
         [...wrapSolInstructions, ...createPoolInstructions],
         [dev],
         `to create pool id (${poolId.toBase58()})`,
-        prioritizationFees.averageFeeWithZeros
+        prioritizationFees.medianFee,
+        {
+            skipPreflight: true,
+            commitment: "confirmed",
+        }
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, poolId.toBase58());
@@ -353,7 +357,7 @@ async function swapSolToToken(
                 prioritizationFees.medianFee,
                 {
                     skipPreflight: true,
-                    preflightCommitment: "confirmed",
+                    commitment: "confirmed",
                 }
             )
         );

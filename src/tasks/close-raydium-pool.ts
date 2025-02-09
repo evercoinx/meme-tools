@@ -133,7 +133,7 @@ async function swapTokenToSol(
                 prioritizationFees.medianFee,
                 {
                     skipPreflight: true,
-                    preflightCommitment: "confirmed",
+                    commitment: "confirmed",
                 }
             )
         );
