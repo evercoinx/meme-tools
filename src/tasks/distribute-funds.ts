@@ -112,7 +112,10 @@ async function distributeFunds(
               instructions,
               [distributor],
               `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${holders.length} holders`,
-              prioritizationFees.averageFeeWithZeros
+              {
+                  amount: prioritizationFees.averageFeeWithZeros,
+                  multiplierIndex: 0,
+              }
           )
         : Promise.resolve();
 }

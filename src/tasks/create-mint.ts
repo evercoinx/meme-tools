@@ -246,6 +246,9 @@ async function createMint(
         instructions,
         [dev, mint],
         `to create mint (${formatPublicKey(mint.publicKey)})`,
-        prioritizationFees.averageFeeWithZeros
+        {
+            amount: prioritizationFees.averageFeeWithZeros,
+            multiplierIndex: 0,
+        }
     );
 }

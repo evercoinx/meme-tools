@@ -2,7 +2,6 @@ import { PublicKey } from "@solana/web3.js";
 import { connection } from ".";
 
 export class PrioritizationFees {
-    public static NO_FEES = 0;
     private static MAX_FETCH_FEES_REQUEST_RETRIES = 25;
 
     public averageFeeWithZeros: number;
@@ -23,7 +22,7 @@ export class PrioritizationFees {
         do {
             await this._fetchFees();
             if (this.medianFee > 0) {
-                break;
+                return;
             }
 
             await new Promise((resolve) => setTimeout(resolve, 200));

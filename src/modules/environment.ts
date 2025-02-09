@@ -8,7 +8,7 @@ interface EnvironmentSchema {
     RPC_URI: string;
     CLUSTER: Cluster;
     EXPLORER_URI: string;
-    PRIORITIZATION_FEE_MULTIPLIER: number;
+    PRIORITIZATION_FEE_MULTIPLIERS: number[];
     MAX_TRANSACTION_CONFIRMATION_RETRIES: number;
     DEV_KEYPAIR_PATH: string;
     DISTRIBUTOR_KEYPAIR_PATH: string;
@@ -52,12 +52,13 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .default("https://solana.fm")
                 .description("Solana explorer URI"),
-            PRIORITIZATION_FEE_MULTIPLIER: Joi.number()
-                .optional()
-                .min(0.0001)
-                .max(10)
-                .default(1)
-                .description("Prioritization fee multiplier"),
+            PRIORITIZATION_FEE_MULTIPLIERS: Joi.array()
+                .required()
+                .items(Joi.number().min(0.0001).max(10))
+                .unique()
+                .min(2)
+                .max(4)
+                .description("Prioritization fee multipliers"),
             MAX_TRANSACTION_CONFIRMATION_RETRIES: Joi.number()
                 .optional()
                 .integer()
@@ -126,6 +127,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
         .validate({
             ...process.env,
             HOLDER_SHARE_POOL_PERCENTS: process.env.HOLDER_SHARE_POOL_PERCENTS?.split(","),
+            PRIORITIZATION_FEE_MULTIPLIERS: process.env.PRIORITIZATION_FEE_MULTIPLIERS?.split(","),
         });
     if (error) {
         throw new Error(error.annotate());

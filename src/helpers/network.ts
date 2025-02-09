@@ -15,25 +15,24 @@ interface TransactionOptions extends SendOptions {
     commitment?: Commitment;
 }
 
+interface PrioritizationFee {
+    amount: number;
+    multiplierIndex: number;
+}
+
 export async function sendAndConfirmVersionedTransaction(
     instructions: TransactionInstruction[],
     signers: Keypair[],
     logMessage: string,
-    prioritizationFee: number,
-    options?: TransactionOptions
+    prioritizationFee?: PrioritizationFee,
+    transactionOptions?: TransactionOptions
 ): Promise<void> {
-    const adjustedPrioritizationFee = new Decimal(prioritizationFee)
-        .mul(envVars.PRIORITIZATION_FEE_MULTIPLIER)
-        .round();
-    if (adjustedPrioritizationFee.gt(0)) {
-        instructions.unshift(
-            ComputeBudgetProgram.setComputeUnitPrice({
-                microLamports: adjustedPrioritizationFee.toNumber(),
-            })
-        );
-    }
-
     const payer = signers[0];
+    const adjustedPrioritizationFee =
+        typeof prioritizationFee !== "undefined"
+            ? addPrioritizationFeeInstruction(instructions, prioritizationFee)
+            : new Decimal(0);
+
     let { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
         payerKey: payer.publicKey,
@@ -50,10 +49,10 @@ export async function sendAndConfirmVersionedTransaction(
         transaction.sign(signers);
 
         signature = await connection.sendTransaction(transaction, {
-            skipPreflight: options?.skipPreflight ?? false,
-            preflightCommitment: options?.preflightCommitment ?? "confirmed",
-            maxRetries: options?.maxRetries,
-            minContextSlot: options?.minContextSlot,
+            skipPreflight: transactionOptions?.skipPreflight ?? false,
+            preflightCommitment: transactionOptions?.preflightCommitment ?? "confirmed",
+            maxRetries: transactionOptions?.maxRetries,
+            minContextSlot: transactionOptions?.minContextSlot,
         });
 
         logger.info(
@@ -69,7 +68,7 @@ export async function sendAndConfirmVersionedTransaction(
                 blockhash,
                 lastValidBlockHeight,
             },
-            options?.commitment ?? "confirmed"
+            transactionOptions?.commitment ?? "confirmed"
         );
         if (confirmation.value.err === null) {
             latestErrorMessage = undefined;
@@ -98,4 +97,31 @@ export async function sendAndConfirmVersionedTransaction(
         formatPublicKey(signature, 8),
         explorer.generateTransactionUri(signature)
     );
+}
+
+function addPrioritizationFeeInstruction(
+    instructions: TransactionInstruction[],
+    prioritizationFee: PrioritizationFee
+): Decimal {
+    if (prioritizationFee.multiplierIndex >= envVars.PRIORITIZATION_FEE_MULTIPLIERS.length) {
+        throw new Error(
+            `Priroritization fee multiplier not found for index: ${prioritizationFee.multiplierIndex}`
+        );
+    }
+
+    const prioritizationFeeMultiplier =
+        envVars.PRIORITIZATION_FEE_MULTIPLIERS[prioritizationFee.multiplierIndex];
+
+    const adjustedPrioritizationFee = new Decimal(prioritizationFee.amount)
+        .mul(prioritizationFeeMultiplier)
+        .round();
+    if (adjustedPrioritizationFee.gt(0)) {
+        instructions.unshift(
+            ComputeBudgetProgram.setComputeUnitPrice({
+                microLamports: adjustedPrioritizationFee.toNumber(),
+            })
+        );
+    }
+
+    return adjustedPrioritizationFee;
 }

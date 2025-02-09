@@ -30,7 +30,6 @@ import {
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
-import { PrioritizationFees } from "../modules/prioritization-fees";
 import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo } from "../modules/raydium";
 
 const SLIPPAGE = 0.3;
@@ -130,10 +129,12 @@ async function swapTokenToSol(
                 instructions,
                 [holder],
                 `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for holder #${i} (${formatPublicKey(holder.publicKey)})`,
-                prioritizationFees.medianFee,
+                {
+                    amount: prioritizationFees.medianFee,
+                    multiplierIndex: 1,
+                },
                 {
                     skipPreflight: true,
-                    commitment: "confirmed",
                 }
             )
         );
@@ -277,8 +278,7 @@ async function closeTokenAccounts(
                 sendAndConfirmVersionedTransaction(
                     instructions,
                     [account],
-                    `to close ATAs for account #${i} (${formatPublicKey(account.publicKey)})`,
-                    PrioritizationFees.NO_FEES
+                    `to close ATAs for account #${i} (${formatPublicKey(account.publicKey)})`
                 )
             );
         }
@@ -315,8 +315,7 @@ async function collectSol(holders: Keypair[], distributor: Keypair): Promise<Pro
             sendAndConfirmVersionedTransaction(
                 instructions,
                 [holder],
-                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from holder #${i} (${formatPublicKey(holder.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`,
-                PrioritizationFees.NO_FEES
+                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from holder #${i} (${formatPublicKey(holder.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
             )
         );
     }
