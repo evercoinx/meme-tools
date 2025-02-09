@@ -162,27 +162,11 @@ async function getUnitsToSwap(holders: Keypair[], mint: Keypair): Promise<(BN | 
             );
             mintBalance = new BN(mintTokenAccountBalance.value.amount.toString());
         } catch {
-            logger.warn(
-                "%s ATA (%s) not exists for holder #%d (%s)",
-                envVars.TOKEN_SYMBOL,
-                formatPublicKey(mintTokenAccount),
-                i,
-                formatPublicKey(holder.publicKey)
-            );
+            unitsToSwap[i] = null;
             continue;
         }
 
-        if (mintBalance.gt(ZERO_BN)) {
-            unitsToSwap[i] = mintBalance;
-        } else {
-            unitsToSwap[i] = null;
-            logger.warn(
-                "Holder #%d (%s) has 0 %s",
-                i,
-                formatPublicKey(holder.publicKey),
-                envVars.TOKEN_SYMBOL
-            );
-        }
+        unitsToSwap[i] = mintBalance.gt(ZERO_BN) ? mintBalance : null;
     }
 
     return unitsToSwap;

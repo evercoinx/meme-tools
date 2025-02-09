@@ -3,6 +3,7 @@ import { connection } from ".";
 
 export class PrioritizationFees {
     public static NO_FEES = 0;
+    private static MAX_FETCH_FEES_REQUEST_RETRIES = 25;
 
     public averageFeeWithZeros: number;
     public averageFeeWithoutZeros: number;
@@ -17,6 +18,22 @@ export class PrioritizationFees {
     }
 
     public async fetchFees(): Promise<void> {
+        let i = 0;
+
+        do {
+            await this._fetchFees();
+            if (this.medianFee > 0) {
+                break;
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            i++;
+        } while (i < PrioritizationFees.MAX_FETCH_FEES_REQUEST_RETRIES);
+
+        throw new Error("Unable to fetch prioritization fees");
+    }
+
+    private async _fetchFees(): Promise<void> {
         const prioritizationFees = await connection.getRecentPrioritizationFees({
             lockedWritableAccounts: this.accounts,
         });
