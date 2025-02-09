@@ -12,11 +12,10 @@ import {
     importHolderKeypairs,
     importLocalKeypair,
 } from "../helpers/account";
-import { formatDecimal } from "../helpers/format";
+import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists } from "../helpers/validation";
 import { connection, envVars, logger, prioritizationFees } from "../modules";
-import { PrioritizationFees } from "../modules/prioritization-fees";
 
 (async () => {
     try {
@@ -110,8 +109,8 @@ async function distributeFunds(
         ? sendAndConfirmVersionedTransaction(
               instructions,
               [distributor],
-              `to distribute funds from distributor (${distributor.publicKey.toBase58()}) to ${holders.length} holders`,
-              PrioritizationFees.NO_FEES
+              `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${holders.length} holders`,
+              prioritizationFees.averageFeeWithZeros
           )
         : Promise.resolve();
 }

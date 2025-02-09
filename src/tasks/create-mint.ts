@@ -18,6 +18,7 @@ import {
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { generateMintKeypair, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import { formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists } from "../helpers/validation";
 import {
@@ -227,7 +228,7 @@ async function createMint(
     return sendAndConfirmVersionedTransaction(
         instructions,
         [dev, mint],
-        `to create mint ${mint.publicKey.toBase58()}`,
+        `to create mint (${formatPublicKey(mint.publicKey)})`,
         prioritizationFees.averageFeeWithZeros
     );
 }

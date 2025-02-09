@@ -45,7 +45,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         const isDistributor = i === 1;
 
         const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
-        const wsolAssociatedTokenAccount = getAssociatedTokenAddressSync(
+        const wsolTokenAccount = getAssociatedTokenAddressSync(
             NATIVE_MINT,
             account.publicKey,
             false,
@@ -56,7 +56,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         let wsolBalance: Decimal | null = null;
         try {
             const wsolTokenAccountBalance = await connection.getTokenAccountBalance(
-                wsolAssociatedTokenAccount,
+                wsolTokenAccount,
                 "confirmed"
             );
             wsolBalance = new Decimal(wsolTokenAccountBalance.value.amount.toString());
@@ -64,10 +64,10 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             // Ignore TokenAccountNotFoundError error
         }
 
-        let mintAssociatedTokenAccount: PublicKey | null = null;
+        let mintTokenAccount: PublicKey | null = null;
         let mintBalance: Decimal | null = null;
         if (mint) {
-            mintAssociatedTokenAccount = getAssociatedTokenAddressSync(
+            mintTokenAccount = getAssociatedTokenAddressSync(
                 mint.publicKey,
                 account.publicKey,
                 false,
@@ -77,7 +77,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
 
             try {
                 const mintTokenAccountBalance = await connection.getTokenAccountBalance(
-                    mintAssociatedTokenAccount,
+                    mintTokenAccount,
                     "confirmed"
                 );
                 mintBalance = new Decimal(mintTokenAccountBalance.value.amount.toString());
@@ -89,9 +89,9 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         const logParams = [
             account.publicKey.toBase58(),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            wsolAssociatedTokenAccount.toBase58(),
+            wsolTokenAccount.toBase58(),
             wsolBalance ? formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL)) : "?",
-            mintAssociatedTokenAccount ? mintAssociatedTokenAccount.toBase58() : UNKNOWN_KEY,
+            mintTokenAccount ? mintTokenAccount : UNKNOWN_KEY,
             mintBalance
                 ? formatDecimal(
                       mintBalance.div(10 ** envVars.TOKEN_DECIMALS),
@@ -102,12 +102,12 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         ];
 
         if (isDev) {
-            let lpMintAssociatedTokenAccount: PublicKey | null = null;
+            let lpMintTokenAccount: PublicKey | null = null;
             let lpMintBalance: Decimal | null = null;
 
             const lpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
             if (lpMint) {
-                lpMintAssociatedTokenAccount = getAssociatedTokenAddressSync(
+                lpMintTokenAccount = getAssociatedTokenAddressSync(
                     new PublicKey(lpMint),
                     account.publicKey,
                     false,
@@ -117,7 +117,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
 
                 try {
                     const mintTokenAccountBalance = await connection.getTokenAccountBalance(
-                        lpMintAssociatedTokenAccount,
+                        lpMintTokenAccount,
                         "confirmed"
                     );
                     lpMintBalance = new Decimal(mintTokenAccountBalance.value.amount.toString());
@@ -129,9 +129,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             logger.info(
                 "Dev funds\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s\n",
                 ...logParams,
-                lpMintAssociatedTokenAccount
-                    ? lpMintAssociatedTokenAccount.toBase58()
-                    : UNKNOWN_KEY,
+                lpMintTokenAccount ? lpMintTokenAccount.toBase58() : UNKNOWN_KEY,
                 lpMintBalance
                     ? formatDecimal(
                           lpMintBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),

@@ -1,3 +1,4 @@
+import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 
@@ -56,4 +57,9 @@ export function formatPercent(value: NumberLike) {
         style: "percent",
         minimumFractionDigits: 2,
     }).format(value);
+}
+
+export function formatPublicKey(publicKey: string | PublicKey): string {
+    const publicKeyStr = typeof publicKey === "string" ? publicKey : publicKey.toBase58();
+    return `${publicKeyStr.slice(0, 4)}...${publicKeyStr.slice(-4)}`;
 }

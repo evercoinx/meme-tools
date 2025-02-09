@@ -31,7 +31,7 @@ import {
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { importHolderKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
-import { formatDecimal } from "../helpers/format";
+import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
 import {
@@ -93,7 +93,7 @@ async function findEligibleHolders(holders: Keypair[], mint: Keypair): Promise<(
     const eligibleHolders: (Keypair | null)[] = [];
 
     for (const holder of holders) {
-        const associatedTokenAccount = getAssociatedTokenAddressSync(
+        const tokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
             holder.publicKey,
             false,
@@ -104,7 +104,7 @@ async function findEligibleHolders(holders: Keypair[], mint: Keypair): Promise<(
         let balance = new Decimal(0);
         try {
             const tokenAccountBalance = await connection.getTokenAccountBalance(
-                associatedTokenAccount,
+                tokenAccount,
                 "confirmed"
             );
             balance = new Decimal(tokenAccountBalance.value.amount.toString());
@@ -221,15 +221,15 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
     const sendTransaction = sendAndConfirmVersionedTransaction(
         [...wrapSolInstructions, ...createPoolInstructions],
         [dev],
-        `to create pool ${poolId.toBase58()}`,
+        `to create pool id (${poolId.toBase58()})`,
         prioritizationFees.averageFeeWithZeros
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, poolId.toBase58());
     storage.set(STORAGE_RAYDIUM_LP_MINT, lpMint.toBase58());
     storage.save();
-    logger.debug("Raydium pool id %s saved to storage", poolId.toBase58());
-    logger.debug("Raydium LP mint %s saved to storage", lpMint.toBase58());
+    logger.debug("Raydium pool id %s saved to storage", formatPublicKey(poolId));
+    logger.debug("Raydium LP mint %s saved to storage", formatPublicKey(lpMint));
 
     const baseIn = NATIVE_MINT.toBase58() === mintA.address;
 
@@ -264,7 +264,7 @@ async function getWrapSolInstructions(
     amount: Decimal,
     owner: Keypair
 ): Promise<TransactionInstruction[]> {
-    const associatedTokenAccount = getAssociatedTokenAddressSync(
+    const tokenAccount = getAssociatedTokenAddressSync(
         NATIVE_MINT,
         owner.publicKey,
         false,
@@ -276,12 +276,7 @@ async function getWrapSolInstructions(
     let wsolBalance = new Decimal(0);
 
     try {
-        const account = await getAccount(
-            connection,
-            associatedTokenAccount,
-            "confirmed",
-            TOKEN_PROGRAM_ID
-        );
+        const account = await getAccount(connection, tokenAccount, "confirmed", TOKEN_PROGRAM_ID);
         wsolBalance = new Decimal(account.amount.toString(10));
     } catch (err) {
         if (!(err instanceof TokenAccountNotFoundError)) {
@@ -291,7 +286,7 @@ async function getWrapSolInstructions(
         instructions.push(
             createAssociatedTokenAccountInstruction(
                 owner.publicKey,
-                associatedTokenAccount,
+                tokenAccount,
                 owner.publicKey,
                 NATIVE_MINT,
                 TOKEN_PROGRAM_ID,
@@ -307,10 +302,10 @@ async function getWrapSolInstructions(
         instructions.push(
             SystemProgram.transfer({
                 fromPubkey: owner.publicKey,
-                toPubkey: associatedTokenAccount,
+                toPubkey: tokenAccount,
                 lamports: residualLamports.toNumber(),
             }),
-            createSyncNativeInstruction(associatedTokenAccount, TOKEN_PROGRAM_ID)
+            createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID)
         );
     }
 
@@ -393,15 +388,15 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
         lpMintBalance = new Decimal(lpMintTokenAccountBalance.value.amount);
     } catch {
         logger.warn(
-            "LP mint associated token account %s not exists for dev %s",
-            lpMintAssociatedTokenAccount.toBase58(),
-            dev.publicKey.toBase58()
+            "LP mint ATA (%s) not exists for dev (%s)",
+            formatPublicKey(lpMintAssociatedTokenAccount),
+            formatPublicKey(dev.publicKey)
         );
         return;
     }
 
     if (lpMintBalance.lte(0)) {
-        logger.warn("Dev %s has 0 LP mint balance", dev.publicKey.toBase58());
+        logger.warn("Dev (%s) has 0 LP mint balance", formatPublicKey(dev.publicKey));
         return;
     }
 
@@ -419,7 +414,7 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
     return sendAndConfirmVersionedTransaction(
         instructions,
         [dev],
-        `to burn LP mint ${lpMint.toBase58()} for ${dev.publicKey.toBase58()}`,
+        `to burn LP mint (${formatPublicKey(lpMint)}) for dev (${formatPublicKey(dev.publicKey)})`,
         prioritizationFees.averageFeeWithZeros
     );
 }
