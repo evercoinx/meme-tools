@@ -70,19 +70,13 @@ const ZERO_BN = new BN(0);
         const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, unitsToSwap, holders);
         await Promise.all(sendSwapTokenToSolTransactions);
 
-        const sendCloseDevTokenAccountsTransaction = await closeDevTokenAccounts(
+        const sendCloseTokenAccountsTransactions = await closeTokenAccounts(
             dev,
+            holders,
             mint,
             new PublicKey(raydiumLpMint)
         );
-        const sendCloseHolderTokenAccountsTransactions = await closeHolderTokenAccounts(
-            holders,
-            mint
-        );
-        await Promise.all([
-            sendCloseDevTokenAccountsTransaction,
-            ...sendCloseHolderTokenAccountsTransactions,
-        ]);
+        await Promise.all(sendCloseTokenAccountsTransactions);
 
         const sendCollectSolTransactions = await collectSol(holders, distributor);
         await Promise.all(sendCollectSolTransactions);
@@ -194,90 +188,20 @@ async function getUnitsToSwap(holders: Keypair[], mint: Keypair): Promise<(BN | 
     return unitsToSwap;
 }
 
-async function closeDevTokenAccounts(
+async function closeTokenAccounts(
     dev: Keypair,
+    holders: Keypair[],
     mint: Keypair,
     lpMintPublicKey: PublicKey
-): Promise<Promise<void>> {
-    const instructions: TransactionInstruction[] = [];
-
-    const mintTokenAccount = getAssociatedTokenAddressSync(
-        mint.publicKey,
-        dev.publicKey,
-        false,
-        TOKEN_2022_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    const mintAccountInfo = await connection.getAccountInfo(mintTokenAccount, "confirmed");
-    if (mintAccountInfo) {
-        instructions.push(
-            createCloseAccountInstruction(
-                mintTokenAccount,
-                dev.publicKey,
-                dev.publicKey,
-                [],
-                TOKEN_2022_PROGRAM_ID
-            )
-        );
-    } else {
-        logger.warn(
-            "%s ATA (%s) not exists for dev (%s)",
-            envVars.TOKEN_SYMBOL,
-            formatPublicKey(mint.publicKey),
-            formatPublicKey(dev.publicKey)
-        );
-    }
-
-    const lpMintTokenAccount = getAssociatedTokenAddressSync(
-        lpMintPublicKey,
-        dev.publicKey,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    const lpMintAccountInfo = await connection.getAccountInfo(lpMintTokenAccount, "confirmed");
-    if (lpMintAccountInfo) {
-        instructions.push(
-            createCloseAccountInstruction(
-                lpMintTokenAccount,
-                dev.publicKey,
-                dev.publicKey,
-                [],
-                TOKEN_PROGRAM_ID
-            )
-        );
-    } else {
-        logger.warn(
-            "LP mint ATA (%s) not exists for dev (%s)",
-            formatPublicKey(lpMintTokenAccount),
-            formatPublicKey(dev.publicKey)
-        );
-    }
-
-    return instructions.length === 0
-        ? Promise.resolve()
-        : sendAndConfirmVersionedTransaction(
-              instructions,
-              [dev],
-              `to close ATAs for dev (${formatPublicKey(dev.publicKey)})`,
-              PrioritizationFees.NO_FEES
-          );
-}
-
-async function closeHolderTokenAccounts(
-    holders: Keypair[],
-    mint: Keypair
 ): Promise<Promise<void>[]> {
     const sendTransactions: Promise<void>[] = [];
-
-    for (const [i, holder] of holders.entries()) {
+    for (const [i, account] of [dev, ...holders].entries()) {
+        const isDev = i === 0;
         const instructions: TransactionInstruction[] = [];
 
         const mintTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
-            holder.publicKey,
+            account.publicKey,
             false,
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
@@ -288,56 +212,88 @@ async function closeHolderTokenAccounts(
             instructions.push(
                 createCloseAccountInstruction(
                     mintTokenAccount,
-                    holder.publicKey,
-                    holder.publicKey,
+                    account.publicKey,
+                    account.publicKey,
                     [],
                     TOKEN_2022_PROGRAM_ID
                 )
             );
         } else {
             logger.warn(
-                "%s ATA (%s) not exists for holder #%d (%s)",
+                "%s ATA (%s) not exists for %s (%s)",
                 envVars.TOKEN_SYMBOL,
                 formatPublicKey(mintTokenAccount),
-                i,
-                formatPublicKey(holder.publicKey)
+                isDev ? "dev" : `holder #${i - 1}`,
+                formatPublicKey(account.publicKey)
             );
         }
 
-        const wsolTokenAccount = getAssociatedTokenAddressSync(
-            NATIVE_MINT,
-            holder.publicKey,
-            false,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
+        if (isDev) {
+            const lpMintTokenAccount = getAssociatedTokenAddressSync(
+                lpMintPublicKey,
+                dev.publicKey,
+                false,
+                TOKEN_PROGRAM_ID,
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            );
 
-        const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
-        if (wsolAccountInfo) {
-            instructions.push(
-                createCloseAccountInstruction(
-                    wsolTokenAccount,
-                    holder.publicKey,
-                    holder.publicKey,
-                    [],
-                    TOKEN_PROGRAM_ID
-                )
+            const lpMintAccountInfo = await connection.getAccountInfo(
+                lpMintTokenAccount,
+                "confirmed"
             );
+            if (lpMintAccountInfo) {
+                instructions.push(
+                    createCloseAccountInstruction(
+                        lpMintTokenAccount,
+                        dev.publicKey,
+                        dev.publicKey,
+                        [],
+                        TOKEN_PROGRAM_ID
+                    )
+                );
+            } else {
+                logger.warn(
+                    "LP mint ATA (%s) not exists for dev (%s)",
+                    formatPublicKey(lpMintTokenAccount),
+                    formatPublicKey(dev.publicKey)
+                );
+            }
         } else {
-            logger.warn(
-                "WSOL ATA (%s) not exists for holder #%d (%s)",
-                formatPublicKey(wsolTokenAccount),
-                i,
-                formatPublicKey(holder.publicKey)
+            const wsolTokenAccount = getAssociatedTokenAddressSync(
+                NATIVE_MINT,
+                account.publicKey,
+                false,
+                TOKEN_PROGRAM_ID,
+                ASSOCIATED_TOKEN_PROGRAM_ID
             );
+
+            const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
+            if (wsolAccountInfo) {
+                instructions.push(
+                    createCloseAccountInstruction(
+                        wsolTokenAccount,
+                        account.publicKey,
+                        account.publicKey,
+                        [],
+                        TOKEN_PROGRAM_ID
+                    )
+                );
+            } else {
+                logger.warn(
+                    "WSOL ATA (%s) not exists for holder #%d (%s)",
+                    formatPublicKey(wsolTokenAccount),
+                    i - 1,
+                    formatPublicKey(account.publicKey)
+                );
+            }
         }
 
         if (instructions.length > 0) {
             sendTransactions.push(
                 sendAndConfirmVersionedTransaction(
                     instructions,
-                    [holder],
-                    `to close ATAs for holder #${i} (${formatPublicKey(holder.publicKey)})`,
+                    [account],
+                    `to close ATAs for account #${i} (${formatPublicKey(account.publicKey)})`,
                     PrioritizationFees.NO_FEES
                 )
             );
