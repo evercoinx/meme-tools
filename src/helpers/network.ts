@@ -48,55 +48,60 @@ export async function sendAndConfirmVersionedTransaction(
         const transaction = new VersionedTransaction(messageV0.compileToV0Message());
         transaction.sign(signers);
 
-        signature = await connection.sendTransaction(transaction, {
-            skipPreflight: transactionOptions?.skipPreflight ?? false,
-            preflightCommitment: transactionOptions?.preflightCommitment ?? "confirmed",
-            maxRetries: transactionOptions?.maxRetries,
-            minContextSlot: transactionOptions?.minContextSlot,
-        });
+        try {
+            signature = await connection.sendTransaction(transaction, {
+                skipPreflight: transactionOptions?.skipPreflight ?? false,
+                preflightCommitment: transactionOptions?.preflightCommitment ?? "confirmed",
+                maxRetries: transactionOptions?.maxRetries,
+                minContextSlot: transactionOptions?.minContextSlot,
+            });
 
-        logger.info(
-            "Transaction (%s) sent %s. Prioritization fee: %s microlamports",
-            formatSignature(signature),
-            logMessage,
-            formatDecimal(adjustedPrioritizationFee, 0)
-        );
+            logger.info(
+                "Transaction (%s) sent %s. Prioritization fee: %s microlamports",
+                formatSignature(signature),
+                logMessage,
+                formatDecimal(adjustedPrioritizationFee, 0)
+            );
 
-        const confirmation = await connection.confirmTransaction(
-            {
-                signature,
-                blockhash,
-                lastValidBlockHeight,
-            },
-            transactionOptions?.commitment ?? "confirmed"
-        );
-        if (confirmation.value.err === null) {
-            latestErrorMessage = undefined;
-            break;
+            const confirmation = await connection.confirmTransaction(
+                {
+                    signature,
+                    blockhash,
+                    lastValidBlockHeight,
+                },
+                transactionOptions?.commitment ?? "confirmed"
+            );
+            if (confirmation.value.err === null) {
+                latestErrorMessage = undefined;
+                break;
+            }
+            throw new Error(JSON.stringify(confirmation.value.err, null, 4));
+        } catch (err: unknown) {
+            ({ blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash());
+            messageV0.recentBlockhash = blockhash;
+            latestErrorMessage = err instanceof Error ? err.message : String(err);
+            totalRetries++;
+
+            logger.warn(
+                "Transaction (%s) failed. Retry: %d/%d",
+                signature ? formatPublicKey(signature, 8) : "?",
+                totalRetries,
+                envVars.MAX_TRANSACTION_CONFIRMATION_RETRIES
+            );
         }
-
-        ({ blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash());
-        messageV0.recentBlockhash = blockhash;
-        latestErrorMessage = JSON.stringify(confirmation.value.err, null, 4);
-        totalRetries++;
-
-        logger.warn(
-            "Transaction (%s) failed. Retry: %d/%d",
-            formatPublicKey(signature, 8),
-            totalRetries,
-            envVars.MAX_TRANSACTION_CONFIRMATION_RETRIES
-        );
     } while (totalRetries < envVars.MAX_TRANSACTION_CONFIRMATION_RETRIES);
 
     if (latestErrorMessage) {
         throw new Error(latestErrorMessage);
     }
 
+    /* eslint-disable @typescript-eslint/no-non-null-assertion */
     logger.info(
         "Transaction (%s) confirmed: %s",
-        formatPublicKey(signature, 8),
-        explorer.generateTransactionUri(signature)
+        formatPublicKey(signature!, 8),
+        explorer.generateTransactionUri(signature!)
     );
+    /* eslint-enable @typescript-eslint/no-non-null-assertion */
 }
 
 function addPrioritizationFeeInstruction(
