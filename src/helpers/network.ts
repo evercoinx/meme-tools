@@ -17,7 +17,11 @@ interface GetPriorityFeeEstimateResponse {
     id?: string;
     jsonrpc: string;
     result?: {
-        priorityFeeEstimate: number;
+        priorityFeeEstimate?: number;
+        priorityFeeLevels?: Record<
+            "min" | "low" | "medium" | "high" | "veryHigh" | "unsafeMax",
+            number
+        >;
     };
     error?: {
         code: number;
@@ -55,15 +59,25 @@ async function getPriorityFeeEstimate(
         }),
     });
 
-    const jsonResponse = (await response.json()) as GetPriorityFeeEstimateResponse;
-    if (!response.ok && jsonResponse.error) {
+    if (!response.ok) {
+        let jsonResponse: GetPriorityFeeEstimateResponse;
+        try {
+            jsonResponse = (await response.json()) as GetPriorityFeeEstimateResponse;
+        } catch {
+            throw new Error(
+                `Error while parsing getPriorityFeeEstimate response. Status: ${response.status}`
+            );
+        }
+
         throw new Error(
-            `RPC Method: getPriorityFeeEstimate. Code: ${jsonResponse.error.code}. Message: ${jsonResponse.error.message}`
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            `Error while calling getPriorityFeeEstimate. Code: ${jsonResponse.error!.code}. Message: ${jsonResponse.error!.message}`
         );
     }
 
+    const jsonResponse = (await response.json()) as GetPriorityFeeEstimateResponse;
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return jsonResponse.result!.priorityFeeEstimate;
+    return jsonResponse.result!.priorityFeeEstimate!;
 }
 
 export async function sendAndConfirmVersionedTransaction(
