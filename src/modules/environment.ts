@@ -1,4 +1,3 @@
-import { Cluster, clusterApiUrl } from "@solana/web3.js";
 import Joi from "joi";
 
 interface EnvironmentSchema {
@@ -6,7 +5,6 @@ interface EnvironmentSchema {
     IPFS_JWT: string;
     IPFS_GATEWAY: string;
     RPC_URI: string;
-    CLUSTER: Cluster;
     EXPLORER_URI: string;
     PRIORITIZATION_FEE_MULTIPLIERS: number[];
     MAX_TRANSACTION_CONFIRMATION_RETRIES: number;
@@ -23,7 +21,6 @@ interface EnvironmentSchema {
 }
 
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
-const DEFAULT_CLUSTER: Cluster = "devnet";
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()
@@ -37,16 +34,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .pattern(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/)
                 .description("IPFS JWT"),
             IPFS_GATEWAY: Joi.string().required().uri().description("IPFS Gateway"),
-            RPC_URI: Joi.string()
-                .optional()
-                .uri()
-                .default(clusterApiUrl(DEFAULT_CLUSTER))
-                .description("Solana RPC URI"),
-            CLUSTER: Joi.string()
-                .optional()
-                .valid("devnet", "testnet", "mainnet-beta")
-                .default(DEFAULT_CLUSTER)
-                .description("Solana cluster"),
+            RPC_URI: Joi.string().required().uri().description("Solana RPC URI"),
             EXPLORER_URI: Joi.string()
                 .optional()
                 .uri()

@@ -2,9 +2,9 @@ import { getMint as getMintInfo, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token
 import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { importMintKeypair } from "../helpers/account";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
-import { checkIfStorageExists } from "../helpers/validation";
-import { connection, envVars, logger } from "../modules";
+import { CLUSTER, connection, envVars, logger } from "../modules";
 
 (async () => {
     try {
@@ -34,7 +34,7 @@ async function getMint(mint: Keypair): Promise<void> {
 
     logger.info(
         "Mint (%s)\n\t\tAddress: %s\n\t\tSymbol: %s\n\t\tDecimals: %d\n\t\tSupply: %s\n\t\tMint authority: %s\n\t\tFreeze authority: %s",
-        envVars.CLUSTER,
+        CLUSTER,
         mintInfo.address,
         envVars.TOKEN_SYMBOL,
         mintInfo.decimals,

@@ -8,8 +8,8 @@ import {
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { importLocalKeypair, importMintKeypair, importSniperKeypairs } from "../helpers/account";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
-import { checkIfStorageExists } from "../helpers/validation";
 import {
     connection,
     envVars,

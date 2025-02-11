@@ -1,4 +1,4 @@
-import { envVars, logger, prioritizationFees } from "../modules";
+import { CLUSTER, logger, prioritizationFees } from "../modules";
 import { formatDecimal } from "../helpers/format";
 
 (async () => {
@@ -15,7 +15,7 @@ async function getFees(): Promise<void> {
 
     logger.info(
         "Prioritization fees (%s)\n\t\tAverage fee with 0s:\t%s\n\t\tAverage fee without 0s: %s\n\t\tMedian fee:\t\t%s",
-        envVars.CLUSTER,
+        CLUSTER,
         formatDecimal(prioritizationFees.averageFeeWithZeros, 0),
         formatDecimal(prioritizationFees.averageFeeWithoutZeros, 0),
         formatDecimal(prioritizationFees.medianFee, 0)

@@ -1,8 +1,8 @@
 import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
 import Decimal from "decimal.js";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../helpers/format";
-import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
 import {
     connection,
     envVars,
@@ -15,8 +15,6 @@ import { loadRaydium } from "../modules/raydium";
 
 (async () => {
     try {
-        checkIfSupportedByRaydium(envVars.CLUSTER);
-
         await checkIfStorageExists();
 
         const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
@@ -32,7 +30,7 @@ import { loadRaydium } from "../modules/raydium";
 })();
 
 async function getPool(raydiumPoolId: string): Promise<void> {
-    const raydium = await loadRaydium(connection, envVars.CLUSTER);
+    const raydium = await loadRaydium(connection);
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
 
     if (raydium.cluster === "devnet") {

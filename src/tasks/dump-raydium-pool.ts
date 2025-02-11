@@ -17,9 +17,9 @@ import {
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { importLocalKeypair, importMintKeypair, importSniperKeypairs } from "../helpers/account";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
-import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
 import {
     connection,
     envVars,
@@ -37,7 +37,6 @@ const ZERO_BN = new BN(0);
 
 (async () => {
     try {
-        checkIfSupportedByRaydium(envVars.CLUSTER);
         await checkIfStorageExists();
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
@@ -105,7 +104,7 @@ async function swapTokenToSol(
             tradeFee
         );
 
-        const raydium = await loadRaydium(connection, envVars.CLUSTER, sniper);
+        const raydium = await loadRaydium(connection, sniper);
         const {
             transaction: { instructions },
         } = await raydium.cpmm.swap<TxVersion.LEGACY>({

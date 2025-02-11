@@ -1,7 +1,7 @@
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 import { importSniperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/validation";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { envVars, logger, UNKNOWN_KEY } from "../modules";
 
 (async () => {

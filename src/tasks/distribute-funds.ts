@@ -12,9 +12,9 @@ import {
     importLocalKeypair,
     importSniperKeypairs,
 } from "../helpers/account";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
-import { checkIfStorageExists } from "../helpers/validation";
 import { connection, envVars, logger, prioritizationFees } from "../modules";
 
 (async () => {

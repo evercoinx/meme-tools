@@ -7,9 +7,9 @@ import {
     Raydium,
 } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { Cluster, clusterApiUrl, Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl, Connection, Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { connection, envVars } from "../modules";
+import { CLUSTER, connection } from "../modules";
 
 export interface CpmmPoolInfo {
     poolInfo: ApiV3PoolInfoStandardItemCpmm;
@@ -19,21 +19,14 @@ export interface CpmmPoolInfo {
     tradeFee: BN;
 }
 
-export async function loadRaydium(
-    connection: Connection,
-    cluster: Cluster,
-    owner?: Keypair
-): Promise<Raydium> {
-    if (cluster !== "devnet" && cluster !== "mainnet-beta") {
-        throw new Error(`Cluster not supported by Raydium: ${cluster}`);
-    }
+export async function loadRaydium(connection: Connection, owner?: Keypair): Promise<Raydium> {
     if (connection.rpcEndpoint === clusterApiUrl("mainnet-beta")) {
         throw new Error(`Public mainnet RPC not allowed: ${connection.rpcEndpoint}`);
     }
 
     return Raydium.load({
         connection,
-        cluster: cluster === "mainnet-beta" ? "mainnet" : cluster,
+        cluster: CLUSTER === "mainnet-beta" ? "mainnet" : CLUSTER,
         owner,
         disableFeatureCheck: true,
         disableLoadToken: true,
@@ -44,7 +37,7 @@ export async function loadRaydium(
 }
 
 export async function loadRaydiumPoolInfo(poolId: PublicKey, mint: Keypair): Promise<CpmmPoolInfo> {
-    const raydium = await loadRaydium(connection, envVars.CLUSTER);
+    const raydium = await loadRaydium(connection);
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
     let poolKeys: CpmmKeys | undefined;
     let rpcData: CpmmRpcData;

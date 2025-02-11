@@ -18,9 +18,9 @@ import {
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { generateMintKeypair, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
-import { checkIfStorageExists } from "../helpers/validation";
 import {
     connection,
     envVars,

@@ -30,9 +30,9 @@ import {
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { importSniperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
-import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
 import {
     connection,
     envVars,
@@ -48,7 +48,6 @@ const SLIPPAGE = 0.15;
 
 (async () => {
     try {
-        checkIfSupportedByRaydium(envVars.CLUSTER);
         await checkIfStorageExists();
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
@@ -142,7 +141,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
         return [Promise.resolve(), poolInfo];
     }
 
-    const raydium = await loadRaydium(connection, envVars.CLUSTER, dev);
+    const raydium = await loadRaydium(connection, dev);
 
     const feeConfigs = await raydium.api.getCpmmConfigs();
     if (feeConfigs.length === 0) {
@@ -332,7 +331,7 @@ async function swapSolToToken(
             tradeFee
         );
 
-        const raydium = await loadRaydium(connection, envVars.CLUSTER, sniper);
+        const raydium = await loadRaydium(connection, sniper);
         const {
             transaction: { instructions },
         } = await raydium.cpmm.swap<TxVersion.LEGACY>({
