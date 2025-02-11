@@ -1,3 +1,4 @@
+import Decimal from "decimal.js";
 import Joi from "joi";
 
 interface EnvironmentSchema {
@@ -20,6 +21,8 @@ interface EnvironmentSchema {
 }
 
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
+
+const handlePercent = (value: string) => new Decimal(value).div(100).toNumber();
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()
@@ -75,25 +78,26 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Token supply"),
             INITIAL_POOL_SIZE_PERCENT: Joi.number()
                 .required()
-                .min(0.0001)
-                .max(1)
-                .description("Initial pool size percent"),
+                .min(0.01)
+                .max(100)
+                .custom(handlePercent)
+                .description("Initial pool size (in percent)"),
             INITIAL_POOL_LIQUIDITY_SOL: Joi.number()
                 .required()
                 .min(0.01)
-                .max(10)
+                .max(20)
                 .description("Initial pool liquidity (in SOL)"),
             SNIPER_SHARE_POOL_PERCENTS: Joi.array()
                 .required()
-                .items(Joi.number().min(0.001).max(0.1))
+                .items(Joi.number().min(0.01).max(3).custom(handlePercent))
                 .unique()
                 .min(1)
                 .max(100)
                 .description("Sniper share pool (in percents)"),
             SNIPER_COMPUTE_BUDGET_SOL: Joi.number()
                 .required()
-                .min(0.001)
-                .max(1)
+                .min(0.01)
+                .max(0.1)
                 .description("Sniper compute budget (in SOL)"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
