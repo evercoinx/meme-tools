@@ -24,8 +24,7 @@ import { loadRaydium } from "../modules/raydium";
             throw new Error("Raydium pool not loaded from storage");
         }
 
-        await getPool("CUd89bTFMk1qwJoTgFYanfNXiDQfFF6srMc8tpYhQtHg");
-        // await getPool(raydiumPoolId);
+        await getPool(raydiumPoolId);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -42,6 +41,9 @@ async function getPool(raydiumPoolId: string): Promise<void> {
     } else {
         const data = await raydium.api.fetchPoolById({ ids: raydiumPoolId });
         poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
+    }
+    if (!poolInfo) {
+        throw new Error(`CPMM pool not found: ${raydiumPoolId}`);
     }
 
     const {

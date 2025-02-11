@@ -18,8 +18,8 @@ interface EnvironmentSchema {
     TOKEN_SUPPLY: number;
     INITIAL_POOL_SIZE_PERCENT: number;
     INITIAL_POOL_LIQUIDITY_SOL: number;
-    HOLDER_SHARE_POOL_PERCENTS: number[];
-    HOLDER_COMPUTE_BUDGET_SOL: number;
+    SNIPER_SHARE_POOL_PERCENTS: number[];
+    SNIPER_COMPUTE_BUDGET_SOL: number;
 }
 
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
@@ -100,21 +100,21 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Initial pool size percent"),
             INITIAL_POOL_LIQUIDITY_SOL: Joi.number()
                 .required()
-                .min(0.0001)
+                .min(0.01)
                 .max(10)
                 .description("Initial pool liquidity (in SOL)"),
-            HOLDER_COMPUTE_BUDGET_SOL: Joi.number()
-                .required()
-                .min(0.0001)
-                .max(10)
-                .description("Holder compute budget (in SOL)"),
-            HOLDER_SHARE_POOL_PERCENTS: Joi.array()
+            SNIPER_SHARE_POOL_PERCENTS: Joi.array()
                 .required()
                 .items(Joi.number().min(0.001).max(0.1))
                 .unique()
                 .min(1)
-                .max(4)
-                .description("Holder share pool (in percents)"),
+                .max(100)
+                .description("Sniper share pool (in percents)"),
+            SNIPER_COMPUTE_BUDGET_SOL: Joi.number()
+                .required()
+                .min(0.001)
+                .max(1)
+                .description("Sniper compute budget (in SOL)"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 
@@ -126,7 +126,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
         })
         .validate({
             ...process.env,
-            HOLDER_SHARE_POOL_PERCENTS: process.env.HOLDER_SHARE_POOL_PERCENTS?.split(","),
+            SNIPER_SHARE_POOL_PERCENTS: process.env.SNIPER_SHARE_POOL_PERCENTS?.split(","),
             PRIORITIZATION_FEE_MULTIPLIERS: process.env.PRIORITIZATION_FEE_MULTIPLIERS?.split(","),
         });
     if (error) {

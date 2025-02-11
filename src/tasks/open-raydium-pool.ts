@@ -29,7 +29,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { importHolderKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import { importSniperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
@@ -58,11 +58,11 @@ const SLIPPAGE = 0.15;
             throw new Error("Mint not imported");
         }
 
-        const holders = importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
-        const amounts = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
+        const snipers = importSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length);
+        const amounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
-        const eligibleHolders = await findEligibleHolders(holders, mint);
+        const eligibleSnipers = await markSnipersAsEligible(snipers, mint);
 
         await prioritizationFees.fetchFees();
 
@@ -70,7 +70,7 @@ const SLIPPAGE = 0.15;
         const sendSwapSolToTokenTransactions = await swapSolToToken(
             poolInfo,
             amounts,
-            eligibleHolders
+            eligibleSnipers
         );
         await Promise.all([sendCreatePoolTransaction]);
         await Promise.all(sendSwapSolToTokenTransactions);
@@ -86,13 +86,16 @@ const SLIPPAGE = 0.15;
     }
 })();
 
-async function findEligibleHolders(holders: Keypair[], mint: Keypair): Promise<(Keypair | null)[]> {
-    const eligibleHolders: (Keypair | null)[] = [];
+async function markSnipersAsEligible(
+    snipers: Keypair[],
+    mint: Keypair
+): Promise<(Keypair | null)[]> {
+    const eligibleSnipers: (Keypair | null)[] = [];
 
-    for (const [i, holder] of holders.entries()) {
+    for (const [i, sniper] of snipers.entries()) {
         const mintTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
-            holder.publicKey,
+            sniper.publicKey,
             false,
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
@@ -110,18 +113,18 @@ async function findEligibleHolders(holders: Keypair[], mint: Keypair): Promise<(
         }
 
         if (mintBalance.eq(0)) {
-            eligibleHolders[i] = holder;
+            eligibleSnipers[i] = sniper;
         } else {
-            eligibleHolders[i] = null;
+            eligibleSnipers[i] = null;
             logger.warn(
-                `Holder #${i} (%s) not eligible with token balance: %s`,
-                formatPublicKey(holder.publicKey),
+                `Sniper #${i} (%s) not eligible with token balance: %s`,
+                formatPublicKey(sniper.publicKey),
                 formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS))
             );
         }
     }
 
-    return eligibleHolders;
+    return eligibleSnipers;
 }
 
 async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, CpmmPoolInfo]> {
@@ -310,13 +313,13 @@ async function getWrapSolInstructions(
 async function swapSolToToken(
     { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
     amounts: Decimal[],
-    holders: (Keypair | null)[]
+    snipers: (Keypair | null)[]
 ): Promise<Promise<void>[]> {
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
     const sendTransactions: Promise<void>[] = [];
 
-    for (const [i, holder] of holders.entries()) {
-        if (holder === null) {
+    for (const [i, sniper] of snipers.entries()) {
+        if (sniper === null) {
             continue;
         }
 
@@ -329,7 +332,7 @@ async function swapSolToToken(
             tradeFee
         );
 
-        const raydium = await loadRaydium(connection, envVars.CLUSTER, holder);
+        const raydium = await loadRaydium(connection, envVars.CLUSTER, sniper);
         const {
             transaction: { instructions },
         } = await raydium.cpmm.swap<TxVersion.LEGACY>({
@@ -351,8 +354,8 @@ async function swapSolToToken(
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 instructions,
-                [holder],
-                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for holder #${i} (${formatPublicKey(holder.publicKey)})`,
+                [sniper],
+                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for sniper #${i} (${formatPublicKey(sniper.publicKey)})`,
                 {
                     amount: prioritizationFees.medianFee,
                     multiplierIndex: 1,

@@ -7,7 +7,7 @@ import {
 } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { importLocalKeypair, importHolderKeypairs, importMintKeypair } from "../helpers/account";
+import { importLocalKeypair, importMintKeypair, importSniperKeypairs } from "../helpers/account";
 import { formatDecimal } from "../helpers/format";
 import { checkIfStorageExists } from "../helpers/validation";
 import {
@@ -29,10 +29,10 @@ import {
             envVars.DISTRIBUTOR_KEYPAIR_PATH,
             "distributor"
         );
-        const holders = importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
+        const snipers = importSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length);
         const mint = importMintKeypair();
 
-        await getFunds([dev, distributor, ...holders], mint);
+        await getFunds([dev, distributor, ...snipers], mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -141,7 +141,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         } else {
             logger.info(
                 "%s funds\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n",
-                isDistributor ? "Distributor" : `Holder #${i - 2}`,
+                isDistributor ? "Distributor" : `Sniper #${i - 2}`,
                 ...logParams
             );
         }

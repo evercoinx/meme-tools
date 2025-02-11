@@ -4,7 +4,7 @@ import {
     encryption,
     logger,
     storage,
-    STORAGE_HOLDER_SECRET_KEYS,
+    STORAGE_SNIPER_SECRET_KEYS,
     STORAGE_MINT_SECRET_KEY,
 } from "../modules";
 import { formatPublicKey } from "./format";
@@ -46,39 +46,39 @@ export function importMintKeypair(): Keypair | undefined {
     return mint;
 }
 
-export function generateHolderKeypairs(holderCount: number): Keypair[] {
-    const holders: Keypair[] = [];
+export function generateSniperKeypairs(sniperCount: number): Keypair[] {
+    const snipers: Keypair[] = [];
 
-    for (let i = 0; i < holderCount; i++) {
-        const holder = Keypair.generate();
-        logger.info("Holder (%s) generated", formatPublicKey(holder.publicKey));
+    for (let i = 0; i < sniperCount; i++) {
+        const sniper = Keypair.generate();
+        logger.info("Sniper (%s) generated", formatPublicKey(sniper.publicKey));
 
-        const encryptedHolder = encryption.encrypt(JSON.stringify(Array.from(holder.secretKey)));
-        storage.set(STORAGE_HOLDER_SECRET_KEYS[i], encryptedHolder);
+        const encryptedSniper = encryption.encrypt(JSON.stringify(Array.from(sniper.secretKey)));
+        storage.set(STORAGE_SNIPER_SECRET_KEYS[i], encryptedSniper);
         storage.save();
-        logger.debug("Holder (%s) secret key saved to storage", formatPublicKey(holder.publicKey));
+        logger.debug("Sniper (%s) secret key saved to storage", formatPublicKey(sniper.publicKey));
 
-        holders.push(holder);
+        snipers.push(sniper);
     }
 
-    return holders;
+    return snipers;
 }
 
-export function importHolderKeypairs(holderCount: number): Keypair[] {
-    const holders: Keypair[] = [];
+export function importSniperKeypairs(sniperCount: number): Keypair[] {
+    const snipers: Keypair[] = [];
 
-    for (let i = 0; i < holderCount; i++) {
-        const encryptedSecretKey = storage.get<string>(STORAGE_HOLDER_SECRET_KEYS[i]);
+    for (let i = 0; i < sniperCount; i++) {
+        const encryptedSecretKey = storage.get<string>(STORAGE_SNIPER_SECRET_KEYS[i]);
         if (!encryptedSecretKey) {
-            throw new Error("Holder secret key not loaded from storage");
+            throw new Error("Sniper secret key not loaded from storage");
         }
 
         const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
-        const holder = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-        logger.debug("Holder (%s) imported", formatPublicKey(holder.publicKey));
+        const sniper = Keypair.fromSecretKey(Uint8Array.from(secretKey));
+        logger.debug("Sniper (%s) imported", formatPublicKey(sniper.publicKey));
 
-        holders.push(holder);
+        snipers.push(sniper);
     }
 
-    return holders;
+    return snipers;
 }

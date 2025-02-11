@@ -1,6 +1,6 @@
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
-import { importHolderKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import { importSniperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/validation";
 import { envVars, logger, UNKNOWN_KEY } from "../modules";
 
@@ -14,17 +14,17 @@ import { envVars, logger, UNKNOWN_KEY } from "../modules";
             "distributor"
         );
 
-        const holders = importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
+        const snipers = importSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length);
         const mint = importMintKeypair();
 
-        getKeys(dev, distributor, holders, mint);
+        getKeys(dev, distributor, snipers, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-function getKeys(dev: Keypair, distributor: Keypair, holders: Keypair[], mint?: Keypair): void {
+function getKeys(dev: Keypair, distributor: Keypair, snipers: Keypair[], mint?: Keypair): void {
     logger.info(
         "Dev keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         dev.publicKey.toBase58(),
@@ -37,12 +37,12 @@ function getKeys(dev: Keypair, distributor: Keypair, holders: Keypair[], mint?: 
         bs58.encode(distributor.secretKey)
     );
 
-    for (const [i, holder] of holders.entries()) {
+    for (const [i, sniper] of snipers.entries()) {
         logger.info(
-            "Holder #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n\n\t\t",
+            "Sniper #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n\n\t\t",
             i,
-            holder.publicKey.toBase58(),
-            bs58.encode(holder.secretKey)
+            sniper.publicKey.toBase58(),
+            bs58.encode(sniper.secretKey)
         );
     }
 

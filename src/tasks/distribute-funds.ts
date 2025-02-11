@@ -8,9 +8,9 @@ import {
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import {
-    generateHolderKeypairs,
-    importHolderKeypairs,
+    generateSniperKeypairs,
     importLocalKeypair,
+    importSniperKeypairs,
 } from "../helpers/account";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
@@ -25,21 +25,21 @@ import { connection, envVars, logger, prioritizationFees } from "../modules";
         );
 
         const storageExists = await checkIfStorageExists(true);
-        const holders = storageExists
-            ? importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length)
-            : generateHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
+        const snipers = storageExists
+            ? importSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length)
+            : generateSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length);
 
-        const amountsToDistribute = envVars.HOLDER_SHARE_POOL_PERCENTS.map((percent) =>
+        const amountsToDistribute = envVars.SNIPER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL)
                 .mul(percent)
-                .plus(envVars.HOLDER_COMPUTE_BUDGET_SOL)
+                .plus(envVars.SNIPER_COMPUTE_BUDGET_SOL)
         );
 
         await prioritizationFees.fetchFees();
         const sendDistrubuteFundsTransaction = await distributeFunds(
             amountsToDistribute,
             distributor,
-            holders
+            snipers
         );
         await Promise.all([sendDistrubuteFundsTransaction]);
     } catch (err) {
@@ -51,19 +51,19 @@ import { connection, envVars, logger, prioritizationFees } from "../modules";
 async function distributeFunds(
     amountsToDistribute: Decimal[],
     distributor: Keypair,
-    holders: Keypair[]
+    snipers: Keypair[]
 ): Promise<Promise<void>> {
     const instructions: TransactionInstruction[] = [];
 
-    for (const [i, holder] of holders.entries()) {
+    for (const [i, sniper] of snipers.entries()) {
         const lamports = amountsToDistribute[i].mul(LAMPORTS_PER_SOL);
-        const solBalance = new Decimal(await connection.getBalance(holder.publicKey, "confirmed"));
+        const solBalance = new Decimal(await connection.getBalance(sniper.publicKey, "confirmed"));
 
         if (solBalance.gte(lamports)) {
             logger.warn(
-                "Holder #%d (%s) has sufficient balance: %s SOL",
+                "Sniper #%d (%s) has sufficient balance: %s SOL",
                 i,
-                formatPublicKey(holder.publicKey),
+                formatPublicKey(sniper.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
         } else {
@@ -71,7 +71,7 @@ async function distributeFunds(
             instructions.push(
                 SystemProgram.transfer({
                     fromPubkey: distributor.publicKey,
-                    toPubkey: holder.publicKey,
+                    toPubkey: sniper.publicKey,
                     lamports: residualLamports.toNumber(),
                 })
             );
@@ -79,7 +79,7 @@ async function distributeFunds(
 
         const wsolTokenAccount = getAssociatedTokenAddressSync(
             NATIVE_MINT,
-            holder.publicKey,
+            sniper.publicKey,
             false,
             TOKEN_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
@@ -88,17 +88,17 @@ async function distributeFunds(
         const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
         if (wsolAccountInfo) {
             logger.warn(
-                "WSOL ATA (%s) exists for holder #%d (%s)",
+                "WSOL ATA (%s) exists for sniper #%d (%s)",
                 wsolTokenAccount.toBase58(),
                 i,
-                holder.publicKey.toBase58()
+                sniper.publicKey.toBase58()
             );
         } else {
             instructions.push(
                 createAssociatedTokenAccountInstruction(
                     distributor.publicKey,
                     wsolTokenAccount,
-                    holder.publicKey,
+                    sniper.publicKey,
                     NATIVE_MINT,
                     TOKEN_PROGRAM_ID,
                     ASSOCIATED_TOKEN_PROGRAM_ID
@@ -111,7 +111,7 @@ async function distributeFunds(
         ? sendAndConfirmVersionedTransaction(
               instructions,
               [distributor],
-              `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${holders.length} holders`,
+              `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${snipers.length} snipers`,
               {
                   amount: prioritizationFees.averageFeeWithZeros,
                   multiplierIndex: 0,

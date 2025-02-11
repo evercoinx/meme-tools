@@ -16,7 +16,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { importHolderKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import { importLocalKeypair, importMintKeypair, importSniperKeypairs } from "../helpers/account";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
@@ -51,7 +51,7 @@ const ZERO_BN = new BN(0);
             throw new Error("Mint not imported");
         }
 
-        const holders = importHolderKeypairs(envVars.HOLDER_SHARE_POOL_PERCENTS.length);
+        const snipers = importSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length);
 
         const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {
@@ -64,20 +64,20 @@ const ZERO_BN = new BN(0);
         }
 
         const poolInfo = await loadRaydiumPoolInfo(new PublicKey(raydiumPoolId), mint);
-        const unitsToSwap = await getUnitsToSwap(holders, mint);
+        const unitsToSwap = await getUnitsToSwap(snipers, mint);
         await prioritizationFees.fetchFees();
-        const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, unitsToSwap, holders);
+        const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, unitsToSwap, snipers);
         await Promise.all(sendSwapTokenToSolTransactions);
 
         const sendCloseTokenAccountsTransactions = await closeTokenAccounts(
             dev,
-            holders,
+            snipers,
             mint,
             new PublicKey(raydiumLpMint)
         );
         await Promise.all(sendCloseTokenAccountsTransactions);
 
-        const sendCollectSolTransactions = await collectSol(holders, distributor);
+        const sendCollectSolTransactions = await collectSol(snipers, distributor);
         await Promise.all(sendCollectSolTransactions);
     } catch (err) {
         logger.fatal(err);
@@ -88,12 +88,12 @@ const ZERO_BN = new BN(0);
 async function swapTokenToSol(
     { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
     unitsToSwap: (BN | null)[],
-    holders: Keypair[]
+    snipers: Keypair[]
 ): Promise<Promise<void>[]> {
     const sendTransactions: Promise<void>[] = [];
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
 
-    for (const [i, holder] of holders.entries()) {
+    for (const [i, sniper] of snipers.entries()) {
         if (unitsToSwap[i] === null) {
             continue;
         }
@@ -105,7 +105,7 @@ async function swapTokenToSol(
             tradeFee
         );
 
-        const raydium = await loadRaydium(connection, envVars.CLUSTER, holder);
+        const raydium = await loadRaydium(connection, envVars.CLUSTER, sniper);
         const {
             transaction: { instructions },
         } = await raydium.cpmm.swap<TxVersion.LEGACY>({
@@ -127,8 +127,8 @@ async function swapTokenToSol(
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 instructions,
-                [holder],
-                `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for holder #${i} (${formatPublicKey(holder.publicKey)})`,
+                [sniper],
+                `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for sniper #${i} (${formatPublicKey(sniper.publicKey)})`,
                 {
                     amount: prioritizationFees.medianFee,
                     multiplierIndex: 1,
@@ -143,13 +143,13 @@ async function swapTokenToSol(
     return sendTransactions;
 }
 
-async function getUnitsToSwap(holders: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
+async function getUnitsToSwap(snipers: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
     const unitsToSwap: (BN | null)[] = [];
 
-    for (const [i, holder] of holders.entries()) {
+    for (const [i, sniper] of snipers.entries()) {
         const mintTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
-            holder.publicKey,
+            sniper.publicKey,
             false,
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
@@ -175,12 +175,12 @@ async function getUnitsToSwap(holders: Keypair[], mint: Keypair): Promise<(BN | 
 
 async function closeTokenAccounts(
     dev: Keypair,
-    holders: Keypair[],
+    snipers: Keypair[],
     mint: Keypair,
     lpMintPublicKey: PublicKey
 ): Promise<Promise<void>[]> {
     const sendTransactions: Promise<void>[] = [];
-    for (const [i, account] of [dev, ...holders].entries()) {
+    for (const [i, account] of [dev, ...snipers].entries()) {
         const isDev = i === 0;
         const instructions: TransactionInstruction[] = [];
 
@@ -208,7 +208,7 @@ async function closeTokenAccounts(
                 "%s ATA (%s) not exists for %s (%s)",
                 envVars.TOKEN_SYMBOL,
                 formatPublicKey(mintTokenAccount),
-                isDev ? "dev" : `holder #${i - 1}`,
+                isDev ? "dev" : `sniper #${i - 1}`,
                 formatPublicKey(account.publicKey)
             );
         }
@@ -265,7 +265,7 @@ async function closeTokenAccounts(
                 );
             } else {
                 logger.warn(
-                    "WSOL ATA (%s) not exists for holder #%d (%s)",
+                    "WSOL ATA (%s) not exists for sniper #%d (%s)",
                     formatPublicKey(wsolTokenAccount),
                     i - 1,
                     formatPublicKey(account.publicKey)
@@ -287,16 +287,16 @@ async function closeTokenAccounts(
     return sendTransactions;
 }
 
-async function collectSol(holders: Keypair[], distributor: Keypair): Promise<Promise<void>[]> {
+async function collectSol(snipers: Keypair[], distributor: Keypair): Promise<Promise<void>[]> {
     const sendTransactions: Promise<void>[] = [];
 
-    for (const [i, holder] of holders.entries()) {
-        const solBalance = await connection.getBalance(holder.publicKey, "confirmed");
+    for (const [i, sniper] of snipers.entries()) {
+        const solBalance = await connection.getBalance(sniper.publicKey, "confirmed");
         if (solBalance <= MIN_REMAINING_BALANCE_LAMPORTS) {
             logger.warn(
-                "Holder #%d (%s) has insufficient balance: %s SOL",
+                "Sniper #%d (%s) has insufficient balance: %s SOL",
                 i,
-                formatPublicKey(holder.publicKey),
+                formatPublicKey(sniper.publicKey),
                 formatDecimal(solBalance)
             );
             continue;
@@ -305,7 +305,7 @@ async function collectSol(holders: Keypair[], distributor: Keypair): Promise<Pro
         const lamports = solBalance - MIN_REMAINING_BALANCE_LAMPORTS;
         const instructions = [
             SystemProgram.transfer({
-                fromPubkey: holder.publicKey,
+                fromPubkey: sniper.publicKey,
                 toPubkey: distributor.publicKey,
                 lamports,
             }),
@@ -314,8 +314,8 @@ async function collectSol(holders: Keypair[], distributor: Keypair): Promise<Pro
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 instructions,
-                [holder],
-                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from holder #${i} (${formatPublicKey(holder.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
+                [sniper],
+                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from sniper #${i} (${formatPublicKey(sniper.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
             )
         );
     }
