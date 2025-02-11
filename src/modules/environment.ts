@@ -6,7 +6,6 @@ interface EnvironmentSchema {
     IPFS_GATEWAY: string;
     RPC_URI: string;
     EXPLORER_URI: string;
-    PRIORITIZATION_FEE_MULTIPLIERS: number[];
     MAX_TRANSACTION_CONFIRMATION_RETRIES: number;
     DEV_KEYPAIR_PATH: string;
     DISTRIBUTOR_KEYPAIR_PATH: string;
@@ -40,13 +39,6 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .default("https://solana.fm")
                 .description("Solana explorer URI"),
-            PRIORITIZATION_FEE_MULTIPLIERS: Joi.array()
-                .required()
-                .items(Joi.number().min(0.0001).max(10))
-                .unique()
-                .min(2)
-                .max(4)
-                .description("Prioritization fee multipliers"),
             MAX_TRANSACTION_CONFIRMATION_RETRIES: Joi.number()
                 .optional()
                 .integer()

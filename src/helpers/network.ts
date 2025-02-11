@@ -7,31 +7,73 @@ import {
     TransactionMessage,
     VersionedTransaction,
 } from "@solana/web3.js";
-import Decimal from "decimal.js";
-import { connection, envVars, explorer, logger } from "../modules";
+import bs58 from "bs58";
+import { CLUSTER, connection, envVars, explorer, logger } from "../modules";
 import { formatDecimal, formatPublicKey, formatSignature } from "./format";
+
+type PriorityLevel = "Min" | "Low" | "Medium" | "High" | "VeryHigh" | "UnsafeMax" | "Default";
+
+interface GetPriorityFeeEstimateResponse {
+    id?: string;
+    jsonrpc: string;
+    result?: {
+        priorityFeeEstimate: number;
+    };
+    error?: {
+        code: number;
+        message: string;
+    };
+}
 
 interface TransactionOptions extends SendOptions {
     commitment?: Commitment;
 }
 
-interface PrioritizationFee {
-    amount: number;
-    multiplierIndex: number;
+async function getPriorityFeeEstimate(
+    priorityLevel: PriorityLevel,
+    transaction: VersionedTransaction
+): Promise<number> {
+    if (CLUSTER === "devnet") {
+        return 0;
+    }
+
+    const response = await fetch(envVars.RPC_URI, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: "1",
+            method: "getPriorityFeeEstimate",
+            params: [
+                {
+                    transaction: bs58.encode(transaction.serialize()),
+                    options: {
+                        priorityLevel,
+                    },
+                },
+            ],
+        }),
+    });
+
+    const jsonResponse = (await response.json()) as GetPriorityFeeEstimateResponse;
+    if (!response.ok && jsonResponse.error) {
+        throw new Error(
+            `RPC Method: getPriorityFeeEstimate. Code: ${jsonResponse.error.code}. Message: ${jsonResponse.error.message}`
+        );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return jsonResponse.result!.priorityFeeEstimate;
 }
 
 export async function sendAndConfirmVersionedTransaction(
     instructions: TransactionInstruction[],
     signers: Keypair[],
     logMessage: string,
-    prioritizationFee?: PrioritizationFee,
+    priorityLevel: PriorityLevel,
     transactionOptions?: TransactionOptions
 ): Promise<void> {
     const payer = signers[0];
-    const adjustedPrioritizationFee =
-        typeof prioritizationFee !== "undefined"
-            ? addPrioritizationFeeInstruction(instructions, prioritizationFee)
-            : new Decimal(0);
 
     let { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
@@ -45,10 +87,21 @@ export async function sendAndConfirmVersionedTransaction(
     let totalRetries = 0;
 
     do {
-        const transaction = new VersionedTransaction(messageV0.compileToV0Message());
-        transaction.sign(signers);
-
         try {
+            let transaction = new VersionedTransaction(messageV0.compileToV0Message());
+
+            const priorityFeeEstimate = await getPriorityFeeEstimate(priorityLevel, transaction);
+            if (priorityFeeEstimate > 0) {
+                messageV0.instructions = [
+                    ComputeBudgetProgram.setComputeUnitPrice({
+                        microLamports: priorityFeeEstimate,
+                    }),
+                    ...instructions,
+                ];
+                transaction = new VersionedTransaction(messageV0.compileToV0Message());
+            }
+
+            transaction.sign(signers);
             signature = await connection.sendTransaction(transaction, {
                 skipPreflight: transactionOptions?.skipPreflight ?? false,
                 preflightCommitment: transactionOptions?.preflightCommitment ?? "confirmed",
@@ -57,10 +110,10 @@ export async function sendAndConfirmVersionedTransaction(
             });
 
             logger.info(
-                "Transaction (%s) sent %s. Prioritization fee: %s microlamports",
+                "Transaction (%s) sent %s. Priority fee: %s microlamports",
                 formatSignature(signature),
                 logMessage,
-                formatDecimal(adjustedPrioritizationFee, 0)
+                formatDecimal(priorityFeeEstimate, 0)
             );
 
             const confirmation = await connection.confirmTransaction(
@@ -78,6 +131,7 @@ export async function sendAndConfirmVersionedTransaction(
             throw new Error(JSON.stringify(confirmation.value.err, null, 4));
         } catch (err: unknown) {
             ({ blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash());
+
             messageV0.recentBlockhash = blockhash;
             latestErrorMessage = err instanceof Error ? err.message : String(err);
             totalRetries++;
@@ -102,31 +156,4 @@ export async function sendAndConfirmVersionedTransaction(
         explorer.generateTransactionUri(signature!)
     );
     /* eslint-enable @typescript-eslint/no-non-null-assertion */
-}
-
-function addPrioritizationFeeInstruction(
-    instructions: TransactionInstruction[],
-    prioritizationFee: PrioritizationFee
-): Decimal {
-    if (prioritizationFee.multiplierIndex >= envVars.PRIORITIZATION_FEE_MULTIPLIERS.length) {
-        throw new Error(
-            `Priroritization fee multiplier not found for index: ${prioritizationFee.multiplierIndex}`
-        );
-    }
-
-    const prioritizationFeeMultiplier =
-        envVars.PRIORITIZATION_FEE_MULTIPLIERS[prioritizationFee.multiplierIndex];
-
-    const adjustedPrioritizationFee = new Decimal(prioritizationFee.amount)
-        .mul(prioritizationFeeMultiplier)
-        .round();
-    if (adjustedPrioritizationFee.gt(0)) {
-        instructions.unshift(
-            ComputeBudgetProgram.setComputeUnitPrice({
-                microLamports: adjustedPrioritizationFee.toNumber(),
-            })
-        );
-    }
-
-    return adjustedPrioritizationFee;
 }

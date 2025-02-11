@@ -37,7 +37,6 @@ import {
     connection,
     envVars,
     logger,
-    prioritizationFees,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
@@ -62,8 +61,6 @@ const SLIPPAGE = 0.15;
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
         const eligibleSnipers = await markSnipersAsEligible(snipers, mint);
-
-        await prioritizationFees.fetchFees();
 
         const [sendCreatePoolTransaction, poolInfo] = await createPool(dev, mint);
         const sendSwapSolToTokenTransactions = await swapSolToToken(
@@ -220,10 +217,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
         [...wrapSolInstructions, ...createPoolInstructions],
         [dev],
         `to create pool id (${poolId.toBase58()})`,
-        {
-            amount: prioritizationFees.averageFeeWithZeros,
-            multiplierIndex: 0,
-        }
+        "Medium"
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, poolId.toBase58());
@@ -355,10 +349,7 @@ async function swapSolToToken(
                 instructions,
                 [sniper],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for sniper #${i} (${formatPublicKey(sniper.publicKey)})`,
-                {
-                    amount: prioritizationFees.medianFee,
-                    multiplierIndex: 1,
-                },
+                "VeryHigh",
                 {
                     skipPreflight: true,
                     commitment: "processed",
@@ -415,9 +406,6 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
         instructions,
         [dev],
         `to burn LP mint (${formatPublicKey(lpMint)}) for dev (${formatPublicKey(dev.publicKey)})`,
-        {
-            amount: prioritizationFees.averageFeeWithZeros,
-            multiplierIndex: 0,
-        }
+        "Medium"
     );
 }

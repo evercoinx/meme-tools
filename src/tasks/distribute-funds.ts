@@ -15,7 +15,7 @@ import {
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
-import { connection, envVars, logger, prioritizationFees } from "../modules";
+import { connection, envVars, logger } from "../modules";
 
 (async () => {
     try {
@@ -35,7 +35,6 @@ import { connection, envVars, logger, prioritizationFees } from "../modules";
                 .plus(envVars.SNIPER_COMPUTE_BUDGET_SOL)
         );
 
-        await prioritizationFees.fetchFees();
         const sendDistrubuteFundsTransaction = await distributeFunds(
             amountsToDistribute,
             distributor,
@@ -112,10 +111,7 @@ async function distributeFunds(
               instructions,
               [distributor],
               `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${snipers.length} snipers`,
-              {
-                  amount: prioritizationFees.averageFeeWithZeros,
-                  multiplierIndex: 0,
-              }
+              "Low"
           )
         : Promise.resolve();
 }

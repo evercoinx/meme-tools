@@ -1,13 +1,11 @@
 import "source-map-support/register";
 import dotenv from "dotenv";
-import { CREATE_CPMM_POOL_PROGRAM, DEVNET_PROGRAM_ID } from "@raydium-io/raydium-sdk-v2";
 import { Connection } from "@solana/web3.js";
 import { Encryption } from "./encryption";
 import { extractEnvironmentVariables } from "./environment";
 import { Explorer } from "./explorer";
 import { createIPFS } from "./ipfs";
 import { createLogger } from "./logger";
-import { PrioritizationFees } from "./prioritization-fees";
 import { createStorage } from "./storage";
 
 dotenv.config();
@@ -41,9 +39,6 @@ export const connection = new Connection(envVars.RPC_URI, "confirmed");
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
 export const explorer = new Explorer(envVars.EXPLORER_URI, CLUSTER);
 export const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);
-export const prioritizationFees = new PrioritizationFees([
-    CLUSTER === "devnet" ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM : CREATE_CPMM_POOL_PROGRAM,
-]);
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 
 function detectCluster(rpcUri: string): "devnet" | "mainnet-beta" {

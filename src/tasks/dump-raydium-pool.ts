@@ -25,7 +25,6 @@ import {
     envVars,
     logger,
     MIN_REMAINING_BALANCE_LAMPORTS,
-    prioritizationFees,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
@@ -64,7 +63,6 @@ const ZERO_BN = new BN(0);
 
         const poolInfo = await loadRaydiumPoolInfo(new PublicKey(raydiumPoolId), mint);
         const unitsToSwap = await getUnitsToSwap(snipers, mint);
-        await prioritizationFees.fetchFees();
         const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, unitsToSwap, snipers);
         await Promise.all(sendSwapTokenToSolTransactions);
 
@@ -128,13 +126,8 @@ async function swapTokenToSol(
                 instructions,
                 [sniper],
                 `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for sniper #${i} (${formatPublicKey(sniper.publicKey)})`,
-                {
-                    amount: prioritizationFees.medianFee,
-                    multiplierIndex: 1,
-                },
-                {
-                    skipPreflight: true,
-                }
+                "VeryHigh",
+                { skipPreflight: true }
             )
         );
     }
@@ -277,7 +270,8 @@ async function closeTokenAccounts(
                 sendAndConfirmVersionedTransaction(
                     instructions,
                     [account],
-                    `to close ATAs for account #${i} (${formatPublicKey(account.publicKey)})`
+                    `to close ATAs for account #${i} (${formatPublicKey(account.publicKey)})`,
+                    "Min"
                 )
             );
         }
@@ -314,7 +308,8 @@ async function collectSol(snipers: Keypair[], distributor: Keypair): Promise<Pro
             sendAndConfirmVersionedTransaction(
                 instructions,
                 [sniper],
-                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from sniper #${i} (${formatPublicKey(sniper.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
+                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from sniper #${i} (${formatPublicKey(sniper.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`,
+                "Low"
             )
         );
     }
