@@ -1,4 +1,5 @@
 import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
+import { NATIVE_MINT } from "@solana/spl-token";
 import Decimal from "decimal.js";
 import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../helpers/format";
 import { checkIfStorageExists, checkIfSupportedByRaydium } from "../helpers/validation";
@@ -23,7 +24,8 @@ import { loadRaydium } from "../modules/raydium";
             throw new Error("Raydium pool not loaded from storage");
         }
 
-        await getPool(raydiumPoolId);
+        await getPool("CUd89bTFMk1qwJoTgFYanfNXiDQfFF6srMc8tpYhQtHg");
+        // await getPool(raydiumPoolId);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -32,54 +34,83 @@ import { loadRaydium } from "../modules/raydium";
 
 async function getPool(raydiumPoolId: string): Promise<void> {
     const raydium = await loadRaydium(connection, envVars.CLUSTER);
-
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
+
     if (raydium.cluster === "devnet") {
         const data = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId);
         poolInfo = data.poolInfo;
-        // Price fix when API returns 5 decimal places
-        poolInfo.price = new Decimal(poolInfo.price.toString().replace(".", ""))
-            .div(10 ** envVars.TOKEN_DECIMALS)
-            .toNumber();
     } else {
         const data = await raydium.api.fetchPoolById({ ids: raydiumPoolId });
         poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
     }
 
-    let mintASymbol: string;
-    let mintBSymbol: string;
-    let feePercent: number;
+    const {
+        id,
+        mintAmountA,
+        mintAmountB,
+        lpMint,
+        lpAmount,
+        type,
+        price,
+        openTime,
+        tvl,
+        burnPercent,
+    } = poolInfo;
+    let { mintA, mintB, feeRate } = poolInfo;
+
     if (raydium.cluster === "devnet") {
-        mintASymbol = "WSOL";
-        mintBSymbol = envVars.TOKEN_SYMBOL;
-        feePercent = poolInfo.feeRate / 1e6;
-    } else {
-        mintASymbol = poolInfo.mintA.symbol;
-        mintBSymbol = poolInfo.mintB.symbol;
-        feePercent = poolInfo.feeRate;
+        const wsolParams = {
+            symbol: "WSOL",
+            name: "Wrapped SOL",
+            decimals: 9,
+        };
+        const tokenParams = {
+            symbol: envVars.TOKEN_SYMBOL,
+            name: envVars.TOKEN_SYMBOL,
+            decimals: envVars.TOKEN_DECIMALS,
+        };
+
+        if (mintA.address === NATIVE_MINT.toBase58()) {
+            mintA = { ...mintA, ...wsolParams };
+            mintB = { ...mintB, ...tokenParams };
+        } else {
+            mintA = { ...mintA, ...tokenParams };
+            mintB = { ...mintB, ...wsolParams };
+        }
+
+        feeRate = feeRate / 1e6;
     }
 
     logger.info(
-        "Raydium pool (%s)\n\t\tPool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\tPool type: %s\n\t\tPrice: 1 %s ≈ %s %s\n\t\tFee tier: %s\n\t\tOpen time: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s",
+        "Raydium pool (%s)\n\t\tPool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\tPool type: %s\n\t\tBase price: 1 %s ≈ %s %s\n\t\tQuote price: 1 %s ≈ %s %s\n\t\tFee tier: %s\n\t\tOpen time: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s",
         raydium.cluster,
-        poolInfo.id,
-        mintASymbol,
-        poolInfo.mintA.address,
-        mintBSymbol,
-        poolInfo.mintB.address,
-        poolInfo.lpMint.address,
-        poolInfo.type,
-        mintASymbol,
-        formatDecimal(poolInfo.price, envVars.TOKEN_DECIMALS),
-        mintBSymbol,
-        formatPercent(feePercent),
-        formatDate(Number(poolInfo.openTime)),
-        formatCurrency(poolInfo.tvl),
-        mintASymbol,
-        formatDecimal(poolInfo.mintAmountA, 9),
-        mintBSymbol,
-        formatDecimal(poolInfo.mintAmountB, envVars.TOKEN_DECIMALS),
-        formatDecimal(poolInfo.lpAmount / 10 ** RAYDIUM_LP_MINT_DECIMALS, RAYDIUM_LP_MINT_DECIMALS),
-        formatPercent(poolInfo.burnPercent / 1e2)
+        id,
+        mintA.symbol,
+        mintA.address,
+        mintB.symbol,
+        mintB.address,
+        lpMint.address,
+        type,
+        mintA.symbol,
+        formatDecimal(
+            price,
+            NATIVE_MINT.toBase58() === mintA.address ? mintA.decimals : mintB.decimals
+        ),
+        mintB.symbol,
+        mintB.symbol,
+        formatDecimal(
+            new Decimal(1).div(price),
+            NATIVE_MINT.toBase58() !== mintA.address ? mintA.decimals : mintB.decimals
+        ),
+        mintA.symbol,
+        formatPercent(feeRate),
+        formatDate(Number(openTime)),
+        formatCurrency(tvl),
+        mintA.symbol,
+        formatDecimal(mintAmountA, 9),
+        mintB.symbol,
+        formatDecimal(mintAmountB, envVars.TOKEN_DECIMALS),
+        formatDecimal(lpAmount / 10 ** RAYDIUM_LP_MINT_DECIMALS, RAYDIUM_LP_MINT_DECIMALS),
+        formatPercent(burnPercent / 1e2)
     );
 }
