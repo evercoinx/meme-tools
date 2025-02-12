@@ -3,7 +3,7 @@ import Joi from "joi";
 
 interface EnvironmentSchema {
     LOG_LEVEL: string;
-    IPFS_JWT: string;
+    PINATA_JWT: string;
     IPFS_GATEWAY: string;
     RPC_URI: string;
     EXPLORER_URI: string;
@@ -31,10 +31,10 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .optional()
                 .valid("debug", "info", "warn", "error", "fatal")
                 .default("info"),
-            IPFS_JWT: Joi.string()
+            PINATA_JWT: Joi.string()
                 .required()
                 .pattern(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/)
-                .description("IPFS JWT"),
+                .description("Pinata JWT"),
             IPFS_GATEWAY: Joi.string().required().uri().description("IPFS Gateway"),
             RPC_URI: Joi.string().required().uri().description("Solana RPC URI"),
             EXPLORER_URI: Joi.string()
