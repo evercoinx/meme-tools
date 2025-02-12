@@ -11,6 +11,11 @@ import { createStorage } from "./storage";
 
 dotenv.config();
 
+export enum SwapperType {
+    Sniper = "sniper",
+    Trader = "trader",
+}
+
 const cwd = process.cwd();
 export const IMAGE_DIR = `${cwd}/input/images`;
 export const METADATA_DIR = `${cwd}/input/metadata`;
@@ -27,12 +32,14 @@ export const RAYDIUM_LP_MINT_DECIMALS = 9;
 export const UNKNOWN_KEY = "?".repeat(44);
 
 export const envVars = extractEnvironmentVariables();
-export const STORAGE_SNIPER_SECRET_KEYS: Record<number, string> = [
-    ...Array(envVars.SNIPER_SHARE_POOL_PERCENTS.length),
-].reduce((secretKeys, _, i) => {
-    secretKeys[i] = `sniper_${i}_secret_key`;
-    return secretKeys;
-}, {});
+export const STORAGE_SNIPER_SECRET_KEYS = generateSecretKeyRecord(
+    envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+    SwapperType.Sniper
+);
+export const STORAGE_TRADER_SECRET_KEYS = generateSecretKeyRecord(
+    envVars.TRADER_COUNT,
+    SwapperType.Trader
+);
 export const CLUSTER = detectCluster(envVars.RPC_URI);
 
 export const logger = createLogger(envVars.LOG_LEVEL);
@@ -52,4 +59,15 @@ function detectCluster(rpcUri: string): "devnet" | "mainnet-beta" {
     }
 
     throw new Error(`Cluster not detected for RPC URI: ${rpcUri}`);
+}
+
+function generateSecretKeyRecord(
+    secretKeyCount: number,
+    swapperType: SwapperType
+): Record<number, string> {
+    const secretKeyRecord: Record<number, string> = {};
+    for (let i = 0; i < secretKeyCount; i++) {
+        secretKeyRecord[i] = `${swapperType}_${i}_secret_key`;
+    }
+    return secretKeyRecord;
 }

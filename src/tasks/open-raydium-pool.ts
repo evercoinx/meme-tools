@@ -29,7 +29,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { importSniperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
@@ -40,6 +40,8 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
+    STORAGE_SNIPER_SECRET_KEYS,
+    SwapperType,
 } from "../modules";
 import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo } from "../modules/raydium";
 
@@ -56,11 +58,15 @@ const SLIPPAGE = 0.15;
             throw new Error("Mint not imported");
         }
 
-        const snipers = importSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length);
+        const snipers = importSwapperKeypairs(
+            envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+            SwapperType.Sniper,
+            STORAGE_SNIPER_SECRET_KEYS
+        );
         const amounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
         );
-        const eligibleSnipers = await markSnipersAsEligible(snipers, mint);
+        const eligibleSnipers = await findEligibleSnipers(snipers, mint);
 
         const [sendCreatePoolTransaction, poolInfo] = await createPool(dev, mint);
         const sendSwapSolToTokenTransactions = await swapSolToToken(
@@ -82,10 +88,7 @@ const SLIPPAGE = 0.15;
     }
 })();
 
-async function markSnipersAsEligible(
-    snipers: Keypair[],
-    mint: Keypair
-): Promise<(Keypair | null)[]> {
+async function findEligibleSnipers(snipers: Keypair[], mint: Keypair): Promise<(Keypair | null)[]> {
     const eligibleSnipers: (Keypair | null)[] = [];
 
     for (const [i, sniper] of snipers.entries()) {

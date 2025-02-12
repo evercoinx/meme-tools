@@ -16,7 +16,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { importLocalKeypair, importMintKeypair, importSniperKeypairs } from "../helpers/account";
+import { importLocalKeypair, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
@@ -28,6 +28,8 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
+    STORAGE_SNIPER_SECRET_KEYS,
+    SwapperType,
 } from "../modules";
 import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo } from "../modules/raydium";
 
@@ -49,7 +51,11 @@ const ZERO_BN = new BN(0);
             throw new Error("Mint not imported");
         }
 
-        const snipers = importSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length);
+        const snipers = importSwapperKeypairs(
+            envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+            SwapperType.Sniper,
+            STORAGE_SNIPER_SECRET_KEYS
+        );
 
         const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {

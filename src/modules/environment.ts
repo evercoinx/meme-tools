@@ -17,7 +17,8 @@ interface EnvironmentSchema {
     INITIAL_POOL_SIZE_PERCENT: number;
     INITIAL_POOL_LIQUIDITY_SOL: number;
     SNIPER_SHARE_POOL_PERCENTS: number[];
-    SNIPER_COMPUTE_BUDGET_SOL: number;
+    SWAPPER_COMPUTE_BUDGET_SOL: number;
+    TRADER_COUNT: number;
 }
 
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
@@ -94,11 +95,17 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(1)
                 .max(100)
                 .description("Sniper share pool (in percents)"),
-            SNIPER_COMPUTE_BUDGET_SOL: Joi.number()
+            SWAPPER_COMPUTE_BUDGET_SOL: Joi.number()
                 .required()
                 .min(0.005)
                 .max(0.1)
-                .description("Sniper compute budget (in SOL)"),
+                .description("Swapper compute budget (in SOL)"),
+            TRADER_COUNT: Joi.number()
+                .required()
+                .integer()
+                .min(1)
+                .max(1_000)
+                .description("Trader count"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 

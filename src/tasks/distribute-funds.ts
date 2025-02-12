@@ -8,14 +8,14 @@ import {
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import {
-    generateSniperKeypairs,
+    generateSwapperKeypairs,
     importLocalKeypair,
-    importSniperKeypairs,
+    importSwapperKeypairs,
 } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
-import { connection, envVars, logger } from "../modules";
+import { connection, envVars, logger, STORAGE_SNIPER_SECRET_KEYS, SwapperType } from "../modules";
 
 (async () => {
     try {
@@ -26,20 +26,24 @@ import { connection, envVars, logger } from "../modules";
 
         const storageExists = await checkIfStorageExists(true);
         const snipers = storageExists
-            ? importSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length)
-            : generateSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length);
+            ? importSwapperKeypairs(
+                  envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+                  SwapperType.Sniper,
+                  STORAGE_SNIPER_SECRET_KEYS
+              )
+            : generateSwapperKeypairs(
+                  envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+                  SwapperType.Sniper,
+                  STORAGE_SNIPER_SECRET_KEYS
+              );
 
-        const amountsToDistribute = envVars.SNIPER_SHARE_POOL_PERCENTS.map((percent) =>
+        const amounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL)
                 .mul(percent)
-                .plus(envVars.SNIPER_COMPUTE_BUDGET_SOL)
+                .plus(envVars.SWAPPER_COMPUTE_BUDGET_SOL)
         );
 
-        const sendDistrubuteFundsTransaction = await distributeFunds(
-            amountsToDistribute,
-            distributor,
-            snipers
-        );
+        const sendDistrubuteFundsTransaction = await distributeFunds(amounts, distributor, snipers);
         await Promise.all([sendDistrubuteFundsTransaction]);
     } catch (err) {
         logger.fatal(err);
@@ -48,14 +52,14 @@ import { connection, envVars, logger } from "../modules";
 })();
 
 async function distributeFunds(
-    amountsToDistribute: Decimal[],
+    amounts: Decimal[],
     distributor: Keypair,
     snipers: Keypair[]
 ): Promise<Promise<void>> {
     const instructions: TransactionInstruction[] = [];
 
     for (const [i, sniper] of snipers.entries()) {
-        const lamports = amountsToDistribute[i].mul(LAMPORTS_PER_SOL);
+        const lamports = amounts[i].mul(LAMPORTS_PER_SOL);
         const solBalance = new Decimal(await connection.getBalance(sniper.publicKey, "confirmed"));
 
         if (solBalance.gte(lamports)) {
