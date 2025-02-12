@@ -18,6 +18,7 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_SNIPER_SECRET_KEYS,
+    STORAGE_TRADER_SECRET_KEYS,
     SwapperType,
     UNKNOWN_KEY,
 } from "../modules";
@@ -36,9 +37,14 @@ import {
             SwapperType.Sniper,
             STORAGE_SNIPER_SECRET_KEYS
         );
+        const traders = importSwapperKeypairs(
+            envVars.TRADER_COUNT,
+            SwapperType.Trader,
+            STORAGE_TRADER_SECRET_KEYS
+        );
         const mint = importMintKeypair();
 
-        await getFunds([dev, distributor, ...snipers], mint);
+        await getFunds([dev, distributor, ...snipers, ...traders], mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -49,6 +55,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
     for (const [i, account] of accounts.entries()) {
         const isDev = i === 0;
         const isDistributor = i === 1;
+        const isSniper = i >= 2 && i < 2 + envVars.SNIPER_SHARE_POOL_PERCENTS.length;
 
         const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
         const wsolTokenAccount = getAssociatedTokenAddressSync(
@@ -147,7 +154,11 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         } else {
             logger.info(
                 "%s funds\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n",
-                isDistributor ? "Distributor" : `Sniper #${i - 2}`,
+                isDistributor
+                    ? "Distributor"
+                    : isSniper
+                      ? `Sniper #${i - 2}`
+                      : `Trader #${i - 2 - envVars.SNIPER_SHARE_POOL_PERCENTS.length}`,
                 ...logParams
             );
         }
