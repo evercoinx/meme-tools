@@ -22,53 +22,6 @@ interface TransactionOptions extends SendOptions {
     commitment?: Commitment;
 }
 
-async function getPriorityFeeEstimate(
-    priorityLevel: PriorityLevel,
-    transaction: VersionedTransaction
-): Promise<number> {
-    if (CLUSTER === "devnet") {
-        return 0;
-    }
-
-    let response: AxiosResponse<GetPriorityFeeEstimateResponse> | undefined;
-    const serializedTransaction = transaction.serialize();
-
-    try {
-        response = await heliusClient.post<
-            GetPriorityFeeEstimateResponse,
-            AxiosResponse<GetPriorityFeeEstimateResponse>,
-            GetPriorityFeeEstimateRequest
-        >("/", {
-            jsonrpc: "2.0",
-            id: Buffer.from(serializedTransaction).toString("hex"),
-            method: "getPriorityFeeEstimate",
-            params: [
-                {
-                    transaction: bs58.encode(serializedTransaction),
-                    options: { priorityLevel },
-                },
-            ],
-        });
-    } catch (err) {
-        if (axios.isAxiosError<GetPriorityFeeEstimateResponse>(err) && err.response?.data.error) {
-            const {
-                response: {
-                    data: {
-                        error: { code, message },
-                    },
-                },
-            } = err;
-            throw new Error(
-                `Failed to call getPriorityFeeEstimate. Code: ${code}. Message: ${message}`
-            );
-        } else {
-            throw new Error(`Failed to call getPriorityFeeEstimate: ${err}`);
-        }
-    }
-
-    return response.data.result?.priorityFeeEstimate ?? 0;
-}
-
 export async function sendAndConfirmVersionedTransaction(
     connection: Connection,
     instructions: TransactionInstruction[],
@@ -153,11 +106,53 @@ export async function sendAndConfirmVersionedTransaction(
         throw new Error(latestErrorMessage);
     }
 
-    /* eslint-disable @typescript-eslint/no-non-null-assertion */
     logger.info(
         "Transaction (%s) confirmed: %s",
-        formatPublicKey(signature!, 8),
-        explorer.generateTransactionUri(signature!)
+        signature ? formatPublicKey(signature, 8) : "?",
+        signature ? explorer.generateTransactionUri(signature) : "?"
     );
-    /* eslint-enable @typescript-eslint/no-non-null-assertion */
+}
+
+async function getPriorityFeeEstimate(
+    priorityLevel: PriorityLevel,
+    transaction: VersionedTransaction
+): Promise<number> {
+    if (CLUSTER === "devnet") {
+        return 0;
+    }
+
+    let response: AxiosResponse<GetPriorityFeeEstimateResponse> | undefined;
+    const serializedTransaction = transaction.serialize();
+
+    try {
+        response = await heliusClient.post<
+            GetPriorityFeeEstimateResponse,
+            AxiosResponse<GetPriorityFeeEstimateResponse>,
+            GetPriorityFeeEstimateRequest
+        >("/", {
+            jsonrpc: "2.0",
+            id: Buffer.from(serializedTransaction).toString("hex"),
+            method: "getPriorityFeeEstimate",
+            params: [
+                {
+                    transaction: bs58.encode(serializedTransaction),
+                    options: { priorityLevel },
+                },
+            ],
+        });
+    } catch (err) {
+        if (axios.isAxiosError<GetPriorityFeeEstimateResponse>(err) && err.response?.data.error) {
+            const {
+                response: { data },
+            } = err;
+
+            throw new Error(
+                `Failed to call getPriorityFeeEstimate. Code: ${data.error?.code ?? "?"}. Message: ${data.error?.message ?? "?"}`
+            );
+        }
+
+        throw new Error(`Failed to call getPriorityFeeEstimate: ${err}`);
+    }
+
+    return response.data.result?.priorityFeeEstimate ?? 0;
 }

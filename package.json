@@ -28,7 +28,7 @@
     "license": "UNLICENSED",
     "private": true,
     "dependencies": {
-        "@raydium-io/raydium-sdk-v2": "^0.1.112-alpha",
+        "@raydium-io/raydium-sdk-v2": "^0.1.113-alpha",
         "@solana/spl-token": "^0.4.9",
         "@solana/web3.js": "^1.98.0",
         "axios": "^1.7.9",
