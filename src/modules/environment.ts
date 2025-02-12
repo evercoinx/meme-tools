@@ -96,7 +96,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Sniper share pool (in percents)"),
             SNIPER_COMPUTE_BUDGET_SOL: Joi.number()
                 .required()
-                .min(0.01)
+                .min(0.005)
                 .max(0.1)
                 .description("Sniper compute budget (in SOL)"),
         })

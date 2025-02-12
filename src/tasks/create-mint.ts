@@ -240,6 +240,7 @@ async function createMint(
     ];
 
     return sendAndConfirmVersionedTransaction(
+        connection,
         instructions,
         [dev, mint],
         `to create mint (${formatPublicKey(mint.publicKey)})`,

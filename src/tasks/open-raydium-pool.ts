@@ -134,7 +134,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
         }
         logger.debug("Raydium LP mint %s loaded from storage", raydimLpMint);
 
-        const poolInfo = await loadRaydiumPoolInfo(new PublicKey(raydiumPoolId), mint);
+        const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
         return [Promise.resolve(), poolInfo];
     }
 
@@ -214,6 +214,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
     });
 
     const sendTransaction = sendAndConfirmVersionedTransaction(
+        connection,
         [...wrapSolInstructions, ...createPoolInstructions],
         [dev],
         `to create pool id (${poolId.toBase58()})`,
@@ -346,6 +347,7 @@ async function swapSolToToken(
 
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
+                connection,
                 instructions,
                 [sniper],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for sniper #${i} (${formatPublicKey(sniper.publicKey)})`,
@@ -403,6 +405,7 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
     ];
 
     return sendAndConfirmVersionedTransaction(
+        connection,
         instructions,
         [dev],
         `to burn LP mint (${formatPublicKey(lpMint)}) for dev (${formatPublicKey(dev.publicKey)})`,

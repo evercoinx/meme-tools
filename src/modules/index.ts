@@ -6,6 +6,7 @@ import { extractEnvironmentVariables } from "./environment";
 import { Explorer } from "./explorer";
 import { createIPFS } from "./ipfs";
 import { createLogger } from "./logger";
+import { createHeliusClient } from "./helius";
 import { createStorage } from "./storage";
 
 dotenv.config();
@@ -36,6 +37,7 @@ export const CLUSTER = detectCluster(envVars.RPC_URI);
 
 export const logger = createLogger(envVars.LOG_LEVEL);
 export const connection = new Connection(envVars.RPC_URI, "confirmed");
+export const heliusClient = createHeliusClient(envVars.RPC_URI);
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
 export const explorer = new Explorer(envVars.EXPLORER_URI, CLUSTER);
 export const ipfs = createIPFS(envVars.IPFS_JWT, envVars.IPFS_GATEWAY);

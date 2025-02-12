@@ -108,6 +108,7 @@ async function distributeFunds(
 
     return instructions.length > 0
         ? sendAndConfirmVersionedTransaction(
+              connection,
               instructions,
               [distributor],
               `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${snipers.length} snipers`,

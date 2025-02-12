@@ -1,33 +1,22 @@
 import {
     Commitment,
     ComputeBudgetProgram,
+    Connection,
     Keypair,
     SendOptions,
     TransactionInstruction,
     TransactionMessage,
     VersionedTransaction,
 } from "@solana/web3.js";
+import axios, { AxiosResponse } from "axios";
 import bs58 from "bs58";
-import { CLUSTER, connection, envVars, explorer, logger } from "../modules";
+import { CLUSTER, envVars, explorer, heliusClient, logger } from "../modules";
+import {
+    GetPriorityFeeEstimateRequest,
+    GetPriorityFeeEstimateResponse,
+    PriorityLevel,
+} from "../modules/helius";
 import { formatDecimal, formatPublicKey, formatSignature } from "./format";
-
-type PriorityLevel = "Min" | "Low" | "Medium" | "High" | "VeryHigh" | "UnsafeMax" | "Default";
-
-interface GetPriorityFeeEstimateResponse {
-    id?: string;
-    jsonrpc: string;
-    result?: {
-        priorityFeeEstimate?: number;
-        priorityFeeLevels?: Record<
-            "min" | "low" | "medium" | "high" | "veryHigh" | "unsafeMax",
-            number
-        >;
-    };
-    error?: {
-        code: number;
-        message: string;
-    };
-}
 
 interface TransactionOptions extends SendOptions {
     commitment?: Commitment;
@@ -41,46 +30,47 @@ async function getPriorityFeeEstimate(
         return 0;
     }
 
-    const response = await fetch(envVars.RPC_URI, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    let response: AxiosResponse<GetPriorityFeeEstimateResponse> | undefined;
+    const serializedTransaction = transaction.serialize();
+
+    try {
+        response = await heliusClient.post<
+            GetPriorityFeeEstimateResponse,
+            AxiosResponse<GetPriorityFeeEstimateResponse>,
+            GetPriorityFeeEstimateRequest
+        >("/", {
             jsonrpc: "2.0",
-            id: "1",
+            id: Buffer.from(serializedTransaction).toString("hex"),
             method: "getPriorityFeeEstimate",
             params: [
                 {
-                    transaction: bs58.encode(transaction.serialize()),
-                    options: {
-                        priorityLevel,
-                    },
+                    transaction: bs58.encode(serializedTransaction),
+                    options: { priorityLevel },
                 },
             ],
-        }),
-    });
-
-    if (!response.ok) {
-        let jsonResponse: GetPriorityFeeEstimateResponse;
-        try {
-            jsonResponse = (await response.json()) as GetPriorityFeeEstimateResponse;
-        } catch {
+        });
+    } catch (err) {
+        if (axios.isAxiosError<GetPriorityFeeEstimateResponse>(err) && err.response?.data.error) {
+            const {
+                response: {
+                    data: {
+                        error: { code, message },
+                    },
+                },
+            } = err;
             throw new Error(
-                `Error while parsing getPriorityFeeEstimate response. Status: ${response.status}`
+                `Failed to call getPriorityFeeEstimate. Code: ${code}. Message: ${message}`
             );
+        } else {
+            throw new Error(`Failed to call getPriorityFeeEstimate: ${err}`);
         }
-
-        throw new Error(
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            `Error while calling getPriorityFeeEstimate. Code: ${jsonResponse.error!.code}. Message: ${jsonResponse.error!.message}`
-        );
     }
 
-    const jsonResponse = (await response.json()) as GetPriorityFeeEstimateResponse;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return jsonResponse.result!.priorityFeeEstimate!;
+    return response.data.result?.priorityFeeEstimate ?? 0;
 }
 
 export async function sendAndConfirmVersionedTransaction(
+    connection: Connection,
     instructions: TransactionInstruction[],
     signers: Keypair[],
     logMessage: string,

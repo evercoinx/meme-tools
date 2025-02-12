@@ -61,7 +61,7 @@ const ZERO_BN = new BN(0);
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const poolInfo = await loadRaydiumPoolInfo(new PublicKey(raydiumPoolId), mint);
+        const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
         const unitsToSwap = await getUnitsToSwap(snipers, mint);
         const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, unitsToSwap, snipers);
         await Promise.all(sendSwapTokenToSolTransactions);
@@ -123,6 +123,7 @@ async function swapTokenToSol(
 
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
+                connection,
                 instructions,
                 [sniper],
                 `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for sniper #${i} (${formatPublicKey(sniper.publicKey)})`,
@@ -268,6 +269,7 @@ async function closeTokenAccounts(
         if (instructions.length > 0) {
             sendTransactions.push(
                 sendAndConfirmVersionedTransaction(
+                    connection,
                     instructions,
                     [account],
                     `to close ATAs for account #${i} (${formatPublicKey(account.publicKey)})`,
@@ -306,6 +308,7 @@ async function collectSol(snipers: Keypair[], distributor: Keypair): Promise<Pro
 
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
+                connection,
                 instructions,
                 [sniper],
                 `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from sniper #${i} (${formatPublicKey(sniper.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`,

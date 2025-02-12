@@ -9,7 +9,7 @@ import {
 import { NATIVE_MINT } from "@solana/spl-token";
 import { clusterApiUrl, Connection, Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { CLUSTER, connection } from "../modules";
+import { CLUSTER } from "../modules";
 
 export interface CpmmPoolInfo {
     poolInfo: ApiV3PoolInfoStandardItemCpmm;
@@ -36,7 +36,11 @@ export async function loadRaydium(connection: Connection, owner?: Keypair): Prom
     });
 }
 
-export async function loadRaydiumPoolInfo(poolId: PublicKey, mint: Keypair): Promise<CpmmPoolInfo> {
+export async function loadRaydiumPoolInfo(
+    connection: Connection,
+    poolId: PublicKey,
+    mint: Keypair
+): Promise<CpmmPoolInfo> {
     const raydium = await loadRaydium(connection);
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
     let poolKeys: CpmmKeys | undefined;
