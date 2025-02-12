@@ -17,14 +17,14 @@ import { envVars, logger, UNKNOWN_KEY } from "../modules";
         const snipers = importSniperKeypairs(envVars.SNIPER_SHARE_POOL_PERCENTS.length);
         const mint = importMintKeypair();
 
-        getKeys(dev, distributor, snipers, mint);
+        getAccounts(dev, distributor, snipers, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-function getKeys(dev: Keypair, distributor: Keypair, snipers: Keypair[], mint?: Keypair): void {
+function getAccounts(dev: Keypair, distributor: Keypair, snipers: Keypair[], mint?: Keypair): void {
     logger.info(
         "Dev keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         dev.publicKey.toBase58(),
@@ -37,18 +37,18 @@ function getKeys(dev: Keypair, distributor: Keypair, snipers: Keypair[], mint?: 
         bs58.encode(distributor.secretKey)
     );
 
-    for (const [i, sniper] of snipers.entries()) {
-        logger.info(
-            "Sniper #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n\n\t\t",
-            i,
-            sniper.publicKey.toBase58(),
-            bs58.encode(sniper.secretKey)
-        );
-    }
-
     logger.info(
         "Mint keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         mint ? mint.publicKey.toBase58() : UNKNOWN_KEY,
         mint ? bs58.encode(mint.secretKey) : UNKNOWN_KEY
     );
+
+    for (const [i, sniper] of snipers.entries()) {
+        logger.info(
+            "Sniper #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
+            i,
+            sniper.publicKey.toBase58(),
+            bs58.encode(sniper.secretKey)
+        );
+    }
 }

@@ -18,7 +18,7 @@
         "open-raydium-pool:view": "yarn open-raydium-pool && yarn get-raydium-pool && yarn get-funds",
         "dump-raydium-pool": "ts-node src/tasks/dump-raydium-pool.ts",
         "dump-raydium-pool:view": "yarn dump-raydium-pool && yarn get-raydium-pool && yarn get-funds",
-        "get-keys": "ts-node src/tasks/get-keys.ts",
+        "get-accounts": "ts-node src/tasks/get-accounts.ts",
         "get-funds": "ts-node src/tasks/get-funds.ts",
         "get-mint": "ts-node src/tasks/get-mint.ts",
         "get-raydium-pool": "ts-node src/tasks/get-raydium-pool.ts"
