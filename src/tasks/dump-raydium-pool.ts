@@ -1,22 +1,14 @@
 import { CurveCalculator, TxVersion } from "@raydium-io/raydium-sdk-v2";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
-    createCloseAccountInstruction,
     getAssociatedTokenAddressSync,
     NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-    Keypair,
-    LAMPORTS_PER_SOL,
-    PublicKey,
-    SystemProgram,
-    TransactionInstruction,
-} from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { importLocalKeypair, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
+import { importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
@@ -24,7 +16,6 @@ import {
     connection,
     envVars,
     logger,
-    MIN_REMAINING_BALANCE_LAMPORTS,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
@@ -39,12 +30,6 @@ const ZERO_BN = new BN(0);
 (async () => {
     try {
         await checkIfStorageExists();
-
-        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
-        const distributor = await importLocalKeypair(
-            envVars.DISTRIBUTOR_KEYPAIR_PATH,
-            "distributor"
-        );
 
         const mint = importMintKeypair();
         if (!mint) {
@@ -69,19 +54,9 @@ const ZERO_BN = new BN(0);
 
         const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
         const unitsToSwap = await getUnitsToSwap(snipers, mint);
+
         const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, unitsToSwap, snipers);
         await Promise.all(sendSwapTokenToSolTransactions);
-
-        const sendCloseTokenAccountsTransactions = await closeTokenAccounts(
-            dev,
-            snipers,
-            mint,
-            new PublicKey(raydiumLpMint)
-        );
-        await Promise.all(sendCloseTokenAccountsTransactions);
-
-        const sendCollectSolTransactions = await collectSol(snipers, distributor);
-        await Promise.all(sendCollectSolTransactions);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -170,158 +145,4 @@ async function getUnitsToSwap(snipers: Keypair[], mint: Keypair): Promise<(BN | 
     }
 
     return unitsToSwap;
-}
-
-async function closeTokenAccounts(
-    dev: Keypair,
-    snipers: Keypair[],
-    mint: Keypair,
-    lpMintPublicKey: PublicKey
-): Promise<Promise<void>[]> {
-    const sendTransactions: Promise<void>[] = [];
-    for (const [i, account] of [dev, ...snipers].entries()) {
-        const isDev = i === 0;
-        const instructions: TransactionInstruction[] = [];
-
-        const mintTokenAccount = getAssociatedTokenAddressSync(
-            mint.publicKey,
-            account.publicKey,
-            false,
-            TOKEN_2022_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
-
-        const mintAccountInfo = await connection.getAccountInfo(mintTokenAccount, "confirmed");
-        if (mintAccountInfo) {
-            instructions.push(
-                createCloseAccountInstruction(
-                    mintTokenAccount,
-                    account.publicKey,
-                    account.publicKey,
-                    [],
-                    TOKEN_2022_PROGRAM_ID
-                )
-            );
-        } else {
-            logger.warn(
-                "%s ATA (%s) not exists for %s (%s)",
-                envVars.TOKEN_SYMBOL,
-                formatPublicKey(mintTokenAccount),
-                isDev ? "dev" : `sniper #${i - 1}`,
-                formatPublicKey(account.publicKey)
-            );
-        }
-
-        if (isDev) {
-            const lpMintTokenAccount = getAssociatedTokenAddressSync(
-                lpMintPublicKey,
-                dev.publicKey,
-                false,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
-            );
-
-            const lpMintAccountInfo = await connection.getAccountInfo(
-                lpMintTokenAccount,
-                "confirmed"
-            );
-            if (lpMintAccountInfo) {
-                instructions.push(
-                    createCloseAccountInstruction(
-                        lpMintTokenAccount,
-                        dev.publicKey,
-                        dev.publicKey,
-                        [],
-                        TOKEN_PROGRAM_ID
-                    )
-                );
-            } else {
-                logger.warn(
-                    "LP mint ATA (%s) not exists for dev (%s)",
-                    formatPublicKey(lpMintTokenAccount),
-                    formatPublicKey(dev.publicKey)
-                );
-            }
-        } else {
-            const wsolTokenAccount = getAssociatedTokenAddressSync(
-                NATIVE_MINT,
-                account.publicKey,
-                false,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
-            );
-
-            const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
-            if (wsolAccountInfo) {
-                instructions.push(
-                    createCloseAccountInstruction(
-                        wsolTokenAccount,
-                        account.publicKey,
-                        account.publicKey,
-                        [],
-                        TOKEN_PROGRAM_ID
-                    )
-                );
-            } else {
-                logger.warn(
-                    "WSOL ATA (%s) not exists for sniper #%d (%s)",
-                    formatPublicKey(wsolTokenAccount),
-                    i - 1,
-                    formatPublicKey(account.publicKey)
-                );
-            }
-        }
-
-        if (instructions.length > 0) {
-            sendTransactions.push(
-                sendAndConfirmVersionedTransaction(
-                    connection,
-                    instructions,
-                    [account],
-                    `to close ATAs for account #${i} (${formatPublicKey(account.publicKey)})`,
-                    "Min"
-                )
-            );
-        }
-    }
-
-    return sendTransactions;
-}
-
-async function collectSol(snipers: Keypair[], distributor: Keypair): Promise<Promise<void>[]> {
-    const sendTransactions: Promise<void>[] = [];
-
-    for (const [i, sniper] of snipers.entries()) {
-        const solBalance = await connection.getBalance(sniper.publicKey, "confirmed");
-        if (solBalance <= MIN_REMAINING_BALANCE_LAMPORTS) {
-            logger.warn(
-                "Sniper #%d (%s) has insufficient balance: %s SOL",
-                i,
-                formatPublicKey(sniper.publicKey),
-                formatDecimal(solBalance)
-            );
-            continue;
-        }
-
-        const lamports = solBalance - MIN_REMAINING_BALANCE_LAMPORTS;
-        const instructions = [
-            SystemProgram.transfer({
-                fromPubkey: sniper.publicKey,
-                toPubkey: distributor.publicKey,
-                lamports,
-            }),
-        ];
-
-        sendTransactions.push(
-            sendAndConfirmVersionedTransaction(
-                connection,
-                instructions,
-                [sniper],
-                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from sniper #${i} (${formatPublicKey(sniper.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`,
-                "Low"
-            )
-        );
-    }
-
-    return sendTransactions;
 }
