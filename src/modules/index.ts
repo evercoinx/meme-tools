@@ -1,6 +1,8 @@
 import "source-map-support/register";
 import dotenv from "dotenv";
 import { Connection } from "@solana/web3.js";
+import BN from "bn.js";
+import Decimal from "decimal.js";
 import { Encryption } from "./encryption";
 import { extractEnvironmentVariables } from "./environment";
 import { Explorer } from "./explorer";
@@ -41,6 +43,8 @@ export const STORAGE_TRADER_SECRET_KEYS = generateSecretKeyRecord(
     SwapperType.Trader
 );
 export const CLUSTER = detectCluster(envVars.RPC_URI);
+export const ZERO_BN = new BN(0);
+export const ZERO_DECIMAL = new Decimal(0);
 
 export const logger = createLogger(envVars.LOG_LEVEL);
 export const connection = new Connection(envVars.RPC_URI, "confirmed");

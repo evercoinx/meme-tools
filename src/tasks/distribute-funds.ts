@@ -1,4 +1,3 @@
-import { randomInt } from "node:crypto";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     createAssociatedTokenAccountInstruction,
@@ -16,6 +15,7 @@ import {
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
+import { getRandomFloat } from "../helpers/random";
 import {
     connection,
     envVars,
@@ -64,10 +64,8 @@ import {
         );
 
         const traderAmounts = new Array(envVars.TRADER_COUNT).fill(0).map(() => {
-            const index = randomInt(0, 1);
-            return new Decimal(envVars.TRADER_AMOUNT_RANGE_SOL[index]).plus(
-                envVars.SWAPPER_COMPUTE_BUDGET_SOL
-            );
+            const buyAmount = new Decimal(getRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
+            return buyAmount.mul(LAMPORTS_PER_SOL).plus(envVars.SWAPPER_COMPUTE_BUDGET_SOL);
         });
 
         const sendDistrubuteSniperFundsTransaction = await distributeFunds(
@@ -92,17 +90,16 @@ import {
 })();
 
 async function distributeFunds(
-    amounts: Decimal[],
+    lamports: Decimal[],
     distributor: Keypair,
     accounts: Keypair[]
 ): Promise<Promise<void>> {
     const instructions: TransactionInstruction[] = [];
 
     for (const [i, account] of accounts.entries()) {
-        const lamports = amounts[i].mul(LAMPORTS_PER_SOL);
         const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
 
-        if (solBalance.gte(lamports)) {
+        if (solBalance.gte(lamports[i])) {
             logger.warn(
                 "Sniper #%d (%s) has sufficient balance: %s SOL",
                 i,
@@ -110,7 +107,7 @@ async function distributeFunds(
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
         } else {
-            const residualLamports = lamports.sub(solBalance);
+            const residualLamports = lamports[i].sub(solBalance);
             instructions.push(
                 SystemProgram.transfer({
                     fromPubkey: distributor.publicKey,

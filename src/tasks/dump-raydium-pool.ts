@@ -7,6 +7,7 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
+import { formatPublicKey } from "../helpers/format";
 import {
     connection,
     envVars,
@@ -15,12 +16,13 @@ import {
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
     STORAGE_SNIPER_SECRET_KEYS,
+    STORAGE_TRADER_SECRET_KEYS,
     SwapperType,
+    ZERO_BN,
 } from "../modules";
 import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
 
 const SLIPPAGE = 0.3;
-const ZERO_BN = new BN(0);
 
 (async () => {
     try {
@@ -30,12 +32,6 @@ const ZERO_BN = new BN(0);
         if (!mint) {
             throw new Error("Mint not imported");
         }
-
-        const snipers = importSwapperKeypairs(
-            envVars.SNIPER_SHARE_POOL_PERCENTS.length,
-            SwapperType.Sniper,
-            STORAGE_SNIPER_SECRET_KEYS
-        );
 
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {
@@ -48,30 +44,61 @@ const ZERO_BN = new BN(0);
         }
 
         const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
-        const unitsToSwap = await findUnitsToSwap(snipers, mint);
-        const sendSwapMintToSolTransactions = await swapMintToSol(
+
+        const snipers = importSwapperKeypairs(
+            envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+            SwapperType.Sniper,
+            STORAGE_SNIPER_SECRET_KEYS
+        );
+        const traders = importSwapperKeypairs(
+            envVars.TRADER_COUNT,
+            SwapperType.Trader,
+            STORAGE_TRADER_SECRET_KEYS
+        );
+
+        const sniperUnitsToSwap = await findUnitsToSwap(snipers, mint);
+        const traderUnitsToSwap = await findUnitsToSwap(traders, mint);
+
+        const sendSniperSwapMintToSolTransactions = await swapMintToSol(
             connection,
             poolInfo,
             snipers,
-            unitsToSwap,
+            sniperUnitsToSwap,
             SLIPPAGE,
             "VeryHigh",
-            { skipPreflight: true }
+            {
+                skipPreflight: true,
+                commitment: "processed",
+            }
         );
-        await Promise.all(sendSwapMintToSolTransactions);
+        await Promise.all(sendSniperSwapMintToSolTransactions);
+
+        const sendTraderSwapMintToSolTransactions = await swapMintToSol(
+            connection,
+            poolInfo,
+            traders,
+            traderUnitsToSwap,
+            SLIPPAGE,
+            "Medium",
+            {
+                skipPreflight: true,
+                commitment: "confirmed",
+            }
+        );
+        await Promise.all(sendTraderSwapMintToSolTransactions);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-async function findUnitsToSwap(snipers: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
+async function findUnitsToSwap(accounts: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
     const unitsToSwap: (BN | null)[] = [];
 
-    for (const [i, sniper] of snipers.entries()) {
+    for (const [i, account] of accounts.entries()) {
         const mintTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
-            sniper.publicKey,
+            account.publicKey,
             false,
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
@@ -90,6 +117,11 @@ async function findUnitsToSwap(snipers: Keypair[], mint: Keypair): Promise<(BN |
 
         if (mintBalance.lte(ZERO_BN)) {
             unitsToSwap[i] = null;
+            logger.warn(
+                "Account #%d (%s) has zero mint balance",
+                i,
+                formatPublicKey(account.publicKey)
+            );
             continue;
         }
 

@@ -19,7 +19,8 @@ interface EnvironmentSchema {
     SNIPER_SHARE_POOL_PERCENTS: number[];
     SWAPPER_COMPUTE_BUDGET_SOL: number;
     TRADER_COUNT: number;
-    TRADER_AMOUNT_RANGE_SOL: [number, number];
+    TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
+    TRADER_SELL_AMOUNT_RANGE_PERCENT: [number, number];
 }
 
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
@@ -107,13 +108,20 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(1)
                 .max(1_000)
                 .description("Trader count"),
-            TRADER_AMOUNT_RANGE_SOL: Joi.array()
+            TRADER_BUY_AMOUNT_RANGE_SOL: Joi.array()
                 .required()
-                .items(Joi.number().min(0.001).max(0.01))
+                .items(Joi.number().min(0.001).max(0.1))
                 .unique()
                 .min(2)
                 .max(2)
-                .description("Trader amount range (in SOL)"),
+                .description("Trader buy amount range (in SOL)"),
+            TRADER_SELL_AMOUNT_RANGE_PERCENT: Joi.array()
+                .required()
+                .items(Joi.number().min(1).max(100).custom(handlePercent))
+                .unique()
+                .min(2)
+                .max(2)
+                .description("Trader sell amount range (in percent)"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 
@@ -127,7 +135,9 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             ...process.env,
             SNIPER_SHARE_POOL_PERCENTS: process.env.SNIPER_SHARE_POOL_PERCENTS?.split(","),
             PRIORITIZATION_FEE_MULTIPLIERS: process.env.PRIORITIZATION_FEE_MULTIPLIERS?.split(","),
-            TRADER_AMOUNT_RANGE_SOL: process.env.TRADER_AMOUNT_RANGE_SOL?.split(","),
+            TRADER_BUY_AMOUNT_RANGE_SOL: process.env.TRADER_BUY_AMOUNT_RANGE_SOL?.split(","),
+            TRADER_SELL_AMOUNT_RANGE_PERCENT:
+                process.env.TRADER_SELL_AMOUNT_RANGE_PERCENT?.split(","),
         });
     if (error) {
         throw new Error(error.annotate());

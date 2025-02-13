@@ -129,7 +129,8 @@ async function findSnipersToExecuteSwap(
         if (mintBalance.gt(0)) {
             snipersToExecuteSwap[i] = null;
             logger.warn(
-                `Sniper #${i} (%s) not eligible with token balance: %s`,
+                "Sniper #$%d (%s) has non zero mint balance: %s",
+                i,
                 formatPublicKey(sniper.publicKey),
                 formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS))
             );
@@ -349,7 +350,7 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
     }
 
     if (lpMintBalance.lte(0)) {
-        logger.warn("Dev (%s) has 0 LP mint balance", formatPublicKey(dev.publicKey));
+        logger.warn("Dev (%s) has zero LP mint balance", formatPublicKey(dev.publicKey));
         return;
     }
 
