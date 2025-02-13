@@ -18,7 +18,7 @@ import {
 } from "../modules/helius";
 import { formatDecimal, formatPublicKey, formatSignature } from "./format";
 
-interface TransactionOptions extends SendOptions {
+export interface TransactionOptions extends SendOptions {
     commitment?: Commitment;
 }
 
@@ -118,7 +118,7 @@ async function getPriorityFeeEstimate(
     transaction: VersionedTransaction
 ): Promise<number> {
     if (CLUSTER === "devnet") {
-        return 0;
+        return ["Min", "Low"].includes(priorityLevel) ? 0 : 10_000;
     }
 
     let response: AxiosResponse<GetPriorityFeeEstimateResponse> | undefined;

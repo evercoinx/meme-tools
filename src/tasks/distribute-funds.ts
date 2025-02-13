@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     createAssociatedTokenAccountInstruction,
@@ -63,7 +64,7 @@ import {
         );
 
         const traderAmounts = new Array(envVars.TRADER_COUNT).fill(0).map(() => {
-            const index = Math.floor(Math.random() * 2);
+            const index = randomInt(0, 1);
             return new Decimal(envVars.TRADER_AMOUNT_RANGE_SOL[index]).plus(
                 envVars.SWAPPER_COMPUTE_BUDGET_SOL
             );

@@ -1,17 +1,12 @@
-import { CurveCalculator, TxVersion } from "@raydium-io/raydium-sdk-v2";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     getAssociatedTokenAddressSync,
-    NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import Decimal from "decimal.js";
 import { importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
-import { formatDecimal, formatPublicKey } from "../helpers/format";
-import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import {
     connection,
     envVars,
@@ -22,7 +17,7 @@ import {
     STORAGE_SNIPER_SECRET_KEYS,
     SwapperType,
 } from "../modules";
-import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo } from "../modules/raydium";
+import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
 
 const SLIPPAGE = 0.3;
 const ZERO_BN = new BN(0);
@@ -53,71 +48,24 @@ const ZERO_BN = new BN(0);
         }
 
         const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
-        const unitsToSwap = await getUnitsToSwap(snipers, mint);
-
-        const sendSwapTokenToSolTransactions = await swapTokenToSol(poolInfo, unitsToSwap, snipers);
-        await Promise.all(sendSwapTokenToSolTransactions);
+        const unitsToSwap = await findUnitsToSwap(snipers, mint);
+        const sendSwapMintToSolTransactions = await swapMintToSol(
+            connection,
+            poolInfo,
+            snipers,
+            unitsToSwap,
+            SLIPPAGE,
+            "VeryHigh",
+            { skipPreflight: true }
+        );
+        await Promise.all(sendSwapMintToSolTransactions);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-async function swapTokenToSol(
-    { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
-    unitsToSwap: (BN | null)[],
-    snipers: Keypair[]
-): Promise<Promise<void>[]> {
-    const sendTransactions: Promise<void>[] = [];
-    const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
-
-    for (const [i, sniper] of snipers.entries()) {
-        if (unitsToSwap[i] === null) {
-            continue;
-        }
-
-        const swapResult = CurveCalculator.swap(
-            unitsToSwap[i],
-            baseIn ? baseReserve : quoteReserve,
-            baseIn ? quoteReserve : baseReserve,
-            tradeFee
-        );
-
-        const raydium = await loadRaydium(connection, sniper);
-        const {
-            transaction: { instructions },
-        } = await raydium.cpmm.swap<TxVersion.LEGACY>({
-            poolInfo,
-            poolKeys,
-            inputAmount: unitsToSwap[i],
-            swapResult,
-            slippage: SLIPPAGE,
-            baseIn,
-        });
-
-        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
-            10 ** envVars.TOKEN_DECIMALS
-        );
-        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
-            LAMPORTS_PER_SOL
-        );
-
-        sendTransactions.push(
-            sendAndConfirmVersionedTransaction(
-                connection,
-                instructions,
-                [sniper],
-                `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for sniper #${i} (${formatPublicKey(sniper.publicKey)})`,
-                "VeryHigh",
-                { skipPreflight: true }
-            )
-        );
-    }
-
-    return sendTransactions;
-}
-
-async function getUnitsToSwap(snipers: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
+async function findUnitsToSwap(snipers: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
     const unitsToSwap: (BN | null)[] = [];
 
     for (const [i, sniper] of snipers.entries()) {
@@ -137,11 +85,15 @@ async function getUnitsToSwap(snipers: Keypair[], mint: Keypair): Promise<(BN | 
             );
             mintBalance = new BN(mintTokenAccountBalance.value.amount.toString());
         } catch {
+            // Ignore TokenAccountNotFoundError error
+        }
+
+        if (mintBalance.lte(ZERO_BN)) {
             unitsToSwap[i] = null;
             continue;
         }
 
-        unitsToSwap[i] = mintBalance.gt(ZERO_BN) ? mintBalance : null;
+        unitsToSwap[i] = mintBalance;
     }
 
     return unitsToSwap;

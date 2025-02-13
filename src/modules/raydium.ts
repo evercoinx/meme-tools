@@ -3,13 +3,19 @@ import {
     CpmmKeys,
     CpmmRpcData,
     CREATE_CPMM_POOL_PROGRAM,
+    CurveCalculator,
     DEV_CREATE_CPMM_POOL_PROGRAM,
     Raydium,
+    TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { clusterApiUrl, Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { CLUSTER } from "../modules";
+import Decimal from "decimal.js";
+import { CLUSTER, envVars } from "../modules";
+import { formatDecimal, formatPublicKey } from "../helpers/format";
+import { sendAndConfirmVersionedTransaction, TransactionOptions } from "../helpers/network";
+import { PriorityLevel } from "./helius";
 
 export interface CpmmPoolInfo {
     poolInfo: ApiV3PoolInfoStandardItemCpmm;
@@ -88,4 +94,120 @@ export async function loadRaydiumPoolInfo(
         quoteReserve: rpcData.quoteReserve,
         tradeFee: rpcData.configInfo.tradeFeeRate,
     };
+}
+
+export async function swapSolToMint(
+    connection: Connection,
+    { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
+    accounts: (Keypair | null)[],
+    lamportsToSwap: (BN | null)[],
+    slippage: number,
+    priorityLevel: PriorityLevel,
+    transactionOptions?: TransactionOptions
+): Promise<Promise<void>[]> {
+    const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
+    const sendTransactions: Promise<void>[] = [];
+
+    for (const [i, account] of accounts.entries()) {
+        if (account === null || lamportsToSwap[i] === null) {
+            continue;
+        }
+
+        const swapResult = CurveCalculator.swap(
+            lamportsToSwap[i],
+            baseIn ? baseReserve : quoteReserve,
+            baseIn ? quoteReserve : baseReserve,
+            tradeFee
+        );
+
+        const raydium = await loadRaydium(connection, account);
+        const {
+            transaction: { instructions },
+        } = await raydium.cpmm.swap<TxVersion.LEGACY>({
+            poolInfo,
+            poolKeys,
+            inputAmount: lamportsToSwap[i],
+            swapResult,
+            slippage,
+            baseIn,
+        });
+
+        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
+            LAMPORTS_PER_SOL
+        );
+        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
+            10 ** envVars.TOKEN_DECIMALS
+        );
+
+        sendTransactions.push(
+            sendAndConfirmVersionedTransaction(
+                connection,
+                instructions,
+                [account],
+                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for account #${i} (${formatPublicKey(account.publicKey)})`,
+                priorityLevel,
+                transactionOptions
+            )
+        );
+    }
+
+    return sendTransactions;
+}
+
+export async function swapMintToSol(
+    connection: Connection,
+    { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
+    accounts: (Keypair | null)[],
+    unitsToSwap: (BN | null)[],
+    slippage: number,
+    priorityLevel: PriorityLevel,
+    transactionOptions?: TransactionOptions
+): Promise<Promise<void>[]> {
+    const sendTransactions: Promise<void>[] = [];
+    const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
+
+    for (const [i, account] of accounts.entries()) {
+        if (unitsToSwap[i] === null || account === null) {
+            continue;
+        }
+
+        const swapResult = CurveCalculator.swap(
+            unitsToSwap[i],
+            baseIn ? baseReserve : quoteReserve,
+            baseIn ? quoteReserve : baseReserve,
+            tradeFee
+        );
+
+        const raydium = await loadRaydium(connection, account);
+        const {
+            transaction: { instructions },
+        } = await raydium.cpmm.swap<TxVersion.LEGACY>({
+            poolInfo,
+            poolKeys,
+            inputAmount: unitsToSwap[i],
+            swapResult,
+            slippage,
+            baseIn,
+        });
+
+        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
+            10 ** envVars.TOKEN_DECIMALS
+        );
+        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
+            LAMPORTS_PER_SOL
+        );
+
+        sendTransactions.push(
+            sendAndConfirmVersionedTransaction(
+                connection,
+                instructions,
+                [account],
+                `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for account #${i} (${formatPublicKey(account.publicKey)})`,
+                priorityLevel,
+                transactionOptions
+            )
+        );
+    }
+
+    return sendTransactions;
 }

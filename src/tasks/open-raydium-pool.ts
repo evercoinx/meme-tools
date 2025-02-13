@@ -4,7 +4,6 @@ import {
     CpmmKeys,
     CREATE_CPMM_POOL_FEE_ACC,
     CREATE_CPMM_POOL_PROGRAM,
-    CurveCalculator,
     DEVNET_PROGRAM_ID,
     getCpmmPdaAmmConfigId,
     TxVersion,
@@ -43,7 +42,7 @@ import {
     STORAGE_SNIPER_SECRET_KEYS,
     SwapperType,
 } from "../modules";
-import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo } from "../modules/raydium";
+import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from "../modules/raydium";
 
 const SLIPPAGE = 0.15;
 
@@ -63,19 +62,32 @@ const SLIPPAGE = 0.15;
             SwapperType.Sniper,
             STORAGE_SNIPER_SECRET_KEYS
         );
-        const amounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((percent) =>
-            new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(percent)
+        const lamportsToSwap = envVars.SNIPER_SHARE_POOL_PERCENTS.map(
+            (percent) =>
+                new BN(
+                    new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL)
+                        .mul(percent)
+                        .mul(LAMPORTS_PER_SOL)
+                        .toFixed(0)
+                )
         );
-        const eligibleSnipers = await findEligibleSnipers(snipers, mint);
+        const snipersToExecuteSwap = await findSnipersToExecuteSwap(snipers, mint);
 
         const [sendCreatePoolTransaction, poolInfo] = await createPool(dev, mint);
-        const sendSwapSolToTokenTransactions = await swapSolToToken(
+        const sendSwapSolToMintTransactions = await swapSolToMint(
+            connection,
             poolInfo,
-            amounts,
-            eligibleSnipers
+            snipersToExecuteSwap,
+            lamportsToSwap,
+            SLIPPAGE,
+            "VeryHigh",
+            {
+                skipPreflight: true,
+                commitment: "processed",
+            }
         );
         await Promise.all([sendCreatePoolTransaction]);
-        await Promise.all(sendSwapSolToTokenTransactions);
+        await Promise.all(sendSwapSolToMintTransactions);
 
         const sendBurnLpMintTransaction = await burnLpMint(
             new PublicKey(poolInfo.poolInfo.lpMint.address),
@@ -88,8 +100,11 @@ const SLIPPAGE = 0.15;
     }
 })();
 
-async function findEligibleSnipers(snipers: Keypair[], mint: Keypair): Promise<(Keypair | null)[]> {
-    const eligibleSnipers: (Keypair | null)[] = [];
+async function findSnipersToExecuteSwap(
+    snipers: Keypair[],
+    mint: Keypair
+): Promise<(Keypair | null)[]> {
+    const snipersToExecuteSwap: (Keypair | null)[] = [];
 
     for (const [i, sniper] of snipers.entries()) {
         const mintTokenAccount = getAssociatedTokenAddressSync(
@@ -111,19 +126,20 @@ async function findEligibleSnipers(snipers: Keypair[], mint: Keypair): Promise<(
             // Ignore TokenAccountNotFoundError error
         }
 
-        if (mintBalance.eq(0)) {
-            eligibleSnipers[i] = sniper;
-        } else {
-            eligibleSnipers[i] = null;
+        if (mintBalance.gt(0)) {
+            snipersToExecuteSwap[i] = null;
             logger.warn(
                 `Sniper #${i} (%s) not eligible with token balance: %s`,
                 formatPublicKey(sniper.publicKey),
                 formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS))
             );
+            continue;
         }
+
+        snipersToExecuteSwap[i] = sniper;
     }
 
-    return eligibleSnipers;
+    return snipersToExecuteSwap;
 }
 
 async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, CpmmPoolInfo]> {
@@ -305,65 +321,6 @@ async function getWrapSolInstructions(
     }
 
     return instructions;
-}
-
-async function swapSolToToken(
-    { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
-    amounts: Decimal[],
-    snipers: (Keypair | null)[]
-): Promise<Promise<void>[]> {
-    const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
-    const sendTransactions: Promise<void>[] = [];
-
-    for (const [i, sniper] of snipers.entries()) {
-        if (sniper === null) {
-            continue;
-        }
-
-        const lamportsToSwap = new BN(amounts[i].mul(LAMPORTS_PER_SOL).toFixed(0));
-
-        const swapResult = CurveCalculator.swap(
-            lamportsToSwap,
-            baseIn ? baseReserve : quoteReserve,
-            baseIn ? quoteReserve : baseReserve,
-            tradeFee
-        );
-
-        const raydium = await loadRaydium(connection, sniper);
-        const {
-            transaction: { instructions },
-        } = await raydium.cpmm.swap<TxVersion.LEGACY>({
-            poolInfo,
-            poolKeys,
-            inputAmount: lamportsToSwap,
-            swapResult,
-            slippage: SLIPPAGE,
-            baseIn,
-        });
-
-        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
-            LAMPORTS_PER_SOL
-        );
-        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
-            10 ** envVars.TOKEN_DECIMALS
-        );
-
-        sendTransactions.push(
-            sendAndConfirmVersionedTransaction(
-                connection,
-                instructions,
-                [sniper],
-                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for sniper #${i} (${formatPublicKey(sniper.publicKey)})`,
-                "VeryHigh",
-                {
-                    skipPreflight: true,
-                    commitment: "processed",
-                }
-            )
-        );
-    }
-
-    return sendTransactions;
 }
 
 async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void>> {
