@@ -61,11 +61,12 @@ import {
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL)
                 .mul(percent)
                 .plus(envVars.INITIAL_SWAPPER_BALANCE_SOL)
+                .mul(LAMPORTS_PER_SOL)
         );
 
         const traderAmounts = new Array(envVars.TRADER_COUNT).fill(0).map(() => {
             const amount = new Decimal(getRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
-            return amount.mul(LAMPORTS_PER_SOL).plus(envVars.INITIAL_SWAPPER_BALANCE_SOL);
+            return amount.plus(envVars.INITIAL_SWAPPER_BALANCE_SOL).mul(LAMPORTS_PER_SOL);
         });
 
         const sendDistrubuteSniperFundsTransaction = await distributeFunds(
@@ -112,7 +113,7 @@ async function distributeFunds(
                 SystemProgram.transfer({
                     fromPubkey: distributor.publicKey,
                     toPubkey: account.publicKey,
-                    lamports: residualLamports.toNumber(),
+                    lamports: residualLamports.trunc().toNumber(),
                 })
             );
         }
