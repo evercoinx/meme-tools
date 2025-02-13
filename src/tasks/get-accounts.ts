@@ -2,7 +2,14 @@ import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
-import { envVars, logger, STORAGE_SNIPER_SECRET_KEYS, SwapperType, UNKNOWN_KEY } from "../modules";
+import {
+    envVars,
+    logger,
+    STORAGE_SNIPER_SECRET_KEYS,
+    STORAGE_TRADER_SECRET_KEYS,
+    SwapperType,
+    UNKNOWN_KEY,
+} from "../modules";
 
 (async () => {
     try {
@@ -19,16 +26,27 @@ import { envVars, logger, STORAGE_SNIPER_SECRET_KEYS, SwapperType, UNKNOWN_KEY }
             SwapperType.Sniper,
             STORAGE_SNIPER_SECRET_KEYS
         );
+        const traders = importSwapperKeypairs(
+            envVars.TRADER_COUNT,
+            SwapperType.Trader,
+            STORAGE_TRADER_SECRET_KEYS
+        );
         const mint = importMintKeypair();
 
-        getAccounts(dev, distributor, snipers, mint);
+        getAccounts(dev, distributor, snipers, traders, mint);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
     }
 })();
 
-function getAccounts(dev: Keypair, distributor: Keypair, snipers: Keypair[], mint?: Keypair): void {
+function getAccounts(
+    dev: Keypair,
+    distributor: Keypair,
+    snipers: Keypair[],
+    traders: Keypair[],
+    mint?: Keypair
+): void {
     logger.info(
         "Dev keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         dev.publicKey.toBase58(),
@@ -53,6 +71,15 @@ function getAccounts(dev: Keypair, distributor: Keypair, snipers: Keypair[], min
             i,
             sniper.publicKey.toBase58(),
             bs58.encode(sniper.secretKey)
+        );
+    }
+
+    for (const [i, trader] of traders.entries()) {
+        logger.info(
+            "Trader #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
+            i,
+            trader.publicKey.toBase58(),
+            bs58.encode(trader.secretKey)
         );
     }
 }

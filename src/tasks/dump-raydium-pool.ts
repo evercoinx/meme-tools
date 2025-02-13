@@ -42,12 +42,12 @@ const ZERO_BN = new BN(0);
             STORAGE_SNIPER_SECRET_KEYS
         );
 
-        const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
+        const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {
             throw new Error("Raydium pool id not loaded from storage");
         }
 
-        const raydiumLpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
+        const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
         if (!raydiumLpMint) {
             throw new Error("Raydium LP mint not loaded from storage");
         }

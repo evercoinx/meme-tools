@@ -40,14 +40,7 @@ import {
         );
 
         const mint = importMintKeypair();
-        if (!mint) {
-            throw new Error("Mint not imported");
-        }
-
-        const raydiumLpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
-        if (!raydiumLpMint) {
-            throw new Error("Raydium LP mint not loaded from storage");
-        }
+        const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,
@@ -66,7 +59,7 @@ import {
             snipers,
             traders,
             mint,
-            new PublicKey(raydiumLpMint)
+            raydiumLpMint ? new PublicKey(raydiumLpMint) : undefined
         );
         await Promise.all(sendCloseTokenAccountsTransactions);
 
@@ -82,72 +75,76 @@ async function closeTokenAccounts(
     dev: Keypair,
     snipers: Keypair[],
     traders: Keypair[],
-    mint: Keypair,
-    lpMintPublicKey: PublicKey
+    mint?: Keypair,
+    lpMint?: PublicKey
 ): Promise<Promise<void>[]> {
     const sendTransactions: Promise<void>[] = [];
     for (const [i, account] of [dev, ...snipers, ...traders].entries()) {
         const isDev = i === 0;
         const instructions: TransactionInstruction[] = [];
 
-        const mintTokenAccount = getAssociatedTokenAddressSync(
-            mint.publicKey,
-            account.publicKey,
-            false,
-            TOKEN_2022_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
-
-        const mintAccountInfo = await connection.getAccountInfo(mintTokenAccount, "confirmed");
-        if (mintAccountInfo) {
-            instructions.push(
-                createCloseAccountInstruction(
-                    mintTokenAccount,
-                    account.publicKey,
-                    account.publicKey,
-                    [],
-                    TOKEN_2022_PROGRAM_ID
-                )
-            );
-        } else {
-            logger.warn(
-                "%s ATA (%s) not exists for %s (%s)",
-                envVars.TOKEN_SYMBOL,
-                formatPublicKey(mintTokenAccount),
-                isDev ? "dev" : `sniper #${i - 1}`,
-                formatPublicKey(account.publicKey)
-            );
-        }
-
-        if (isDev) {
-            const lpMintTokenAccount = getAssociatedTokenAddressSync(
-                lpMintPublicKey,
-                dev.publicKey,
+        if (mint) {
+            const mintTokenAccount = getAssociatedTokenAddressSync(
+                mint.publicKey,
+                account.publicKey,
                 false,
-                TOKEN_PROGRAM_ID,
+                TOKEN_2022_PROGRAM_ID,
                 ASSOCIATED_TOKEN_PROGRAM_ID
             );
 
-            const lpMintAccountInfo = await connection.getAccountInfo(
-                lpMintTokenAccount,
-                "confirmed"
-            );
-            if (lpMintAccountInfo) {
+            const mintAccountInfo = await connection.getAccountInfo(mintTokenAccount, "confirmed");
+            if (mintAccountInfo) {
                 instructions.push(
                     createCloseAccountInstruction(
-                        lpMintTokenAccount,
-                        dev.publicKey,
-                        dev.publicKey,
+                        mintTokenAccount,
+                        account.publicKey,
+                        account.publicKey,
                         [],
-                        TOKEN_PROGRAM_ID
+                        TOKEN_2022_PROGRAM_ID
                     )
                 );
             } else {
                 logger.warn(
-                    "LP mint ATA (%s) not exists for dev (%s)",
-                    formatPublicKey(lpMintTokenAccount),
-                    formatPublicKey(dev.publicKey)
+                    "%s ATA (%s) not exists for %s (%s)",
+                    envVars.TOKEN_SYMBOL,
+                    formatPublicKey(mintTokenAccount),
+                    isDev ? "dev" : "account",
+                    formatPublicKey(account.publicKey)
                 );
+            }
+        }
+
+        if (isDev) {
+            if (lpMint) {
+                const lpMintTokenAccount = getAssociatedTokenAddressSync(
+                    lpMint,
+                    dev.publicKey,
+                    false,
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                );
+
+                const lpMintAccountInfo = await connection.getAccountInfo(
+                    lpMintTokenAccount,
+                    "confirmed"
+                );
+                if (lpMintAccountInfo) {
+                    instructions.push(
+                        createCloseAccountInstruction(
+                            lpMintTokenAccount,
+                            dev.publicKey,
+                            dev.publicKey,
+                            [],
+                            TOKEN_PROGRAM_ID
+                        )
+                    );
+                } else {
+                    logger.warn(
+                        "LP mint ATA (%s) not exists for dev (%s)",
+                        formatPublicKey(lpMintTokenAccount),
+                        formatPublicKey(dev.publicKey)
+                    );
+                }
             }
         } else {
             const wsolTokenAccount = getAssociatedTokenAddressSync(
@@ -171,9 +168,8 @@ async function closeTokenAccounts(
                 );
             } else {
                 logger.warn(
-                    "WSOL ATA (%s) not exists for sniper #%d (%s)",
+                    "WSOL ATA (%s) not exists for account (%s)",
                     formatPublicKey(wsolTokenAccount),
-                    i - 1,
                     formatPublicKey(account.publicKey)
                 );
             }
@@ -185,7 +181,7 @@ async function closeTokenAccounts(
                     connection,
                     instructions,
                     [account],
-                    `to close ATAs for account #${i} (${formatPublicKey(account.publicKey)})`,
+                    `to close ATAs for account (${formatPublicKey(account.publicKey)})`,
                     "Min"
                 )
             );

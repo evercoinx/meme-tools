@@ -118,7 +118,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             let lpMintTokenAccount: PublicKey | null = null;
             let lpMintBalance: Decimal | null = null;
 
-            const lpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
+            const lpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
             if (lpMint) {
                 lpMintTokenAccount = getAssociatedTokenAddressSync(
                     new PublicKey(lpMint),

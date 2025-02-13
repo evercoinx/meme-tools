@@ -127,11 +127,11 @@ async function findEligibleSnipers(snipers: Keypair[], mint: Keypair): Promise<(
 }
 
 async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, CpmmPoolInfo]> {
-    const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
+    const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
     if (raydiumPoolId) {
         logger.debug("Raydium pool id loaded from storage", raydiumPoolId);
 
-        const raydimLpMint = storage.get<string>(STORAGE_RAYDIUM_LP_MINT);
+        const raydimLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
         if (!raydimLpMint) {
             throw new Error("Raydium LP mint not loaded from storage");
         }

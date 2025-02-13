@@ -77,7 +77,7 @@ export async function loadRaydiumPoolInfo(
         );
     }
 
-    if (typeof rpcData.configInfo === "undefined") {
+    if (!rpcData.configInfo) {
         throw new Error("Missing Raydium config info");
     }
 

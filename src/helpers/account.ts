@@ -23,7 +23,7 @@ export function generateMintKeypair(): Keypair {
 }
 
 export function importMintKeypair(): Keypair | undefined {
-    const encryptedSecretKey = storage.get<string>(STORAGE_MINT_SECRET_KEY);
+    const encryptedSecretKey = storage.get<string | undefined>(STORAGE_MINT_SECRET_KEY);
     if (!encryptedSecretKey) {
         return;
     }

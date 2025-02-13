@@ -70,7 +70,7 @@ const generatePinataUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${
 })();
 
 async function uploadImage(): Promise<string> {
-    let imageUri = storage.get<string>(STORAGE_MINT_IMAGE_URI);
+    let imageUri = storage.get<string | undefined>(STORAGE_MINT_IMAGE_URI);
     if (imageUri) {
         logger.debug("Mint image URI loaded from storage");
         return imageUri;
@@ -101,7 +101,7 @@ async function uploadImage(): Promise<string> {
 }
 
 async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> {
-    let metadata = storage.get<OffchainTokenMetadata>(STORAGE_MINT_METADATA);
+    let metadata = storage.get<OffchainTokenMetadata | undefined>(STORAGE_MINT_METADATA);
     if (metadata) {
         logger.debug("Mint metadata file loaded from storage");
         return metadata;
@@ -112,7 +112,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
     metadata = {
         ...JSON.parse(metadataContents),
         image: imageUri,
-    };
+    } as OffchainTokenMetadata;
 
     let metadataUri = "";
     const pinnedFiles = await pinataClient.listFiles().name(metadataFilename);

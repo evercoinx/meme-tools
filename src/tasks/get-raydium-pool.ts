@@ -17,7 +17,7 @@ import { loadRaydium } from "../modules/raydium";
     try {
         await checkIfStorageExists();
 
-        const raydiumPoolId = storage.get<string>(STORAGE_RAYDIUM_POOL_ID);
+        const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {
             throw new Error("Raydium pool not loaded from storage");
         }
