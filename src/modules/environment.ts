@@ -7,7 +7,6 @@ interface EnvironmentSchema {
     IPFS_GATEWAY: string;
     RPC_URI: string;
     EXPLORER_URI: string;
-    MAX_TRANSACTION_CONFIRMATION_RETRIES: number;
     DEV_KEYPAIR_PATH: string;
     DISTRIBUTOR_KEYPAIR_PATH: string;
     KEYPAIR_SECRET: string;
@@ -17,7 +16,7 @@ interface EnvironmentSchema {
     INITIAL_POOL_SIZE_PERCENT: number;
     INITIAL_POOL_LIQUIDITY_SOL: number;
     SNIPER_SHARE_POOL_PERCENTS: number[];
-    SWAPPER_COMPUTE_BUDGET_SOL: number;
+    INITIAL_SWAPPER_BALANCE_SOL: number;
     TRADER_COUNT: number;
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
     TRADER_SELL_AMOUNT_RANGE_PERCENT: [number, number];
@@ -45,13 +44,6 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .default("https://solana.fm")
                 .description("Solana explorer URI"),
-            MAX_TRANSACTION_CONFIRMATION_RETRIES: Joi.number()
-                .optional()
-                .integer()
-                .min(1)
-                .max(10)
-                .default(5)
-                .description("Maximum transaction confirmation retries"),
             DEV_KEYPAIR_PATH: Joi.string()
                 .required()
                 .pattern(FILE_PATH_PATTERN)
@@ -97,11 +89,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(1)
                 .max(100)
                 .description("Sniper share pool (in percents)"),
-            SWAPPER_COMPUTE_BUDGET_SOL: Joi.number()
+            INITIAL_SWAPPER_BALANCE_SOL: Joi.number()
                 .required()
                 .min(0.005)
                 .max(0.1)
-                .description("Swapper compute budget (in SOL)"),
+                .description("Initial swapper balance (in SOL)"),
             TRADER_COUNT: Joi.number()
                 .required()
                 .integer()

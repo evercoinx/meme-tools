@@ -10,7 +10,7 @@ import {
 } from "@solana/web3.js";
 import axios, { AxiosResponse } from "axios";
 import bs58 from "bs58";
-import { CLUSTER, envVars, explorer, heliusClient, logger } from "../modules";
+import { CLUSTER, explorer, heliusClient, logger } from "../modules";
 import {
     GetPriorityFeeEstimateRequest,
     GetPriorityFeeEstimateResponse,
@@ -21,6 +21,8 @@ import { formatDecimal, formatPublicKey, formatSignature } from "./format";
 export interface TransactionOptions extends SendOptions {
     commitment?: Commitment;
 }
+
+const MAX_TRANSACTION_CONFIRMATION_RETRIES = 5;
 
 export async function sendAndConfirmVersionedTransaction(
     connection: Connection,
@@ -97,10 +99,10 @@ export async function sendAndConfirmVersionedTransaction(
                 "Transaction (%s) failed. Retry: %d/%d",
                 signature ? formatPublicKey(signature, 8) : "?",
                 totalRetries,
-                envVars.MAX_TRANSACTION_CONFIRMATION_RETRIES
+                MAX_TRANSACTION_CONFIRMATION_RETRIES
             );
         }
-    } while (totalRetries < envVars.MAX_TRANSACTION_CONFIRMATION_RETRIES);
+    } while (totalRetries < MAX_TRANSACTION_CONFIRMATION_RETRIES);
 
     if (latestErrorMessage) {
         throw new Error(latestErrorMessage);

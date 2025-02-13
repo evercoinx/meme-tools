@@ -60,12 +60,12 @@ import {
         const sniperAmounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL)
                 .mul(percent)
-                .plus(envVars.SWAPPER_COMPUTE_BUDGET_SOL)
+                .plus(envVars.INITIAL_SWAPPER_BALANCE_SOL)
         );
 
         const traderAmounts = new Array(envVars.TRADER_COUNT).fill(0).map(() => {
-            const buyAmount = new Decimal(getRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
-            return buyAmount.mul(LAMPORTS_PER_SOL).plus(envVars.SWAPPER_COMPUTE_BUDGET_SOL);
+            const amount = new Decimal(getRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
+            return amount.mul(LAMPORTS_PER_SOL).plus(envVars.INITIAL_SWAPPER_BALANCE_SOL);
         });
 
         const sendDistrubuteSniperFundsTransaction = await distributeFunds(
