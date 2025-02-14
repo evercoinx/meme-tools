@@ -21,12 +21,12 @@ export function generateOrImportMintKeypair(): Keypair {
     } else {
         mint = Keypair.generate();
         logger.info("Mint (%s) key pair generated", formatPublicKey(mint.publicKey));
-    }
 
-    const encryptedMint = encryption.encrypt(JSON.stringify(Array.from(mint.secretKey)));
-    storage.set(STORAGE_MINT_SECRET_KEY, encryptedMint);
-    storage.save();
-    logger.debug("Mint (%s) key pair saved to storage", formatPublicKey(mint.publicKey));
+        const encryptedMint = encryption.encrypt(JSON.stringify(Array.from(mint.secretKey)));
+        storage.set(STORAGE_MINT_SECRET_KEY, encryptedMint);
+        storage.save();
+        logger.debug("Mint (%s) key pair saved to storage", formatPublicKey(mint.publicKey));
+    }
 
     return mint;
 }
@@ -67,6 +67,17 @@ export function generateOrImportSwapperKeypairs(
             swapper = Keypair.generate();
             logger.info(
                 `%s (%s) key pair generated`,
+                capitalize(swapperType),
+                formatPublicKey(swapper.publicKey)
+            );
+
+            const encryptedSwapper = encryption.encrypt(
+                JSON.stringify(Array.from(swapper.secretKey))
+            );
+            storage.set(storageKeys[i], encryptedSwapper);
+            storage.save();
+            logger.debug(
+                "%s (%s) secret key saved to storage",
                 capitalize(swapperType),
                 formatPublicKey(swapper.publicKey)
             );

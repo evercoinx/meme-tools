@@ -5,20 +5,13 @@ import {
     NATIVE_MINT,
     TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-    Connection,
-    Keypair,
-    LAMPORTS_PER_SOL,
-    SystemProgram,
-    TransactionInstruction,
-} from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { generateOrImportSwapperKeypairs, importLocalKeypair } from "../helpers/account";
-import { formatDecimal, formatPublicKey } from "../helpers/format";
+import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { getRandomFloat } from "../helpers/random";
 import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "../modules";
-import { HeliusClient } from "../modules/helius";
 
 (async () => {
     try {
@@ -47,12 +40,14 @@ import { HeliusClient } from "../modules/helius";
         const sendDistrubuteSniperFundsTransaction = await distributeFunds(
             sniperAmounts,
             distributor,
-            snipers
+            snipers,
+            SwapperType.Sniper
         );
         const sendDistrubuteTraderFundsTransaction = await distributeFunds(
             traderAmounts,
             distributor,
-            traders
+            traders,
+            SwapperType.Trader
         );
 
         await Promise.all([
@@ -68,21 +63,21 @@ import { HeliusClient } from "../modules/helius";
 async function distributeFunds(
     lamports: Decimal[],
     distributor: Keypair,
-    accounts: Keypair[]
+    accounts: Keypair[],
+    swapperType: SwapperType
 ): Promise<Promise<void>> {
-    let connection: Connection | undefined;
-    let heliusCleint: HeliusClient | undefined;
+    let connection = connectionPool.next();
+    let heliusCleint = heliusClientPool.next();
     const instructions: TransactionInstruction[] = [];
+    let fundedAccountCount = 0;
 
     for (const [i, account] of accounts.entries()) {
-        connection = connectionPool.next();
-        heliusCleint = heliusClientPool.next();
-
         const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
 
         if (solBalance.gte(lamports[i])) {
             logger.warn(
-                "Sniper #%d (%s) has sufficient balance: %s SOL",
+                "%s #%d (%s) has sufficient balance: %s SOL",
+                capitalize(swapperType),
                 i,
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
@@ -96,6 +91,7 @@ async function distributeFunds(
                     lamports: residualLamports.trunc().toNumber(),
                 })
             );
+            fundedAccountCount++;
         }
 
         const wsolTokenAccount = getAssociatedTokenAddressSync(
@@ -109,8 +105,9 @@ async function distributeFunds(
         const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
         if (wsolAccountInfo) {
             logger.warn(
-                "WSOL ATA (%s) exists for account #%d (%s)",
+                "WSOL ATA (%s) exists for %s #%d (%s)",
                 wsolTokenAccount.toBase58(),
+                swapperType,
                 i,
                 account.publicKey.toBase58()
             );
@@ -126,15 +123,18 @@ async function distributeFunds(
                 )
             );
         }
+
+        connection = connectionPool.next();
+        heliusCleint = heliusClientPool.next();
     }
 
-    return connection && heliusCleint && instructions.length > 0
+    return instructions.length > 0
         ? sendAndConfirmVersionedTransaction(
               connection,
               heliusCleint,
               instructions,
               [distributor],
-              `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${accounts.length} accounts`,
+              `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${fundedAccountCount} ${swapperType}s`,
               "Low"
           )
         : Promise.resolve();
