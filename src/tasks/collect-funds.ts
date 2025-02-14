@@ -18,8 +18,9 @@ import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import {
-    connection,
+    connectionPool,
     envVars,
+    heliusClientPool,
     logger,
     MIN_REMAINING_BALANCE_LAMPORTS,
     storage,
@@ -82,6 +83,9 @@ async function closeTokenAccounts(
     for (const [i, account] of [dev, ...snipers, ...traders].entries()) {
         const isDev = i === 0;
         const instructions: TransactionInstruction[] = [];
+
+        const connection = connectionPool[i % connectionPool.length];
+        const heliusCleint = heliusClientPool[i % heliusClientPool.length];
 
         if (mint) {
             const mintTokenAccount = getAssociatedTokenAddressSync(
@@ -179,6 +183,7 @@ async function closeTokenAccounts(
             sendTransactions.push(
                 sendAndConfirmVersionedTransaction(
                     connection,
+                    heliusCleint,
                     instructions,
                     [account],
                     `to close ATAs for account (${formatPublicKey(account.publicKey)})`,
@@ -199,6 +204,9 @@ async function collectFunds(
     const sendTransactions: Promise<void>[] = [];
 
     for (const [i, account] of [...snipers, ...traders].entries()) {
+        const connection = connectionPool[i % connectionPool.length];
+        const heliusCleint = heliusClientPool[i % heliusClientPool.length];
+
         const solBalance = await connection.getBalance(account.publicKey, "confirmed");
         if (solBalance <= MIN_REMAINING_BALANCE_LAMPORTS) {
             logger.warn(
@@ -222,6 +230,7 @@ async function collectFunds(
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 connection,
+                heliusCleint,
                 instructions,
                 [account],
                 `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from account (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`,

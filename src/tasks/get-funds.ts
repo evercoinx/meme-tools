@@ -11,7 +11,7 @@ import { importLocalKeypair, importMintKeypair, importSwapperKeypairs } from "..
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
 import {
-    connection,
+    connectionPool,
     envVars,
     logger,
     RAYDIUM_LP_MINT_DECIMALS,
@@ -56,6 +56,8 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         const isDev = i === 0;
         const isDistributor = i === 1;
         const isSniper = i >= 2 && i < 2 + envVars.SNIPER_SHARE_POOL_PERCENTS.length;
+
+        const connection = connectionPool[i % connectionPool.length];
 
         const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
         const wsolTokenAccount = getAssociatedTokenAddressSync(

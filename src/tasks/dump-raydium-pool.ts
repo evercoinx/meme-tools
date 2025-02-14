@@ -9,7 +9,7 @@ import { importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import {
-    connection,
+    connectionPool,
     envVars,
     logger,
     storage,
@@ -43,7 +43,11 @@ const SLIPPAGE = 0.3;
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
+        const poolInfo = await loadRaydiumPoolInfo(
+            connectionPool[0],
+            new PublicKey(raydiumPoolId),
+            mint
+        );
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,
@@ -60,7 +64,7 @@ const SLIPPAGE = 0.3;
         const traderUnitsToSwap = await findUnitsToSwap(traders, mint);
 
         const sendSniperSwapMintToSolTransactions = await swapMintToSol(
-            connection,
+            connectionPool,
             poolInfo,
             snipers,
             sniperUnitsToSwap,
@@ -74,7 +78,7 @@ const SLIPPAGE = 0.3;
         await Promise.all(sendSniperSwapMintToSolTransactions);
 
         const sendTraderSwapMintToSolTransactions = await swapMintToSol(
-            connection,
+            connectionPool,
             poolInfo,
             traders,
             traderUnitsToSwap,
@@ -96,6 +100,8 @@ async function findUnitsToSwap(accounts: Keypair[], mint: Keypair): Promise<(BN 
     const unitsToSwap: (BN | null)[] = [];
 
     for (const [i, account] of accounts.entries()) {
+        const connection = connectionPool[i % connectionPool.length];
+
         const mintTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
             account.publicKey,

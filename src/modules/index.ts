@@ -7,7 +7,7 @@ import { Encryption } from "./encryption";
 import { extractEnvironmentVariables } from "./environment";
 import { Explorer } from "./explorer";
 import { createLogger } from "./logger";
-import { createHeliusClient } from "./helius";
+import { createHeliusClient, HeliusClient } from "./helius";
 import { createPinataClient } from "./pinata";
 import { createStorage } from "./storage";
 
@@ -42,13 +42,13 @@ export const STORAGE_TRADER_SECRET_KEYS = generateSecretKeyRecord(
     envVars.TRADER_COUNT,
     SwapperType.Trader
 );
-export const CLUSTER = detectCluster(envVars.RPC_URI);
+export const CLUSTER = detectCluster(envVars.RPC_URIS[0]);
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
 export const logger = createLogger(envVars.LOG_LEVEL);
-export const connection = new Connection(envVars.RPC_URI, "confirmed");
-export const heliusClient = createHeliusClient(envVars.RPC_URI);
+export const connectionPool = createConnectionPool(envVars.RPC_URIS);
+export const heliusClientPool = createHeliusClientPool(envVars.RPC_URIS);
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY);
 
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
@@ -74,4 +74,20 @@ function generateSecretKeyRecord(
         secretKeyRecord[i] = `${swapperType}_${i}_secret_key`;
     }
     return secretKeyRecord;
+}
+
+function createConnectionPool(rpcUris: string[]) {
+    const connectionPool: Connection[] = [];
+    for (const [i, rpcUri] of rpcUris.entries()) {
+        connectionPool[i] = new Connection(rpcUri, "confirmed");
+    }
+    return connectionPool;
+}
+
+function createHeliusClientPool(rpcUris: string[]): HeliusClient[] {
+    const heliusClientPool: HeliusClient[] = [];
+    for (const [i, rpcUri] of rpcUris.entries()) {
+        heliusClientPool[i] = createHeliusClient(rpcUri);
+    }
+    return heliusClientPool;
 }

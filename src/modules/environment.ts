@@ -5,7 +5,7 @@ interface EnvironmentSchema {
     LOG_LEVEL: string;
     PINATA_JWT: string;
     IPFS_GATEWAY: string;
-    RPC_URI: string;
+    RPC_URIS: string[];
     EXPLORER_URI: string;
     DEV_KEYPAIR_PATH: string;
     DISTRIBUTOR_KEYPAIR_PATH: string;
@@ -38,7 +38,13 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .pattern(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/)
                 .description("Pinata JWT"),
             IPFS_GATEWAY: Joi.string().required().uri().description("IPFS Gateway"),
-            RPC_URI: Joi.string().required().uri().description("Solana RPC URI"),
+            RPC_URIS: Joi.array()
+                .required()
+                .items(Joi.string().uri())
+                .unique()
+                .min(1)
+                .max(3)
+                .description("Solana RPC URIs"),
             EXPLORER_URI: Joi.string()
                 .optional()
                 .uri()
@@ -125,6 +131,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
         })
         .validate({
             ...process.env,
+            RPC_URIS: process.env.RPC_URIS?.split(","),
             SNIPER_SHARE_POOL_PERCENTS: process.env.SNIPER_SHARE_POOL_PERCENTS?.split(","),
             PRIORITIZATION_FEE_MULTIPLIERS: process.env.PRIORITIZATION_FEE_MULTIPLIERS?.split(","),
             TRADER_BUY_AMOUNT_RANGE_SOL: process.env.TRADER_BUY_AMOUNT_RANGE_SOL?.split(","),

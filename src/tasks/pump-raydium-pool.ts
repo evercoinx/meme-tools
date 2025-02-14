@@ -9,7 +9,7 @@ import Decimal from "decimal.js";
 import { importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import {
-    connection,
+    connectionPool,
     envVars,
     logger,
     storage,
@@ -50,11 +50,15 @@ const SLIPPAGE = 0.05;
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
+        const poolInfo = await loadRaydiumPoolInfo(
+            connectionPool[0],
+            new PublicKey(raydiumPoolId),
+            mint
+        );
         const lamportsToBuy = await findLamportsToBuy(traders);
 
         const sendSwapSolToMintTransactions = await swapSolToMint(
-            connection,
+            connectionPool,
             poolInfo,
             traders,
             lamportsToBuy,
@@ -66,7 +70,7 @@ const SLIPPAGE = 0.05;
         const shuffledTraders = shuffle(traders) as Keypair[];
         const unitsToSell = await findUnitsToSell(shuffledTraders, mint);
         const sendSwapMintToSolTransactions = await swapMintToSol(
-            connection,
+            connectionPool,
             poolInfo,
             shuffledTraders,
             unitsToSell,
@@ -84,6 +88,8 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
     const lamportsToSwap: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
+        const connection = connectionPool[i % connectionPool.length];
+
         const solBalance = new Decimal(await connection.getBalance(trader.publicKey, "confirmed"));
         const residualSolBalance = solBalance.sub(
             new Decimal(envVars.INITIAL_SWAPPER_BALANCE_SOL).mul(LAMPORTS_PER_SOL)
@@ -110,6 +116,8 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
     const unitsToSwap: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
+        const connection = connectionPool[i % connectionPool.length];
+
         const mintTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
             trader.publicKey,

@@ -1,5 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 
+export type HeliusClient = AxiosInstance;
+
 export type PriorityLevel =
     | "Min"
     | "Low"
@@ -43,10 +45,10 @@ export interface GetPriorityFeeEstimateResponse {
     };
 }
 
-export function createHeliusClient(baseUrl: string): AxiosInstance {
+export function createHeliusClient(baseUrl: string): HeliusClient {
     return axios.create({
         baseURL: baseUrl,
-        timeout: 5_000,
+        timeout: 10_000,
         headers: {
             "Content-Type": "application/json",
         },

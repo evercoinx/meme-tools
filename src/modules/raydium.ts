@@ -12,7 +12,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { CLUSTER, envVars } from "../modules";
+import { CLUSTER, envVars, heliusClientPool } from "../modules";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction, TransactionOptions } from "../helpers/network";
 import { PriorityLevel } from "./helius";
@@ -97,7 +97,7 @@ export async function loadRaydiumPoolInfo(
 }
 
 export async function swapSolToMint(
-    connection: Connection,
+    connectionPool: Connection[],
     { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
     accounts: (Keypair | null)[],
     lamportsToSwap: (BN | null)[],
@@ -112,6 +112,9 @@ export async function swapSolToMint(
         if (account === null || lamportsToSwap[i] === null) {
             continue;
         }
+
+        const connection = connectionPool[i % connectionPool.length];
+        const heliusCleint = heliusClientPool[i % heliusClientPool.length];
 
         const swapResult = CurveCalculator.swap(
             lamportsToSwap[i],
@@ -142,6 +145,7 @@ export async function swapSolToMint(
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 connection,
+                heliusCleint,
                 instructions,
                 [account],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for account #${i} (${formatPublicKey(account.publicKey)})`,
@@ -155,7 +159,7 @@ export async function swapSolToMint(
 }
 
 export async function swapMintToSol(
-    connection: Connection,
+    connectionPool: Connection[],
     { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
     accounts: (Keypair | null)[],
     unitsToSwap: (BN | null)[],
@@ -170,6 +174,9 @@ export async function swapMintToSol(
         if (unitsToSwap[i] === null || account === null) {
             continue;
         }
+
+        const connection = connectionPool[i % connectionPool.length];
+        const heliusCleint = heliusClientPool[i % heliusClientPool.length];
 
         const swapResult = CurveCalculator.swap(
             unitsToSwap[i],
@@ -200,6 +207,7 @@ export async function swapMintToSol(
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 connection,
+                heliusCleint,
                 instructions,
                 [account],
                 `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for account #${i} (${formatPublicKey(account.publicKey)})`,

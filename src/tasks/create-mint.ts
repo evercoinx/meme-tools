@@ -22,8 +22,9 @@ import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import {
-    connection,
+    connectionPool,
     envVars,
+    heliusClientPool,
     IMAGE_DIR,
     logger,
     METADATA_DIR,
@@ -163,7 +164,7 @@ async function createMint(
     // Size of metadata
     const metadataSize = pack(metadata).length;
     // Minimum lamports required for Mint account
-    const mintLamports = await connection.getMinimumBalanceForRentExemption(
+    const mintLamports = await connectionPool[0].getMinimumBalanceForRentExemption(
         mintSize + metadataExtensionSize + metadataSize
     );
 
@@ -240,7 +241,8 @@ async function createMint(
     ];
 
     return sendAndConfirmVersionedTransaction(
-        connection,
+        connectionPool[1],
+        heliusClientPool[1],
         instructions,
         [dev, mint],
         `to create mint (${formatPublicKey(mint.publicKey)})`,

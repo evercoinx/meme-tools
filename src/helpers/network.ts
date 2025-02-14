@@ -10,10 +10,11 @@ import {
 } from "@solana/web3.js";
 import axios, { AxiosResponse } from "axios";
 import bs58 from "bs58";
-import { CLUSTER, explorer, heliusClient, logger } from "../modules";
+import { CLUSTER, explorer, logger } from "../modules";
 import {
     GetPriorityFeeEstimateRequest,
     GetPriorityFeeEstimateResponse,
+    HeliusClient,
     PriorityLevel,
 } from "../modules/helius";
 import { formatDecimal, formatPublicKey, formatSignature } from "./format";
@@ -26,6 +27,7 @@ const MAX_TRANSACTION_CONFIRMATION_RETRIES = 5;
 
 export async function sendAndConfirmVersionedTransaction(
     connection: Connection,
+    heliusClient: HeliusClient,
     instructions: TransactionInstruction[],
     signers: Keypair[],
     logMessage: string,
@@ -49,7 +51,11 @@ export async function sendAndConfirmVersionedTransaction(
         try {
             let transaction = new VersionedTransaction(messageV0.compileToV0Message());
 
-            const priorityFeeEstimate = await getPriorityFeeEstimate(priorityLevel, transaction);
+            const priorityFeeEstimate = await getPriorityFeeEstimate(
+                heliusClient,
+                priorityLevel,
+                transaction
+            );
             if (priorityFeeEstimate > 0) {
                 messageV0.instructions = [
                     ComputeBudgetProgram.setComputeUnitPrice({
@@ -116,6 +122,7 @@ export async function sendAndConfirmVersionedTransaction(
 }
 
 async function getPriorityFeeEstimate(
+    heliusClient: HeliusClient,
     priorityLevel: PriorityLevel,
     transaction: VersionedTransaction
 ): Promise<number> {

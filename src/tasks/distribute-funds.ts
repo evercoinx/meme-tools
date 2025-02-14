@@ -5,7 +5,13 @@ import {
     NATIVE_MINT,
     TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
+import {
+    Connection,
+    Keypair,
+    LAMPORTS_PER_SOL,
+    SystemProgram,
+    TransactionInstruction,
+} from "@solana/web3.js";
 import Decimal from "decimal.js";
 import {
     generateSwapperKeypairs,
@@ -17,13 +23,15 @@ import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { getRandomFloat } from "../helpers/random";
 import {
-    connection,
+    connectionPool,
     envVars,
+    heliusClientPool,
     logger,
     STORAGE_SNIPER_SECRET_KEYS,
     STORAGE_TRADER_SECRET_KEYS,
     SwapperType,
 } from "../modules";
+import { HeliusClient } from "../modules/helius";
 
 (async () => {
     try {
@@ -95,9 +103,14 @@ async function distributeFunds(
     distributor: Keypair,
     accounts: Keypair[]
 ): Promise<Promise<void>> {
+    let connection: Connection | undefined;
+    let heliusCleint: HeliusClient | undefined;
     const instructions: TransactionInstruction[] = [];
 
     for (const [i, account] of accounts.entries()) {
+        connection = connectionPool[i % connectionPool.length];
+        heliusCleint = heliusClientPool[i % heliusClientPool.length];
+
         const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
 
         if (solBalance.gte(lamports[i])) {
@@ -148,9 +161,10 @@ async function distributeFunds(
         }
     }
 
-    return instructions.length > 0
+    return connection && heliusCleint && instructions.length > 0
         ? sendAndConfirmVersionedTransaction(
               connection,
+              heliusCleint,
               instructions,
               [distributor],
               `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${accounts.length} accounts`,
