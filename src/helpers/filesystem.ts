@@ -1,20 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { storage, STORAGE_DIR } from "../modules";
+import { STORAGE_DIR } from "../modules";
 
-export async function checkIfStorageExists(silentOnError = false): Promise<boolean> {
-    const storageExists = await checkIfFileExists(path.join(STORAGE_DIR, storage.cacheId));
-    if (!storageExists && !silentOnError) {
-        throw new Error(`Storage ${storage.cacheId} not exists`);
-    }
-    return storageExists;
-}
-
-async function checkIfFileExists(path: string) {
+export async function checkIfStorageExists(cacheId: string): Promise<void> {
     try {
-        await fs.access(path);
-        return true;
+        await fs.access(path.join(STORAGE_DIR, cacheId));
     } catch {
-        return false;
+        throw new Error(`Storage ${cacheId} not exists`);
     }
 }

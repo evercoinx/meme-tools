@@ -9,15 +9,17 @@ import {
     createMintToInstruction,
     createSetAuthorityInstruction,
     ExtensionType,
-    getAssociatedTokenAddress,
+    getAssociatedTokenAddressSync,
+    getMint,
     getMintLen,
     LENGTH_SIZE,
+    Mint,
     TOKEN_2022_PROGRAM_ID,
     TYPE_SIZE,
 } from "@solana/spl-token";
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import { generateMintKeypair, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
@@ -49,14 +51,9 @@ const generatePinataUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${
 
 (async () => {
     try {
-        await checkIfStorageExists();
+        await checkIfStorageExists(storage.cacheId);
 
-        let mint = importMintKeypair();
-        if (mint) {
-            throw new Error(`Mint ${mint.publicKey.toBase58()} already created`);
-        }
-        mint = generateMintKeypair();
-
+        const mint = generateOrImportMintKeypair();
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
 
         const imageUri = await uploadImage();
@@ -149,6 +146,23 @@ async function createMint(
     dev: Keypair,
     mint: Keypair
 ): Promise<Promise<void>> {
+    let mintInfo: Mint | undefined;
+    try {
+        mintInfo = await getMint(
+            connectionPool.next(),
+            mint.publicKey,
+            "confirmed",
+            TOKEN_2022_PROGRAM_ID
+        );
+    } catch {
+        // Ignore AccountNotFoundError error
+    }
+
+    if (mintInfo) {
+        logger.warn("Mint (%s) already created", mint.publicKey.toBase58());
+        return Promise.resolve();
+    }
+
     const metadata: TokenMetadata = {
         mint: mint.publicKey,
         updateAuthority: PublicKey.default,
@@ -168,7 +182,7 @@ async function createMint(
         .next()
         .getMinimumBalanceForRentExemption(mintSize + metadataExtensionSize + metadataSize);
 
-    const associatedTokenAccount = await getAssociatedTokenAddress(
+    const mintTokenAccount = getAssociatedTokenAddressSync(
         mint.publicKey,
         dev.publicKey,
         false,
@@ -214,7 +228,7 @@ async function createMint(
         // Create the associated token account of the owner
         createAssociatedTokenAccountInstruction(
             dev.publicKey,
-            associatedTokenAccount,
+            mintTokenAccount,
             dev.publicKey,
             mint.publicKey,
             TOKEN_2022_PROGRAM_ID,
@@ -223,7 +237,7 @@ async function createMint(
         // Mint to the associated token account of the owner
         createMintToInstruction(
             mint.publicKey,
-            associatedTokenAccount,
+            mintTokenAccount,
             dev.publicKey,
             envVars.TOKEN_SUPPLY * 10 ** envVars.TOKEN_DECIMALS,
             [],

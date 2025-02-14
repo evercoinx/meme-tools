@@ -4,7 +4,7 @@ import Decimal from "decimal.js";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../helpers/format";
 import {
-    connection,
+    connectionPool,
     envVars,
     logger,
     RAYDIUM_LP_MINT_DECIMALS,
@@ -15,7 +15,7 @@ import { loadRaydium } from "../modules/raydium";
 
 (async () => {
     try {
-        await checkIfStorageExists();
+        await checkIfStorageExists(storage.cacheId);
 
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {
@@ -30,7 +30,7 @@ import { loadRaydium } from "../modules/raydium";
 })();
 
 async function getPool(raydiumPoolId: string): Promise<void> {
-    const raydium = await loadRaydium(connection);
+    const raydium = await loadRaydium(connectionPool.next());
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
 
     if (raydium.cluster === "devnet") {

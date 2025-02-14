@@ -40,7 +40,6 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
-    STORAGE_SNIPER_SECRET_KEYS,
     SwapperType,
 } from "../modules";
 import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from "../modules/raydium";
@@ -49,7 +48,7 @@ const SLIPPAGE = 0.15;
 
 (async () => {
     try {
-        await checkIfStorageExists();
+        await checkIfStorageExists(storage.cacheId);
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
 
@@ -60,8 +59,7 @@ const SLIPPAGE = 0.15;
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,
-            SwapperType.Sniper,
-            STORAGE_SNIPER_SECRET_KEYS
+            SwapperType.Sniper
         );
         const lamportsToSwap = envVars.SNIPER_SHARE_POOL_PERCENTS.map(
             (percent) =>

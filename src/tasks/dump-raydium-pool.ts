@@ -16,8 +16,6 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
-    STORAGE_SNIPER_SECRET_KEYS,
-    STORAGE_TRADER_SECRET_KEYS,
     SwapperType,
     ZERO_BN,
 } from "../modules";
@@ -27,7 +25,7 @@ const SLIPPAGE = 0.3;
 
 (async () => {
     try {
-        await checkIfStorageExists();
+        await checkIfStorageExists(storage.cacheId);
 
         const mint = importMintKeypair();
         if (!mint) {
@@ -52,14 +50,9 @@ const SLIPPAGE = 0.3;
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,
-            SwapperType.Sniper,
-            STORAGE_SNIPER_SECRET_KEYS
+            SwapperType.Sniper
         );
-        const traders = importSwapperKeypairs(
-            envVars.TRADER_COUNT,
-            SwapperType.Trader,
-            STORAGE_TRADER_SECRET_KEYS
-        );
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
         const sniperUnitsToSwap = await findUnitsToSwap(snipers, mint);
         const traderUnitsToSwap = await findUnitsToSwap(traders, mint);

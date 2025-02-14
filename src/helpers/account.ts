@@ -6,18 +6,27 @@ import { capitalize, formatPublicKey } from "./format";
 export async function importLocalKeypair(path: string, id: string): Promise<Keypair> {
     const secretKey: number[] = JSON.parse(await fs.readFile(path, "utf8"));
     const account = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-    logger.debug("%s (%s) imported", capitalize(id), formatPublicKey(account.publicKey));
+    logger.debug("%s (%s) key pair imported", capitalize(id), formatPublicKey(account.publicKey));
     return account;
 }
 
-export function generateMintKeypair(): Keypair {
-    const mint = Keypair.generate();
-    logger.info("Mint (%s) generated", formatPublicKey(mint.publicKey));
+export function generateOrImportMintKeypair(): Keypair {
+    let mint: Keypair | undefined;
+
+    const encryptedSecretKey = storage.get<string | undefined>(STORAGE_MINT_SECRET_KEY);
+    if (encryptedSecretKey) {
+        const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
+        mint = Keypair.fromSecretKey(Uint8Array.from(secretKey));
+        logger.debug("Mint (%s) key pair imported", formatPublicKey(mint.publicKey));
+    } else {
+        mint = Keypair.generate();
+        logger.info("Mint (%s) key pair generated", formatPublicKey(mint.publicKey));
+    }
 
     const encryptedMint = encryption.encrypt(JSON.stringify(Array.from(mint.secretKey)));
     storage.set(STORAGE_MINT_SECRET_KEY, encryptedMint);
     storage.save();
-    logger.debug("Mint (%s) saved to storage", formatPublicKey(mint.publicKey));
+    logger.debug("Mint (%s) key pair saved to storage", formatPublicKey(mint.publicKey));
 
     return mint;
 }
@@ -30,34 +39,38 @@ export function importMintKeypair(): Keypair | undefined {
 
     const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
     const mint = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-    logger.debug("Mint (%s) imported", formatPublicKey(mint.publicKey));
+    logger.debug("Mint (%s) key pair imported", formatPublicKey(mint.publicKey));
 
     return mint;
 }
 
-export function generateSwapperKeypairs(
+export function generateOrImportSwapperKeypairs(
     swapperCount: number,
-    swapperType: SwapperType,
-    storageKeys: Record<number, string>
+    swapperType: SwapperType
 ): Keypair[] {
     const swappers: Keypair[] = [];
+    const storageKeys = generateSecretStorageKeys(swapperCount, swapperType);
 
     for (let i = 0; i < swapperCount; i++) {
-        const swapper = Keypair.generate();
-        logger.info(
-            `%s (%s) generated`,
-            capitalize(swapperType),
-            formatPublicKey(swapper.publicKey)
-        );
+        let swapper: Keypair | undefined;
 
-        const encryptedSniper = encryption.encrypt(JSON.stringify(Array.from(swapper.secretKey)));
-        storage.set(storageKeys[i], encryptedSniper);
-        storage.save();
-        logger.debug(
-            "%s (%s) secret key saved to storage",
-            capitalize(swapperType),
-            formatPublicKey(swapper.publicKey)
-        );
+        const encryptedSecretKey = storage.get<string | undefined>(storageKeys[i]);
+        if (encryptedSecretKey) {
+            const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
+            swapper = Keypair.fromSecretKey(Uint8Array.from(secretKey));
+            logger.debug(
+                "%s (%s) key pair imported",
+                capitalize(swapperType),
+                formatPublicKey(swapper.publicKey)
+            );
+        } else {
+            swapper = Keypair.generate();
+            logger.info(
+                `%s (%s) key pair generated`,
+                capitalize(swapperType),
+                formatPublicKey(swapper.publicKey)
+            );
+        }
 
         swappers.push(swapper);
     }
@@ -65,12 +78,9 @@ export function generateSwapperKeypairs(
     return swappers;
 }
 
-export function importSwapperKeypairs(
-    swapperCount: number,
-    swapperType: SwapperType,
-    storageKeys: Record<number, string>
-): Keypair[] {
+export function importSwapperKeypairs(swapperCount: number, swapperType: SwapperType): Keypair[] {
     const swappers: Keypair[] = [];
+    const storageKeys = generateSecretStorageKeys(swapperCount, swapperType);
 
     for (let i = 0; i < swapperCount; i++) {
         const encryptedSecretKey = storage.get<string>(storageKeys[i]);
@@ -81,7 +91,7 @@ export function importSwapperKeypairs(
         const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
         const swapper = Keypair.fromSecretKey(Uint8Array.from(secretKey));
         logger.debug(
-            "%s (%s) imported",
+            "%s (%s) key pair imported",
             capitalize(swapperType),
             formatPublicKey(swapper.publicKey)
         );
@@ -90,4 +100,15 @@ export function importSwapperKeypairs(
     }
 
     return swappers;
+}
+
+function generateSecretStorageKeys(
+    keyCount: number,
+    swapperType: SwapperType
+): Record<number, string> {
+    const secretKeyRecord: Record<number, string> = {};
+    for (let i = 0; i < keyCount; i++) {
+        secretKeyRecord[i] = `${swapperType}_${i}_secret_key`;
+    }
+    return secretKeyRecord;
 }

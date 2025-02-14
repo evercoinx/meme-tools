@@ -13,24 +13,11 @@ import {
     TransactionInstruction,
 } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import {
-    generateSwapperKeypairs,
-    importLocalKeypair,
-    importSwapperKeypairs,
-} from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/filesystem";
+import { generateOrImportSwapperKeypairs, importLocalKeypair } from "../helpers/account";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction } from "../helpers/network";
 import { getRandomFloat } from "../helpers/random";
-import {
-    connectionPool,
-    envVars,
-    heliusClientPool,
-    logger,
-    STORAGE_SNIPER_SECRET_KEYS,
-    STORAGE_TRADER_SECRET_KEYS,
-    SwapperType,
-} from "../modules";
+import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "../modules";
 import { HeliusClient } from "../modules/helius";
 
 (async () => {
@@ -40,30 +27,11 @@ import { HeliusClient } from "../modules/helius";
             "distributor"
         );
 
-        const storageExists = await checkIfStorageExists(true);
-        const snipers = storageExists
-            ? importSwapperKeypairs(
-                  envVars.SNIPER_SHARE_POOL_PERCENTS.length,
-                  SwapperType.Sniper,
-                  STORAGE_SNIPER_SECRET_KEYS
-              )
-            : generateSwapperKeypairs(
-                  envVars.SNIPER_SHARE_POOL_PERCENTS.length,
-                  SwapperType.Sniper,
-                  STORAGE_SNIPER_SECRET_KEYS
-              );
-
-        const traders = storageExists
-            ? importSwapperKeypairs(
-                  envVars.TRADER_COUNT,
-                  SwapperType.Trader,
-                  STORAGE_TRADER_SECRET_KEYS
-              )
-            : generateSwapperKeypairs(
-                  envVars.TRADER_COUNT,
-                  SwapperType.Trader,
-                  STORAGE_TRADER_SECRET_KEYS
-              );
+        const snipers = generateOrImportSwapperKeypairs(
+            envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+            SwapperType.Sniper
+        );
+        const traders = generateOrImportSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
         const sniperAmounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((percent) =>
             new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL)
@@ -71,7 +39,6 @@ import { HeliusClient } from "../modules/helius";
                 .plus(envVars.INITIAL_SWAPPER_BALANCE_SOL)
                 .mul(LAMPORTS_PER_SOL)
         );
-
         const traderAmounts = new Array(envVars.TRADER_COUNT).fill(0).map(() => {
             const amount = new Decimal(getRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
             return amount.plus(envVars.INITIAL_SWAPPER_BALANCE_SOL).mul(LAMPORTS_PER_SOL);

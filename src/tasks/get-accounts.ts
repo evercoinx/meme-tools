@@ -2,18 +2,11 @@ import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
-import {
-    envVars,
-    logger,
-    STORAGE_SNIPER_SECRET_KEYS,
-    STORAGE_TRADER_SECRET_KEYS,
-    SwapperType,
-    UNKNOWN_KEY,
-} from "../modules";
+import { envVars, logger, storage, SwapperType, UNKNOWN_KEY } from "../modules";
 
 (async () => {
     try {
-        await checkIfStorageExists();
+        await checkIfStorageExists(storage.cacheId);
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
         const distributor = await importLocalKeypair(
@@ -23,14 +16,9 @@ import {
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,
-            SwapperType.Sniper,
-            STORAGE_SNIPER_SECRET_KEYS
+            SwapperType.Sniper
         );
-        const traders = importSwapperKeypairs(
-            envVars.TRADER_COUNT,
-            SwapperType.Trader,
-            STORAGE_TRADER_SECRET_KEYS
-        );
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
         const mint = importMintKeypair();
 
         getAccounts(dev, distributor, snipers, traders, mint);

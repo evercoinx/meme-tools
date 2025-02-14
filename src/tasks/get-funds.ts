@@ -17,15 +17,13 @@ import {
     RAYDIUM_LP_MINT_DECIMALS,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
-    STORAGE_SNIPER_SECRET_KEYS,
-    STORAGE_TRADER_SECRET_KEYS,
     SwapperType,
     UNKNOWN_KEY,
 } from "../modules";
 
 (async () => {
     try {
-        await checkIfStorageExists();
+        await checkIfStorageExists(storage.cacheId);
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
         const distributor = await importLocalKeypair(
@@ -34,14 +32,9 @@ import {
         );
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,
-            SwapperType.Sniper,
-            STORAGE_SNIPER_SECRET_KEYS
+            SwapperType.Sniper
         );
-        const traders = importSwapperKeypairs(
-            envVars.TRADER_COUNT,
-            SwapperType.Trader,
-            STORAGE_TRADER_SECRET_KEYS
-        );
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
         const mint = importMintKeypair();
 
         await getFunds([dev, distributor, ...snipers, ...traders], mint);

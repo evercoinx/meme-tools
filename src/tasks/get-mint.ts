@@ -4,11 +4,11 @@ import Decimal from "decimal.js";
 import { importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal } from "../helpers/format";
-import { CLUSTER, connection, envVars, logger } from "../modules";
+import { CLUSTER, connectionPool, envVars, logger, storage } from "../modules";
 
 (async () => {
     try {
-        await checkIfStorageExists();
+        await checkIfStorageExists(storage.cacheId);
 
         const mint = importMintKeypair();
         if (!mint) {
@@ -24,7 +24,7 @@ import { CLUSTER, connection, envVars, logger } from "../modules";
 
 async function getMint(mint: Keypair): Promise<void> {
     const mintInfo = await getMintInfo(
-        connection,
+        connectionPool.next(),
         mint.publicKey,
         "confirmed",
         TOKEN_2022_PROGRAM_ID

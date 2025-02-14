@@ -16,7 +16,6 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
-    STORAGE_TRADER_SECRET_KEYS,
     SwapperType,
     ZERO_DECIMAL,
 } from "../modules";
@@ -28,18 +27,14 @@ const SLIPPAGE = 0.1;
 
 (async () => {
     try {
-        await checkIfStorageExists();
+        await checkIfStorageExists(storage.cacheId);
 
         const mint = importMintKeypair();
         if (!mint) {
             throw new Error("Mint not imported");
         }
 
-        const traders = importSwapperKeypairs(
-            envVars.TRADER_COUNT,
-            SwapperType.Trader,
-            STORAGE_TRADER_SECRET_KEYS
-        );
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {
