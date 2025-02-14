@@ -32,6 +32,7 @@ export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 
 export const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
 export const RAYDIUM_LP_MINT_DECIMALS = 9;
+export const SLIPPAGE = 1;
 export const UNKNOWN_KEY = "?".repeat(44);
 
 export const envVars = extractEnvironmentVariables();

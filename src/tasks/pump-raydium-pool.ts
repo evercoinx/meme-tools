@@ -13,6 +13,7 @@ import {
     envVars,
     heliusClientPool,
     logger,
+    SLIPPAGE,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
@@ -22,8 +23,6 @@ import {
 import { loadRaydiumPoolInfo, swapMintToSol, swapSolToMint } from "../modules/raydium";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { getRandomFloat, shuffle } from "../helpers/random";
-
-const SLIPPAGE = 0.1;
 
 (async () => {
     try {

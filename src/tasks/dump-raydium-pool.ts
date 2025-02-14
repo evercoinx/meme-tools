@@ -13,6 +13,7 @@ import {
     envVars,
     heliusClientPool,
     logger,
+    SLIPPAGE,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
@@ -20,8 +21,6 @@ import {
     ZERO_BN,
 } from "../modules";
 import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
-
-const SLIPPAGE = 0.3;
 
 (async () => {
     try {
