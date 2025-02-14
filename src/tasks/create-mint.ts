@@ -1,5 +1,5 @@
-import fs from "node:fs/promises";
-import path from "node:path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     AuthorityType,
@@ -82,7 +82,7 @@ async function uploadImage(): Promise<string> {
         logger.warn("Mint image file already uploaded to IPFS: %s", imageUri);
     } else {
         logger.debug("Uploading mint image file to IPFS");
-        const imageBlob = new Blob([await fs.readFile(path.join(IMAGE_DIR, imageFileName))]);
+        const imageBlob = new Blob([await readFile(join(IMAGE_DIR, imageFileName))]);
 
         const imageFile = new File([imageBlob], imageFileName, { type: "image/webp" });
         const upload = await pinataClient.upload.file(imageFile);
@@ -106,7 +106,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
     }
 
     const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
-    const metadataContents = await fs.readFile(path.join(METADATA_DIR, metadataFilename), "utf8");
+    const metadataContents = await readFile(join(METADATA_DIR, metadataFilename), "utf8");
     metadata = {
         ...JSON.parse(metadataContents),
         image: imageUri,
