@@ -11,6 +11,7 @@ import { formatPublicKey } from "../helpers/format";
 import {
     connectionPool,
     envVars,
+    heliusClientPool,
     logger,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
@@ -44,7 +45,7 @@ const SLIPPAGE = 0.3;
         }
 
         const poolInfo = await loadRaydiumPoolInfo(
-            connectionPool[0],
+            connectionPool.next(),
             new PublicKey(raydiumPoolId),
             mint
         );
@@ -65,6 +66,7 @@ const SLIPPAGE = 0.3;
 
         const sendSniperSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
+            heliusClientPool,
             poolInfo,
             snipers,
             sniperUnitsToSwap,
@@ -79,6 +81,7 @@ const SLIPPAGE = 0.3;
 
         const sendTraderSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
+            heliusClientPool,
             poolInfo,
             traders,
             traderUnitsToSwap,
@@ -100,7 +103,7 @@ async function findUnitsToSwap(accounts: Keypair[], mint: Keypair): Promise<(BN 
     const unitsToSwap: (BN | null)[] = [];
 
     for (const [i, account] of accounts.entries()) {
-        const connection = connectionPool[i % connectionPool.length];
+        const connection = connectionPool.next();
 
         const mintTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,

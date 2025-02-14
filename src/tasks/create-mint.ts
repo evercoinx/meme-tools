@@ -164,9 +164,9 @@ async function createMint(
     // Size of metadata
     const metadataSize = pack(metadata).length;
     // Minimum lamports required for Mint account
-    const mintLamports = await connectionPool[0].getMinimumBalanceForRentExemption(
-        mintSize + metadataExtensionSize + metadataSize
-    );
+    const mintLamports = await connectionPool
+        .next()
+        .getMinimumBalanceForRentExemption(mintSize + metadataExtensionSize + metadataSize);
 
     const associatedTokenAccount = await getAssociatedTokenAddress(
         mint.publicKey,
@@ -241,8 +241,8 @@ async function createMint(
     ];
 
     return sendAndConfirmVersionedTransaction(
-        connectionPool[1],
-        heliusClientPool[1],
+        connectionPool.next(),
+        heliusClientPool.next(),
         instructions,
         [dev, mint],
         `to create mint (${formatPublicKey(mint.publicKey)})`,

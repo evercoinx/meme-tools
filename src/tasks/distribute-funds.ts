@@ -108,8 +108,8 @@ async function distributeFunds(
     const instructions: TransactionInstruction[] = [];
 
     for (const [i, account] of accounts.entries()) {
-        connection = connectionPool[i % connectionPool.length];
-        heliusCleint = heliusClientPool[i % heliusClientPool.length];
+        connection = connectionPool.next();
+        heliusCleint = heliusClientPool.next();
 
         const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
 

@@ -11,6 +11,7 @@ import { checkIfStorageExists } from "../helpers/filesystem";
 import {
     connectionPool,
     envVars,
+    heliusClientPool,
     logger,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
@@ -23,7 +24,7 @@ import { loadRaydiumPoolInfo, swapMintToSol, swapSolToMint } from "../modules/ra
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { getRandomFloat, shuffle } from "../helpers/random";
 
-const SLIPPAGE = 0.05;
+const SLIPPAGE = 0.1;
 
 (async () => {
     try {
@@ -51,7 +52,7 @@ const SLIPPAGE = 0.05;
         }
 
         const poolInfo = await loadRaydiumPoolInfo(
-            connectionPool[0],
+            connectionPool.next(),
             new PublicKey(raydiumPoolId),
             mint
         );
@@ -59,6 +60,7 @@ const SLIPPAGE = 0.05;
 
         const sendSwapSolToMintTransactions = await swapSolToMint(
             connectionPool,
+            heliusClientPool,
             poolInfo,
             traders,
             lamportsToBuy,
@@ -71,6 +73,7 @@ const SLIPPAGE = 0.05;
         const unitsToSell = await findUnitsToSell(shuffledTraders, mint);
         const sendSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
+            heliusClientPool,
             poolInfo,
             shuffledTraders,
             unitsToSell,
@@ -88,7 +91,7 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
     const lamportsToSwap: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
-        const connection = connectionPool[i % connectionPool.length];
+        const connection = connectionPool.next();
 
         const solBalance = new Decimal(await connection.getBalance(trader.publicKey, "confirmed"));
         const residualSolBalance = solBalance.sub(
@@ -116,7 +119,7 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
     const unitsToSwap: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
-        const connection = connectionPool[i % connectionPool.length];
+        const connection = connectionPool.next();
 
         const mintTokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,

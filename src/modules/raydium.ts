@@ -12,10 +12,11 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { CLUSTER, envVars, heliusClientPool } from "../modules";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { sendAndConfirmVersionedTransaction, TransactionOptions } from "../helpers/network";
-import { PriorityLevel } from "./helius";
+import { CLUSTER, envVars } from "../modules";
+import { HeliusClient, PriorityLevel } from "./helius";
+import { Pool } from "./pool";
 
 export interface CpmmPoolInfo {
     poolInfo: ApiV3PoolInfoStandardItemCpmm;
@@ -97,7 +98,8 @@ export async function loadRaydiumPoolInfo(
 }
 
 export async function swapSolToMint(
-    connectionPool: Connection[],
+    connectionPool: Pool<Connection>,
+    heliusClientPool: Pool<HeliusClient>,
     { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
     accounts: (Keypair | null)[],
     lamportsToSwap: (BN | null)[],
@@ -113,8 +115,8 @@ export async function swapSolToMint(
             continue;
         }
 
-        const connection = connectionPool[i % connectionPool.length];
-        const heliusCleint = heliusClientPool[i % heliusClientPool.length];
+        const connection = connectionPool.next();
+        const heliusCleint = heliusClientPool.next();
 
         const swapResult = CurveCalculator.swap(
             lamportsToSwap[i],
@@ -159,7 +161,8 @@ export async function swapSolToMint(
 }
 
 export async function swapMintToSol(
-    connectionPool: Connection[],
+    connectionPool: Pool<Connection>,
+    heliusClientPool: Pool<HeliusClient>,
     { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
     accounts: (Keypair | null)[],
     unitsToSwap: (BN | null)[],
@@ -175,8 +178,8 @@ export async function swapMintToSol(
             continue;
         }
 
-        const connection = connectionPool[i % connectionPool.length];
-        const heliusCleint = heliusClientPool[i % heliusClientPool.length];
+        const connection = connectionPool.next();
+        const heliusCleint = heliusClientPool.next();
 
         const swapResult = CurveCalculator.swap(
             unitsToSwap[i],

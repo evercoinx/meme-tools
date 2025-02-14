@@ -84,8 +84,8 @@ async function closeTokenAccounts(
         const isDev = i === 0;
         const instructions: TransactionInstruction[] = [];
 
-        const connection = connectionPool[i % connectionPool.length];
-        const heliusCleint = heliusClientPool[i % heliusClientPool.length];
+        const connection = connectionPool.next();
+        const heliusCleint = heliusClientPool.next();
 
         if (mint) {
             const mintTokenAccount = getAssociatedTokenAddressSync(
@@ -204,8 +204,8 @@ async function collectFunds(
     const sendTransactions: Promise<void>[] = [];
 
     for (const [i, account] of [...snipers, ...traders].entries()) {
-        const connection = connectionPool[i % connectionPool.length];
-        const heliusCleint = heliusClientPool[i % heliusClientPool.length];
+        const connection = connectionPool.next();
+        const heliusCleint = heliusClientPool.next();
 
         const solBalance = await connection.getBalance(account.publicKey, "confirmed");
         if (solBalance <= MIN_REMAINING_BALANCE_LAMPORTS) {

@@ -7,8 +7,9 @@ import { Encryption } from "./encryption";
 import { extractEnvironmentVariables } from "./environment";
 import { Explorer } from "./explorer";
 import { createLogger } from "./logger";
-import { createHeliusClient, HeliusClient } from "./helius";
+import { createHeliusClient } from "./helius";
 import { createPinataClient } from "./pinata";
+import { Pool } from "./pool";
 import { createStorage } from "./storage";
 
 dotenv.config();
@@ -47,8 +48,12 @@ export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
 export const logger = createLogger(envVars.LOG_LEVEL);
-export const connectionPool = createConnectionPool(envVars.RPC_URIS);
-export const heliusClientPool = createHeliusClientPool(envVars.RPC_URIS);
+export const connectionPool = new Pool(
+    envVars.RPC_URIS.map((rpcUri) => new Connection(rpcUri, "confirmed"))
+);
+export const heliusClientPool = new Pool(
+    envVars.RPC_URIS.map((rpcUri) => createHeliusClient(rpcUri))
+);
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY);
 
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
@@ -74,20 +79,4 @@ function generateSecretKeyRecord(
         secretKeyRecord[i] = `${swapperType}_${i}_secret_key`;
     }
     return secretKeyRecord;
-}
-
-function createConnectionPool(rpcUris: string[]) {
-    const connectionPool: Connection[] = [];
-    for (const [i, rpcUri] of rpcUris.entries()) {
-        connectionPool[i] = new Connection(rpcUri, "confirmed");
-    }
-    return connectionPool;
-}
-
-function createHeliusClientPool(rpcUris: string[]): HeliusClient[] {
-    const heliusClientPool: HeliusClient[] = [];
-    for (const [i, rpcUri] of rpcUris.entries()) {
-        heliusClientPool[i] = createHeliusClient(rpcUri);
-    }
-    return heliusClientPool;
 }
