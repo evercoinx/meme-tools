@@ -75,7 +75,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             traders,
             traderUnitsToSwap,
             SLIPPAGE,
-            "Medium",
+            "Default",
             {
                 skipPreflight: true,
                 commitment: "confirmed",

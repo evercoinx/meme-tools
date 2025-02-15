@@ -1,8 +1,12 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 
-export function getRandomFloat(range: [number, number]): number {
+export function generateRandomFloat(range: [number, number]): number {
     const randomFloat = randomBytes(4).readUInt32LE(0) / 0xffffffff;
     return randomFloat * (range[1] - range[0]) + range[0];
+}
+
+export function generateRandomInteger(range: [number, number]): number {
+    return randomInt(range[0], range[1]);
 }
 
 export function shuffle(arr: unknown[]): unknown[] {

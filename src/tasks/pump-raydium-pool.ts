@@ -8,6 +8,8 @@ import BN from "bn.js";
 import Decimal from "decimal.js";
 import { importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
+import { formatDecimal, formatPublicKey } from "../helpers/format";
+import { generateRandomFloat, generateRandomInteger, shuffle } from "../helpers/random";
 import {
     connectionPool,
     envVars,
@@ -21,8 +23,8 @@ import {
     ZERO_DECIMAL,
 } from "../modules";
 import { loadRaydiumPoolInfo, swapMintToSol, swapSolToMint } from "../modules/raydium";
-import { formatDecimal, formatPublicKey } from "../helpers/format";
-import { getRandomFloat, shuffle } from "../helpers/random";
+
+const TRADER_GROUP_SIZE = 1;
 
 (async () => {
     try {
@@ -48,30 +50,54 @@ import { getRandomFloat, shuffle } from "../helpers/random";
         const connection = connectionPool.next();
         const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
 
-        const lamportsToBuy = await findLamportsToBuy(traders);
-        const sendSwapSolToMintTransactions = await swapSolToMint(
-            connectionPool,
-            heliusClientPool,
-            poolInfo,
-            traders,
-            lamportsToBuy,
-            SLIPPAGE,
-            "Low"
-        );
-        await Promise.all(sendSwapSolToMintTransactions);
+        for (let i = 0; i < traders.length; i += TRADER_GROUP_SIZE) {
+            const traderGroup = traders.slice(i, i + TRADER_GROUP_SIZE);
 
-        const shuffledTraders = shuffle(traders) as Keypair[];
-        const unitsToSell = await findUnitsToSell(shuffledTraders, mint);
-        const sendSwapMintToSolTransactions = await swapMintToSol(
-            connectionPool,
-            heliusClientPool,
-            poolInfo,
-            shuffledTraders,
-            unitsToSell,
-            SLIPPAGE,
-            "Low"
-        );
-        await Promise.all(sendSwapMintToSolTransactions);
+            const lamportsToBuy = await findLamportsToBuy(traderGroup);
+            const sendSwapSolToMintTransactions = await swapSolToMint(
+                connectionPool,
+                heliusClientPool,
+                poolInfo,
+                traderGroup,
+                lamportsToBuy,
+                SLIPPAGE,
+                "Low"
+            );
+            await Promise.all(sendSwapSolToMintTransactions);
+
+            await new Promise((resolve) => {
+                const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
+                logger.info(
+                    "%d buy(s) executed. Pausing: %d sec",
+                    sendSwapSolToMintTransactions.length,
+                    formatDecimal(delay / 1_000, 3)
+                );
+                setTimeout(resolve, delay);
+            });
+
+            const shuffledTraderGroup = shuffle(traderGroup) as Keypair[];
+            const unitsToSell = await findUnitsToSell(shuffledTraderGroup, mint);
+            const sendSwapMintToSolTransactions = await swapMintToSol(
+                connectionPool,
+                heliusClientPool,
+                poolInfo,
+                shuffledTraderGroup,
+                unitsToSell,
+                SLIPPAGE,
+                "Low"
+            );
+            await Promise.all(sendSwapMintToSolTransactions);
+
+            await new Promise((resolve) => {
+                const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
+                logger.info(
+                    "%d sell(s) executed. Pausing: %d sec",
+                    sendSwapMintToSolTransactions.length,
+                    formatDecimal(delay / 1_000, 3)
+                );
+                setTimeout(resolve, delay);
+            });
+        }
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -141,7 +167,9 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
             continue;
         }
 
-        const sellPercent = new Decimal(getRandomFloat(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT));
+        const sellPercent = new Decimal(
+            generateRandomFloat(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT)
+        );
         unitsToSwap[i] = new BN(sellPercent.mul(mintBalance).toFixed(0));
     }
 

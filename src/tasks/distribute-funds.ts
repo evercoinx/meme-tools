@@ -19,7 +19,7 @@ import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
-import { getRandomFloat } from "../helpers/random";
+import { generateRandomFloat } from "../helpers/random";
 import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "../modules";
 
 (async () => {
@@ -42,7 +42,7 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
                 .mul(LAMPORTS_PER_SOL)
         );
         const traderAmounts = new Array(envVars.TRADER_COUNT).fill(0).map(() => {
-            const amount = new Decimal(getRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
+            const amount = new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
             return amount.plus(envVars.INITIAL_SWAPPER_BALANCE_SOL).mul(LAMPORTS_PER_SOL);
         });
 

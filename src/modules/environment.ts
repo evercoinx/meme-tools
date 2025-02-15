@@ -20,11 +20,14 @@ interface EnvironmentSchema {
     TRADER_COUNT: number;
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
     TRADER_SELL_AMOUNT_RANGE_PERCENT: [number, number];
+    TRADER_SWAP_DELAY_RANGE_SEC: [number, number];
 }
 
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
 
-const handlePercent = (value: string) => new Decimal(value).div(100).toNumber();
+const convertToPercent = (value: string) => new Decimal(value).div(100).toNumber();
+
+const convertToMilliseconds = (value: string) => new Decimal(value).mul(1_000).toNumber();
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()
@@ -81,7 +84,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .min(0.01)
                 .max(100)
-                .custom(handlePercent)
+                .custom(convertToPercent)
                 .description("Initial pool size (in percent)"),
             INITIAL_POOL_LIQUIDITY_SOL: Joi.number()
                 .required()
@@ -90,7 +93,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Initial pool liquidity (in SOL)"),
             SNIPER_SHARE_POOL_PERCENTS: Joi.array()
                 .required()
-                .items(Joi.number().min(0.01).max(3).custom(handlePercent))
+                .items(Joi.number().min(0.01).max(3).custom(convertToPercent))
                 .unique()
                 .min(1)
                 .max(100)
@@ -115,11 +118,18 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Trader buy amount range (in SOL)"),
             TRADER_SELL_AMOUNT_RANGE_PERCENT: Joi.array()
                 .required()
-                .items(Joi.number().min(1).max(100).custom(handlePercent))
+                .items(Joi.number().min(1).max(100).custom(convertToPercent))
                 .unique()
                 .min(2)
                 .max(2)
                 .description("Trader sell amount range (in percent)"),
+            TRADER_SWAP_DELAY_RANGE_SEC: Joi.array()
+                .required()
+                .items(Joi.number().min(6).max(600).custom(convertToMilliseconds))
+                .unique()
+                .min(2)
+                .max(2)
+                .description("Trader swap delay range (in seconds)"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 
@@ -137,6 +147,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             TRADER_BUY_AMOUNT_RANGE_SOL: process.env.TRADER_BUY_AMOUNT_RANGE_SOL?.split(","),
             TRADER_SELL_AMOUNT_RANGE_PERCENT:
                 process.env.TRADER_SELL_AMOUNT_RANGE_PERCENT?.split(","),
+            TRADER_SWAP_DELAY_RANGE_SEC: process.env.TRADER_SWAP_DELAY_RANGE_SEC?.split(","),
         });
     if (error) {
         throw new Error(error.annotate());

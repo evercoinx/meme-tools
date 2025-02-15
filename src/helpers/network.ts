@@ -139,7 +139,12 @@ export async function sendAndConfirmVersionedTransaction(
             logger.info("Transaction (%s) sent %s", formatSignature(signature), logMessage);
 
             return await pollTransactionConfirmation(connection, signature);
-        } catch {
+        } catch (err: unknown) {
+            logger.error(
+                "Transaction (%s) failed. Trying to resend for reason: %s",
+                signature ? formatSignature(signature) : "?",
+                err instanceof Error ? err.message : String(err)
+            );
             continue;
         }
     } while (Date.now() - startTime < timeout);
@@ -159,7 +164,6 @@ async function pollTransactionConfirmation(
 
             if (elapsed >= timeout) {
                 clearInterval(intervalId);
-                logger.error("Transaction (%s) failed", formatSignature(signature));
                 reject(new Error(`Transaction (${formatSignature(signature)}) timed out`));
             }
 
