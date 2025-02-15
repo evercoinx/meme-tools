@@ -16,6 +16,7 @@ import {
     LAMPORTS_PER_SOL,
     PublicKey,
     TransactionInstruction,
+    TransactionSignature,
 } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
@@ -117,10 +118,10 @@ export async function swapSolToMint(
     slippage: number,
     priorityLevel: PriorityLevel,
     transactionOptions?: TransactionOptions
-): Promise<Promise<void>[]> {
+): Promise<Promise<TransactionSignature | undefined>[]> {
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
     let computePriceInstruction: TransactionInstruction | undefined;
-    const sendTransactions: Promise<void>[] = [];
+    const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
 
     for (const [i, account] of accounts.entries()) {
         if (account === null || lamportsToSwap[i] === null) {
@@ -189,8 +190,8 @@ export async function swapMintToSol(
     slippage: number,
     priorityLevel: PriorityLevel,
     transactionOptions?: TransactionOptions
-): Promise<Promise<void>[]> {
-    const sendTransactions: Promise<void>[] = [];
+): Promise<Promise<TransactionSignature | undefined>[]> {
+    const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     let computePriceInstruction: TransactionInstruction | undefined;
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
 

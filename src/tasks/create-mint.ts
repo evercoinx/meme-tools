@@ -18,7 +18,7 @@ import {
     TYPE_SIZE,
 } from "@solana/spl-token";
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana/web3.js";
 import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
@@ -148,7 +148,7 @@ async function createMint(
     offchainMetadata: OffchainTokenMetadata,
     dev: Keypair,
     mint: Keypair
-): Promise<Promise<void>> {
+): Promise<Promise<TransactionSignature | undefined>> {
     let mintInfo: Mint | undefined;
     try {
         mintInfo = await getMint(
@@ -162,7 +162,7 @@ async function createMint(
     }
     if (mintInfo) {
         logger.warn("Mint (%s) already created", mint.publicKey.toBase58());
-        return Promise.resolve();
+        return Promise.resolve(undefined);
     }
 
     const connection = connectionPool.next();

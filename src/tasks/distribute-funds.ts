@@ -5,7 +5,13 @@ import {
     NATIVE_MINT,
     TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from "@solana/web3.js";
+import {
+    Keypair,
+    LAMPORTS_PER_SOL,
+    SystemProgram,
+    TransactionInstruction,
+    TransactionSignature,
+} from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { generateOrImportSwapperKeypairs, importLocalKeypair } from "../helpers/account";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
@@ -68,7 +74,7 @@ async function distributeFunds(
     distributor: Keypair,
     accounts: Keypair[],
     swapperType: SwapperType
-): Promise<Promise<void>> {
+): Promise<Promise<TransactionSignature | undefined>> {
     let connection = connectionPool.next();
     let heliusClient = heliusClientPool.next();
     const instructions: TransactionInstruction[] = [];
@@ -132,7 +138,7 @@ async function distributeFunds(
     }
 
     if (instructions.length === 0) {
-        return Promise.resolve();
+        return Promise.resolve(undefined);
     }
 
     const computePriceInstruction = await getComputeUnitPriceInstruction(

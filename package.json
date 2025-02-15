@@ -9,7 +9,7 @@
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
         "clean": "rm -rf dist/*",
-        "start": "yarn distribute-funds && yarn create-mint && yarn open-raydium-pool:view",
+        "start": "yarn distribute-funds && yarn create-mint && sleep 3 && yarn open-raydium-pool:view",
         "distribute-funds": "ts-node src/tasks/distribute-funds.ts",
         "distribute-funds:view": "yarn distribute-funds && yarn get-funds",
         "create-mint": "ts-node src/tasks/create-mint.ts",

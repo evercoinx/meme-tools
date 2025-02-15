@@ -12,6 +12,7 @@ import {
     PublicKey,
     SystemProgram,
     TransactionInstruction,
+    TransactionSignature,
 } from "@solana/web3.js";
 import { importLocalKeypair, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
@@ -73,8 +74,8 @@ async function closeTokenAccounts(
     traders: Keypair[],
     mint?: Keypair,
     lpMint?: PublicKey
-): Promise<Promise<void>[]> {
-    const sendTransactions: Promise<void>[] = [];
+): Promise<Promise<TransactionSignature | undefined>[]> {
+    const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     for (const [i, account] of [dev, ...snipers, ...traders].entries()) {
         const isDev = i === 0;
 
@@ -205,8 +206,8 @@ async function collectFunds(
     snipers: Keypair[],
     traders: Keypair[],
     distributor: Keypair
-): Promise<Promise<void>[]> {
-    const sendTransactions: Promise<void>[] = [];
+): Promise<Promise<TransactionSignature | undefined>[]> {
+    const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     let computePriceInstruction: TransactionInstruction | undefined;
 
     for (const [i, account] of [...snipers, ...traders].entries()) {

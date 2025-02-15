@@ -5,6 +5,7 @@ import {
     Keypair,
     TransactionInstruction,
     TransactionMessage,
+    TransactionSignature,
     VersionedTransaction,
 } from "@solana/web3.js";
 import axios, { AxiosResponse } from "axios";
@@ -16,15 +17,13 @@ import {
     HeliusClient,
     PriorityLevel,
 } from "../modules/helius";
-import { formatPublicKey, formatSignature } from "./format";
+import { formatSignature } from "./format";
 
 export interface TransactionOptions {
     skipPreflight?: boolean;
     preflightCommitment?: Commitment;
     commitment?: Commitment;
 }
-
-const MAX_TRANSACTION_CONFIRMATION_RETRIES = 5;
 
 export async function getComputeUnitPriceInstruction(
     connection: Connection,
@@ -33,13 +32,7 @@ export async function getComputeUnitPriceInstruction(
     instructions: TransactionInstruction[],
     payer: Keypair
 ) {
-    const { blockhash } = await connection.getLatestBlockhash();
-    const messageV0 = new TransactionMessage({
-        instructions,
-        payerKey: payer.publicKey,
-        recentBlockhash: blockhash,
-    });
-    const transaction = new VersionedTransaction(messageV0.compileToV0Message());
+    const transaction = await createTransaction(connection, instructions, payer);
 
     const priorityFeeEstimate = await getPriorityFeeEstimate(
         heliusClient,
@@ -49,6 +42,21 @@ export async function getComputeUnitPriceInstruction(
     return ComputeBudgetProgram.setComputeUnitPrice({
         microLamports: priorityFeeEstimate,
     });
+}
+
+async function createTransaction(
+    connection: Connection,
+    instructions: TransactionInstruction[],
+    payer: Keypair
+): Promise<VersionedTransaction> {
+    const { blockhash } = await connection.getLatestBlockhash();
+    const messageV0 = new TransactionMessage({
+        instructions,
+        payerKey: payer.publicKey,
+        recentBlockhash: blockhash,
+    });
+
+    return new VersionedTransaction(messageV0.compileToV0Message());
 }
 
 async function getPriorityFeeEstimate(
@@ -103,69 +111,60 @@ export async function sendAndConfirmVersionedTransaction(
     signers: Keypair[],
     logMessage: string,
     transactionOptions?: TransactionOptions
-): Promise<void> {
-    const payer = signers[0];
+): Promise<TransactionSignature | undefined> {
+    let signature: TransactionSignature | undefined;
+    const timeout = 60_000;
 
-    let { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-    const messageV0 = new TransactionMessage({
-        payerKey: payer.publicKey,
-        recentBlockhash: blockhash,
-        instructions,
-    });
+    const transaction = await createTransaction(connection, instructions, signers[0]);
+    transaction.sign(signers);
 
-    let signature: string | undefined;
-    let latestErrorMessage: string | undefined;
-    let totalRetries = 0;
+    const startTime = Date.now();
 
     do {
         try {
-            const transaction = new VersionedTransaction(messageV0.compileToV0Message());
-            transaction.sign(signers);
-
-            signature = await connection.sendTransaction(transaction, {
+            signature = await connection.sendRawTransaction(transaction.serialize(), {
                 skipPreflight: transactionOptions?.skipPreflight ?? false,
                 preflightCommitment: transactionOptions?.preflightCommitment ?? "confirmed",
                 maxRetries: 0,
             });
-
             logger.info("Transaction (%s) sent %s", formatSignature(signature), logMessage);
 
-            const confirmation = await connection.confirmTransaction(
-                {
-                    signature,
-                    blockhash,
-                    lastValidBlockHeight,
-                },
-                transactionOptions?.commitment ?? "confirmed"
-            );
-            if (confirmation.value.err === null) {
-                latestErrorMessage = undefined;
-                break;
-            }
-            throw new Error(JSON.stringify(confirmation.value.err, null, 4));
-        } catch (err: unknown) {
-            ({ blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash());
-
-            messageV0.recentBlockhash = blockhash;
-            latestErrorMessage = err instanceof Error ? err.message : String(err);
-            totalRetries++;
-
-            logger.warn(
-                "Transaction (%s) failed. Retry: %d/%d",
-                signature ? formatPublicKey(signature, 8) : "?",
-                totalRetries,
-                MAX_TRANSACTION_CONFIRMATION_RETRIES
-            );
+            return await pollTransactionConfirmation(connection, signature);
+        } catch {
+            continue;
         }
-    } while (totalRetries < MAX_TRANSACTION_CONFIRMATION_RETRIES);
+    } while (Date.now() - startTime < timeout);
+}
 
-    if (latestErrorMessage) {
-        throw new Error(latestErrorMessage);
-    }
+async function pollTransactionConfirmation(
+    connection: Connection,
+    signature: TransactionSignature
+): Promise<TransactionSignature> {
+    const timeout = 15_000;
+    const interval = 1_000;
+    let elapsed = 0;
 
-    logger.info(
-        "Transaction (%s) confirmed: %s",
-        signature ? formatPublicKey(signature, 8) : "?",
-        signature ? explorer.generateTransactionUri(signature) : "?"
-    );
+    return new Promise<TransactionSignature>((resolve, reject) => {
+        const intervalId = setInterval(async () => {
+            elapsed += interval;
+
+            if (elapsed >= timeout) {
+                clearInterval(intervalId);
+                logger.error("Transaction (%s) failed", formatSignature(signature));
+                reject(new Error(`Transaction (${formatSignature(signature)}) timed out`));
+            }
+
+            const status = await connection.getSignatureStatuses([signature]);
+            if (status?.value[0]?.confirmationStatus === "confirmed") {
+                clearInterval(intervalId);
+                logger.info(
+                    "Transaction (%s) confirmed: %s",
+                    formatSignature(signature),
+                    explorer.generateTransactionUri(signature)
+                );
+
+                resolve(signature);
+            }
+        }, interval);
+    });
 }

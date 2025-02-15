@@ -25,6 +25,7 @@ import {
     PublicKey,
     SystemProgram,
     TransactionInstruction,
+    TransactionSignature,
 } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
@@ -147,7 +148,10 @@ async function findSnipersToExecuteSwap(
     return snipersToExecuteSwap;
 }
 
-async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, CpmmPoolInfo]> {
+async function createPool(
+    dev: Keypair,
+    mint: Keypair
+): Promise<[Promise<TransactionSignature | undefined>, CpmmPoolInfo]> {
     const connection = connectionPool.next();
 
     const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
@@ -161,7 +165,7 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
         logger.debug("Raydium LP mint %s loaded from storage", raydimLpMint);
 
         const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
-        return [Promise.resolve(), poolInfo];
+        return [Promise.resolve(undefined), poolInfo];
     }
 
     const raydium = await loadRaydium(connection, dev);
@@ -341,7 +345,10 @@ async function getWrapSolInstructions(
     return instructions;
 }
 
-async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void>> {
+async function burnLpMint(
+    lpMint: PublicKey,
+    dev: Keypair
+): Promise<Promise<TransactionSignature | undefined>> {
     const connection = connectionPool.next();
 
     const lpMintAssociatedTokenAccount = getAssociatedTokenAddressSync(
