@@ -23,7 +23,7 @@ import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/acco
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import {
-    getComputeUnitPriceInstruction,
+    getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import {
@@ -259,7 +259,7 @@ async function createMint(
         ),
     ];
 
-    const computePriceInstruction = await getComputeUnitPriceInstruction(
+    const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
         heliusClient,
         "Default",
@@ -269,7 +269,7 @@ async function createMint(
 
     return sendAndConfirmVersionedTransaction(
         connection,
-        [computePriceInstruction, ...instructions],
+        [...computeBudgetInstructions, ...instructions],
         [dev, mint],
         `to create mint (${formatPublicKey(mint.publicKey)})`
     );

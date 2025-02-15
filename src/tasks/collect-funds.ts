@@ -18,7 +18,7 @@ import { importLocalKeypair, importMintKeypair, importSwapperKeypairs } from "..
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
-    getComputeUnitPriceInstruction,
+    getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import {
@@ -83,7 +83,7 @@ async function closeTokenAccounts(
         const heliusClient = heliusClientPool.next();
 
         const instructions: TransactionInstruction[] = [];
-        let computePriceInstruction: TransactionInstruction | undefined;
+        const computeBudgetInstructions: TransactionInstruction[] = [];
 
         if (mint) {
             const mintTokenAccount = getAssociatedTokenAddressSync(
@@ -178,20 +178,22 @@ async function closeTokenAccounts(
         }
 
         if (instructions.length > 0) {
-            if (!computePriceInstruction) {
-                computePriceInstruction = await getComputeUnitPriceInstruction(
-                    connection,
-                    heliusClient,
-                    "Low",
-                    instructions,
-                    dev
+            if (computeBudgetInstructions.length === 0) {
+                computeBudgetInstructions.push(
+                    ...(await getComputeBudgetInstructions(
+                        connection,
+                        heliusClient,
+                        "Low",
+                        instructions,
+                        dev
+                    ))
                 );
             }
 
             sendTransactions.push(
                 sendAndConfirmVersionedTransaction(
                     connection,
-                    [computePriceInstruction, ...instructions],
+                    [...computeBudgetInstructions, ...instructions],
                     [account],
                     `to close ATAs for account (${formatPublicKey(account.publicKey)})`
                 )
@@ -208,7 +210,7 @@ async function collectFunds(
     distributor: Keypair
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
-    let computePriceInstruction: TransactionInstruction | undefined;
+    const computeBudgetInstructions: TransactionInstruction[] = [];
 
     for (const [i, account] of [...snipers, ...traders].entries()) {
         const connection = connectionPool.next();
@@ -234,20 +236,22 @@ async function collectFunds(
             }),
         ];
 
-        if (!computePriceInstruction) {
-            computePriceInstruction = await getComputeUnitPriceInstruction(
-                connection,
-                heliusClient,
-                "Low",
-                instructions,
-                account
+        if (computeBudgetInstructions.length === 0) {
+            computeBudgetInstructions.push(
+                ...(await getComputeBudgetInstructions(
+                    connection,
+                    heliusClient,
+                    "Low",
+                    instructions,
+                    account
+                ))
             );
         }
 
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 connection,
-                [computePriceInstruction, ...instructions],
+                [...computeBudgetInstructions, ...instructions],
                 [account],
                 `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from account (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
             )

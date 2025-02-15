@@ -33,7 +33,7 @@ import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "..
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
-    getComputeUnitPriceInstruction,
+    getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import {
@@ -246,7 +246,7 @@ async function createPool(
     const heliusClient = heliusClientPool.next();
 
     const instructions = [...wrapSolInstructions, ...createPoolInstructions];
-    const computePriceInstruction = await getComputeUnitPriceInstruction(
+    const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
         heliusClient,
         "Default",
@@ -256,7 +256,7 @@ async function createPool(
 
     const sendTransaction = sendAndConfirmVersionedTransaction(
         connection,
-        [computePriceInstruction, ...instructions],
+        [...computeBudgetInstructions, ...instructions],
         [dev],
         `to create pool id (${poolId.toBase58()})`
     );
@@ -391,7 +391,7 @@ async function burnLpMint(
         ),
     ];
 
-    const computePriceInstruction = await getComputeUnitPriceInstruction(
+    const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
         heliusClientPool.next(),
         "Default",
@@ -400,8 +400,8 @@ async function burnLpMint(
     );
 
     return sendAndConfirmVersionedTransaction(
-        connectionPool.next(),
-        [computePriceInstruction, ...instructions],
+        connection,
+        [...computeBudgetInstructions, ...instructions],
         [dev],
         `to burn LP mint (${formatPublicKey(lpMint)}) for dev (${formatPublicKey(dev.publicKey)})`
     );

@@ -22,7 +22,7 @@ import BN from "bn.js";
 import Decimal from "decimal.js";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
-    getComputeUnitPriceInstruction,
+    getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
     TransactionOptions,
 } from "../helpers/network";
@@ -120,7 +120,7 @@ export async function swapSolToMint(
     transactionOptions?: TransactionOptions
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
-    let computePriceInstruction: TransactionInstruction | undefined;
+    const computeBudgetInstructions: TransactionInstruction[] = [];
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
 
     for (const [i, account] of accounts.entries()) {
@@ -157,20 +157,22 @@ export async function swapSolToMint(
             10 ** envVars.TOKEN_DECIMALS
         );
 
-        if (!computePriceInstruction) {
-            computePriceInstruction = await getComputeUnitPriceInstruction(
-                connection,
-                heliusClient,
-                priorityLevel,
-                instructions,
-                account
+        if (computeBudgetInstructions.length === 0) {
+            computeBudgetInstructions.push(
+                ...(await getComputeBudgetInstructions(
+                    connection,
+                    heliusClient,
+                    priorityLevel,
+                    instructions,
+                    account
+                ))
             );
         }
 
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 connection,
-                [computePriceInstruction, ...instructions],
+                [...computeBudgetInstructions, ...instructions],
                 [account],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for account #${i} (${formatPublicKey(account.publicKey)})`,
                 transactionOptions
@@ -192,7 +194,7 @@ export async function swapMintToSol(
     transactionOptions?: TransactionOptions
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
-    let computePriceInstruction: TransactionInstruction | undefined;
+    const computeBudgetInstructions: TransactionInstruction[] = [];
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
 
     for (const [i, account] of accounts.entries()) {
@@ -229,20 +231,22 @@ export async function swapMintToSol(
             LAMPORTS_PER_SOL
         );
 
-        if (!computePriceInstruction) {
-            computePriceInstruction = await getComputeUnitPriceInstruction(
-                connection,
-                heliusClient,
-                priorityLevel,
-                instructions,
-                account
+        if (computeBudgetInstructions.length === 0) {
+            computeBudgetInstructions.push(
+                ...(await getComputeBudgetInstructions(
+                    connection,
+                    heliusClient,
+                    priorityLevel,
+                    instructions,
+                    account
+                ))
             );
         }
 
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 connection,
-                [computePriceInstruction, ...instructions],
+                [...computeBudgetInstructions, ...instructions],
                 [account],
                 `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for account #${i} (${formatPublicKey(account.publicKey)})`,
                 transactionOptions

@@ -25,23 +25,32 @@ export interface TransactionOptions {
     commitment?: Commitment;
 }
 
-export async function getComputeUnitPriceInstruction(
+export async function getComputeBudgetInstructions(
     connection: Connection,
     heliusClient: HeliusClient,
     priorityLevel: PriorityLevel,
     instructions: TransactionInstruction[],
     payer: Keypair
-) {
-    const transaction = await createTransaction(connection, instructions, payer);
+): Promise<TransactionInstruction[]> {
+    const setComputeUnitLimitInstruction = ComputeBudgetProgram.setComputeUnitLimit({
+        units: 220_000,
+    });
+    const transaction = await createTransaction(
+        connection,
+        [setComputeUnitLimitInstruction, ...instructions],
+        payer
+    );
 
     const priorityFeeEstimate = await getPriorityFeeEstimate(
         heliusClient,
         priorityLevel,
         transaction
     );
-    return ComputeBudgetProgram.setComputeUnitPrice({
-        microLamports: priorityFeeEstimate,
-    });
+
+    return [
+        setComputeUnitLimitInstruction,
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFeeEstimate }),
+    ];
 }
 
 async function createTransaction(

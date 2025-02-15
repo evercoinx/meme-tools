@@ -16,7 +16,7 @@ import Decimal from "decimal.js";
 import { generateOrImportSwapperKeypairs, importLocalKeypair } from "../helpers/account";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
-    getComputeUnitPriceInstruction,
+    getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import { getRandomFloat } from "../helpers/random";
@@ -141,7 +141,7 @@ async function distributeFunds(
         return Promise.resolve(undefined);
     }
 
-    const computePriceInstruction = await getComputeUnitPriceInstruction(
+    const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
         heliusClient,
         "Low",
@@ -151,7 +151,7 @@ async function distributeFunds(
 
     return sendAndConfirmVersionedTransaction(
         connection,
-        [computePriceInstruction, ...instructions],
+        [...computeBudgetInstructions, ...instructions],
         [distributor],
         `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${fundedAccountCount} ${swapperType}s`
     );
