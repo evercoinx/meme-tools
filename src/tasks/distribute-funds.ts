@@ -9,7 +9,10 @@ import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction } from
 import Decimal from "decimal.js";
 import { generateOrImportSwapperKeypairs, importLocalKeypair } from "../helpers/account";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
-import { sendAndConfirmVersionedTransaction } from "../helpers/network";
+import {
+    getComputeUnitPriceInstruction,
+    sendAndConfirmVersionedTransaction,
+} from "../helpers/network";
 import { getRandomFloat } from "../helpers/random";
 import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "../modules";
 
@@ -67,7 +70,7 @@ async function distributeFunds(
     swapperType: SwapperType
 ): Promise<Promise<void>> {
     let connection = connectionPool.next();
-    let heliusCleint = heliusClientPool.next();
+    let heliusClient = heliusClientPool.next();
     const instructions: TransactionInstruction[] = [];
     let fundedAccountCount = 0;
 
@@ -125,17 +128,25 @@ async function distributeFunds(
         }
 
         connection = connectionPool.next();
-        heliusCleint = heliusClientPool.next();
+        heliusClient = heliusClientPool.next();
     }
 
-    return instructions.length > 0
-        ? sendAndConfirmVersionedTransaction(
-              connection,
-              heliusCleint,
-              instructions,
-              [distributor],
-              `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${fundedAccountCount} ${swapperType}s`,
-              "Low"
-          )
-        : Promise.resolve();
+    if (instructions.length === 0) {
+        return Promise.resolve();
+    }
+
+    const computePriceInstruction = await getComputeUnitPriceInstruction(
+        connection,
+        heliusClient,
+        "Low",
+        instructions,
+        distributor
+    );
+
+    return sendAndConfirmVersionedTransaction(
+        connection,
+        [computePriceInstruction, ...instructions],
+        [distributor],
+        `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${fundedAccountCount} ${swapperType}s`
+    );
 }

@@ -9,11 +9,22 @@ import {
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import {
+    clusterApiUrl,
+    Connection,
+    Keypair,
+    LAMPORTS_PER_SOL,
+    PublicKey,
+    TransactionInstruction,
+} from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
-import { sendAndConfirmVersionedTransaction, TransactionOptions } from "../helpers/network";
+import {
+    getComputeUnitPriceInstruction,
+    sendAndConfirmVersionedTransaction,
+    TransactionOptions,
+} from "../helpers/network";
 import { CLUSTER, envVars } from "../modules";
 import { HeliusClient, PriorityLevel } from "./helius";
 import { Pool } from "./pool";
@@ -108,6 +119,7 @@ export async function swapSolToMint(
     transactionOptions?: TransactionOptions
 ): Promise<Promise<void>[]> {
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
+    let computePriceInstruction: TransactionInstruction | undefined;
     const sendTransactions: Promise<void>[] = [];
 
     for (const [i, account] of accounts.entries()) {
@@ -116,7 +128,7 @@ export async function swapSolToMint(
         }
 
         const connection = connectionPool.next();
-        const heliusCleint = heliusClientPool.next();
+        const heliusClient = heliusClientPool.next();
 
         const swapResult = CurveCalculator.swap(
             lamportsToSwap[i],
@@ -144,14 +156,22 @@ export async function swapSolToMint(
             10 ** envVars.TOKEN_DECIMALS
         );
 
+        if (!computePriceInstruction) {
+            computePriceInstruction = await getComputeUnitPriceInstruction(
+                connection,
+                heliusClient,
+                priorityLevel,
+                instructions,
+                account
+            );
+        }
+
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 connection,
-                heliusCleint,
-                instructions,
+                [computePriceInstruction, ...instructions],
                 [account],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for account #${i} (${formatPublicKey(account.publicKey)})`,
-                priorityLevel,
                 transactionOptions
             )
         );
@@ -171,6 +191,7 @@ export async function swapMintToSol(
     transactionOptions?: TransactionOptions
 ): Promise<Promise<void>[]> {
     const sendTransactions: Promise<void>[] = [];
+    let computePriceInstruction: TransactionInstruction | undefined;
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
 
     for (const [i, account] of accounts.entries()) {
@@ -179,7 +200,7 @@ export async function swapMintToSol(
         }
 
         const connection = connectionPool.next();
-        const heliusCleint = heliusClientPool.next();
+        const heliusClient = heliusClientPool.next();
 
         const swapResult = CurveCalculator.swap(
             unitsToSwap[i],
@@ -207,14 +228,22 @@ export async function swapMintToSol(
             LAMPORTS_PER_SOL
         );
 
+        if (!computePriceInstruction) {
+            computePriceInstruction = await getComputeUnitPriceInstruction(
+                connection,
+                heliusClient,
+                priorityLevel,
+                instructions,
+                account
+            );
+        }
+
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 connection,
-                heliusCleint,
-                instructions,
+                [computePriceInstruction, ...instructions],
                 [account],
                 `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for account #${i} (${formatPublicKey(account.publicKey)})`,
-                priorityLevel,
                 transactionOptions
             )
         );

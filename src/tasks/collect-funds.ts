@@ -16,7 +16,10 @@ import {
 import { importLocalKeypair, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
-import { sendAndConfirmVersionedTransaction } from "../helpers/network";
+import {
+    getComputeUnitPriceInstruction,
+    sendAndConfirmVersionedTransaction,
+} from "../helpers/network";
 import {
     connectionPool,
     envVars,
@@ -74,10 +77,12 @@ async function closeTokenAccounts(
     const sendTransactions: Promise<void>[] = [];
     for (const [i, account] of [dev, ...snipers, ...traders].entries()) {
         const isDev = i === 0;
-        const instructions: TransactionInstruction[] = [];
 
         const connection = connectionPool.next();
-        const heliusCleint = heliusClientPool.next();
+        const heliusClient = heliusClientPool.next();
+
+        const instructions: TransactionInstruction[] = [];
+        let computePriceInstruction: TransactionInstruction | undefined;
 
         if (mint) {
             const mintTokenAccount = getAssociatedTokenAddressSync(
@@ -172,14 +177,22 @@ async function closeTokenAccounts(
         }
 
         if (instructions.length > 0) {
+            if (!computePriceInstruction) {
+                computePriceInstruction = await getComputeUnitPriceInstruction(
+                    connection,
+                    heliusClient,
+                    "Low",
+                    instructions,
+                    dev
+                );
+            }
+
             sendTransactions.push(
                 sendAndConfirmVersionedTransaction(
                     connection,
-                    heliusCleint,
-                    instructions,
+                    [computePriceInstruction, ...instructions],
                     [account],
-                    `to close ATAs for account (${formatPublicKey(account.publicKey)})`,
-                    "Min"
+                    `to close ATAs for account (${formatPublicKey(account.publicKey)})`
                 )
             );
         }
@@ -194,10 +207,11 @@ async function collectFunds(
     distributor: Keypair
 ): Promise<Promise<void>[]> {
     const sendTransactions: Promise<void>[] = [];
+    let computePriceInstruction: TransactionInstruction | undefined;
 
     for (const [i, account] of [...snipers, ...traders].entries()) {
         const connection = connectionPool.next();
-        const heliusCleint = heliusClientPool.next();
+        const heliusClient = heliusClientPool.next();
 
         const solBalance = await connection.getBalance(account.publicKey, "confirmed");
         if (solBalance <= MIN_REMAINING_BALANCE_LAMPORTS) {
@@ -219,14 +233,22 @@ async function collectFunds(
             }),
         ];
 
+        if (!computePriceInstruction) {
+            computePriceInstruction = await getComputeUnitPriceInstruction(
+                connection,
+                heliusClient,
+                "Low",
+                instructions,
+                account
+            );
+        }
+
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(
                 connection,
-                heliusCleint,
-                instructions,
+                [computePriceInstruction, ...instructions],
                 [account],
-                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from account (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`,
-                "Low"
+                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from account (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
             )
         );
     }

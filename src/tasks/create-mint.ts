@@ -22,7 +22,10 @@ import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
-import { sendAndConfirmVersionedTransaction } from "../helpers/network";
+import {
+    getComputeUnitPriceInstruction,
+    sendAndConfirmVersionedTransaction,
+} from "../helpers/network";
 import {
     connectionPool,
     envVars,
@@ -157,11 +160,13 @@ async function createMint(
     } catch {
         // Ignore AccountNotFoundError error
     }
-
     if (mintInfo) {
         logger.warn("Mint (%s) already created", mint.publicKey.toBase58());
         return Promise.resolve();
     }
+
+    const connection = connectionPool.next();
+    const heliusClient = heliusClientPool.next();
 
     const metadata: TokenMetadata = {
         mint: mint.publicKey,
@@ -178,9 +183,9 @@ async function createMint(
     // Size of metadata
     const metadataSize = pack(metadata).length;
     // Minimum lamports required for Mint account
-    const mintLamports = await connectionPool
-        .next()
-        .getMinimumBalanceForRentExemption(mintSize + metadataExtensionSize + metadataSize);
+    const mintLamports = await connection.getMinimumBalanceForRentExemption(
+        mintSize + metadataExtensionSize + metadataSize
+    );
 
     const mintTokenAccount = getAssociatedTokenAddressSync(
         mint.publicKey,
@@ -254,12 +259,18 @@ async function createMint(
         ),
     ];
 
-    return sendAndConfirmVersionedTransaction(
-        connectionPool.next(),
-        heliusClientPool.next(),
+    const computePriceInstruction = await getComputeUnitPriceInstruction(
+        connection,
+        heliusClient,
+        "Default",
         instructions,
+        dev
+    );
+
+    return sendAndConfirmVersionedTransaction(
+        connection,
+        [computePriceInstruction, ...instructions],
         [dev, mint],
-        `to create mint (${formatPublicKey(mint.publicKey)})`,
-        "Medium"
+        `to create mint (${formatPublicKey(mint.publicKey)})`
     );
 }

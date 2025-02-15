@@ -45,13 +45,10 @@ import { getRandomFloat, shuffle } from "../helpers/random";
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const poolInfo = await loadRaydiumPoolInfo(
-            connectionPool.next(),
-            new PublicKey(raydiumPoolId),
-            mint
-        );
-        const lamportsToBuy = await findLamportsToBuy(traders);
+        const connection = connectionPool.next();
+        const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
 
+        const lamportsToBuy = await findLamportsToBuy(traders);
         const sendSwapSolToMintTransactions = await swapSolToMint(
             connectionPool,
             heliusClientPool,

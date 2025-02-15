@@ -31,7 +31,10 @@ import Decimal from "decimal.js";
 import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
-import { sendAndConfirmVersionedTransaction } from "../helpers/network";
+import {
+    getComputeUnitPriceInstruction,
+    sendAndConfirmVersionedTransaction,
+} from "../helpers/network";
 import {
     connectionPool,
     envVars,
@@ -82,7 +85,7 @@ import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from ".
             "VeryHigh",
             {
                 skipPreflight: true,
-                commitment: "processed",
+                commitment: "confirmed",
             }
         );
         await Promise.all([sendCreatePoolTransaction]);
@@ -145,6 +148,8 @@ async function findSnipersToExecuteSwap(
 }
 
 async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, CpmmPoolInfo]> {
+    const connection = connectionPool.next();
+
     const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
     if (raydiumPoolId) {
         logger.debug("Raydium pool id loaded from storage", raydiumPoolId);
@@ -155,15 +160,11 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
         }
         logger.debug("Raydium LP mint %s loaded from storage", raydimLpMint);
 
-        const poolInfo = await loadRaydiumPoolInfo(
-            connectionPool.next(),
-            new PublicKey(raydiumPoolId),
-            mint
-        );
+        const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
         return [Promise.resolve(), poolInfo];
     }
 
-    const raydium = await loadRaydium(connectionPool.next(), dev);
+    const raydium = await loadRaydium(connection, dev);
 
     const feeConfigs = await raydium.api.getCpmmConfigs();
     if (feeConfigs.length === 0) {
@@ -238,13 +239,22 @@ async function createPool(dev: Keypair, mint: Keypair): Promise<[Promise<void>, 
         },
     });
 
+    const heliusClient = heliusClientPool.next();
+
+    const instructions = [...wrapSolInstructions, ...createPoolInstructions];
+    const computePriceInstruction = await getComputeUnitPriceInstruction(
+        connection,
+        heliusClient,
+        "Default",
+        instructions,
+        dev
+    );
+
     const sendTransaction = sendAndConfirmVersionedTransaction(
-        connectionPool.next(),
-        heliusClientPool.next(),
-        [...wrapSolInstructions, ...createPoolInstructions],
+        connection,
+        [computePriceInstruction, ...instructions],
         [dev],
-        `to create pool id (${poolId.toBase58()})`,
-        "Medium"
+        `to create pool id (${poolId.toBase58()})`
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, poolId.toBase58());
@@ -294,16 +304,12 @@ async function getWrapSolInstructions(
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
+    const connection = connectionPool.next();
     const instructions: TransactionInstruction[] = [];
     let wsolBalance = new Decimal(0);
 
     try {
-        const account = await getAccount(
-            connectionPool.next(),
-            tokenAccount,
-            "confirmed",
-            TOKEN_PROGRAM_ID
-        );
+        const account = await getAccount(connection, tokenAccount, "confirmed", TOKEN_PROGRAM_ID);
         wsolBalance = new Decimal(account.amount.toString(10));
     } catch {
         instructions.push(
@@ -336,6 +342,8 @@ async function getWrapSolInstructions(
 }
 
 async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void>> {
+    const connection = connectionPool.next();
+
     const lpMintAssociatedTokenAccount = getAssociatedTokenAddressSync(
         lpMint,
         dev.publicKey,
@@ -346,9 +354,10 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
     let lpMintBalance = new Decimal(0);
 
     try {
-        const lpMintTokenAccountBalance = await connectionPool
-            .next()
-            .getTokenAccountBalance(lpMintAssociatedTokenAccount, "confirmed");
+        const lpMintTokenAccountBalance = await connection.getTokenAccountBalance(
+            lpMintAssociatedTokenAccount,
+            "confirmed"
+        );
         lpMintBalance = new Decimal(lpMintTokenAccountBalance.value.amount);
     } catch {
         logger.warn(
@@ -375,12 +384,18 @@ async function burnLpMint(lpMint: PublicKey, dev: Keypair): Promise<Promise<void
         ),
     ];
 
+    const computePriceInstruction = await getComputeUnitPriceInstruction(
+        connection,
+        heliusClientPool.next(),
+        "Default",
+        instructions,
+        dev
+    );
+
     return sendAndConfirmVersionedTransaction(
         connectionPool.next(),
-        heliusClientPool.next(),
-        instructions,
+        [computePriceInstruction, ...instructions],
         [dev],
-        `to burn LP mint (${formatPublicKey(lpMint)}) for dev (${formatPublicKey(dev.publicKey)})`,
-        "Medium"
+        `to burn LP mint (${formatPublicKey(lpMint)}) for dev (${formatPublicKey(dev.publicKey)})`
     );
 }
