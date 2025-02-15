@@ -125,7 +125,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Trader sell amount range (in percent)"),
             TRADER_SWAP_DELAY_RANGE_SEC: Joi.array()
                 .required()
-                .items(Joi.number().min(6).max(600).custom(convertToMilliseconds))
+                .items(Joi.number().min(1).max(600).custom(convertToMilliseconds))
                 .unique()
                 .min(2)
                 .max(2)

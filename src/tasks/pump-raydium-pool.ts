@@ -63,6 +63,11 @@ const TRADER_GROUP_SIZE = 1;
                 SLIPPAGE,
                 "Low"
             );
+            if (sendSwapSolToMintTransactions.length === 0) {
+                logger.warn("0 buys left");
+                continue;
+            }
+
             await Promise.all(sendSwapSolToMintTransactions);
 
             await new Promise((resolve) => {
@@ -86,6 +91,15 @@ const TRADER_GROUP_SIZE = 1;
                 SLIPPAGE,
                 "Low"
             );
+            if (sendSwapMintToSolTransactions.length !== sendSwapSolToMintTransactions.length) {
+                logger.warn(
+                    "Buys and sells mistmatch: %d != %d",
+                    sendSwapMintToSolTransactions.length,
+                    sendSwapSolToMintTransactions.length
+                );
+                continue;
+            }
+
             await Promise.all(sendSwapMintToSolTransactions);
 
             await new Promise((resolve) => {
@@ -118,8 +132,7 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
         if (residualSolBalance.lte(0)) {
             lamportsToSwap[i] = null;
             logger.warn(
-                "Trader #%d (%s) has insufficient SOL balance: %s",
-                i,
+                "Trader (%s) has insufficient SOL balance: %s",
                 formatPublicKey(trader.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
@@ -159,11 +172,7 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
 
         if (mintBalance.lte(ZERO_DECIMAL)) {
             unitsToSwap[i] = null;
-            logger.warn(
-                "Trader #%d (%s) has zero mint balance",
-                i,
-                formatPublicKey(trader.publicKey)
-            );
+            logger.warn("Trader (%s) has 0 mint balance", formatPublicKey(trader.publicKey));
             continue;
         }
 

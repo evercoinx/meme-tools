@@ -134,8 +134,7 @@ async function findSnipersToExecuteSwap(
         if (mintBalance.gt(0)) {
             snipersToExecuteSwap[i] = null;
             logger.warn(
-                "Sniper #$%d (%s) has non zero mint balance: %s",
-                i,
+                "Sniper (%s) has positive mint balance: %s",
                 formatPublicKey(sniper.publicKey),
                 formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS))
             );
@@ -376,7 +375,7 @@ async function burnLpMint(
     }
 
     if (lpMintBalance.lte(0)) {
-        logger.warn("Dev (%s) has zero LP mint balance", formatPublicKey(dev.publicKey));
+        logger.warn("Dev (%s) has 0 LP mint balance", formatPublicKey(dev.publicKey));
         return;
     }
 

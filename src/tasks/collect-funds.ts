@@ -212,15 +212,14 @@ async function collectFunds(
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     const computeBudgetInstructions: TransactionInstruction[] = [];
 
-    for (const [i, account] of [...snipers, ...traders].entries()) {
+    for (const account of [...snipers, ...traders]) {
         const connection = connectionPool.next();
         const heliusClient = heliusClientPool.next();
 
         const solBalance = await connection.getBalance(account.publicKey, "confirmed");
         if (solBalance <= MIN_REMAINING_BALANCE_LAMPORTS) {
             logger.warn(
-                "Account #%d (%s) has insufficient balance: %s SOL",
-                i,
+                "Account (%s) has insufficient balance: %s SOL",
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance)
             );

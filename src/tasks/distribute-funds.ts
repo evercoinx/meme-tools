@@ -85,9 +85,8 @@ async function distributeFunds(
 
         if (solBalance.gte(lamports[i])) {
             logger.warn(
-                "%s #%d (%s) has sufficient balance: %s SOL",
+                "%s (%s) has sufficient balance: %s SOL",
                 capitalize(swapperType),
-                i,
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
@@ -114,10 +113,9 @@ async function distributeFunds(
         const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
         if (wsolAccountInfo) {
             logger.warn(
-                "WSOL ATA (%s) exists for %s #%d (%s)",
+                "WSOL ATA (%s) exists for %s (%s)",
                 wsolTokenAccount.toBase58(),
                 swapperType,
-                i,
                 account.publicKey.toBase58()
             );
         } else {

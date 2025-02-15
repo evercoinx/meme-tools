@@ -174,7 +174,7 @@ export async function swapSolToMint(
                 connection,
                 [...computeBudgetInstructions, ...instructions],
                 [account],
-                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for account #${i} (${formatPublicKey(account.publicKey)})`,
+                `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for account (${formatPublicKey(account.publicKey)})`,
                 transactionOptions
             )
         );
@@ -248,7 +248,7 @@ export async function swapMintToSol(
                 connection,
                 [...computeBudgetInstructions, ...instructions],
                 [account],
-                `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for account #${i} (${formatPublicKey(account.publicKey)})`,
+                `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for account (${formatPublicKey(account.publicKey)})`,
                 transactionOptions
             )
         );

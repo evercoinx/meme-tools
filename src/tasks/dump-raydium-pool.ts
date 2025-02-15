@@ -115,11 +115,7 @@ async function findUnitsToSwap(accounts: Keypair[], mint: Keypair): Promise<(BN 
 
         if (mintBalance.lte(ZERO_BN)) {
             unitsToSwap[i] = null;
-            logger.warn(
-                "Account #%d (%s) has zero mint balance",
-                i,
-                formatPublicKey(account.publicKey)
-            );
+            logger.warn("Account (%s) has 0 mint balance", formatPublicKey(account.publicKey));
             continue;
         }
 
