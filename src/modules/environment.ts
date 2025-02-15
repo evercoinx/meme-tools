@@ -18,6 +18,7 @@ interface EnvironmentSchema {
     SNIPER_SHARE_POOL_PERCENTS: number[];
     INITIAL_SWAPPER_BALANCE_SOL: number;
     TRADER_COUNT: number;
+    TRADER_GROUP_SIZE: number;
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
     TRADER_SELL_AMOUNT_RANGE_PERCENT: [number, number];
     TRADER_SWAP_DELAY_RANGE_SEC: [number, number];
@@ -109,6 +110,13 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(1)
                 .max(1_000)
                 .description("Trader count"),
+            TRADER_GROUP_SIZE: Joi.number()
+                .optional()
+                .integer()
+                .min(1)
+                .max(3)
+                .default(1)
+                .description("Trader group size"),
             TRADER_BUY_AMOUNT_RANGE_SOL: Joi.array()
                 .required()
                 .items(Joi.number().min(0.001).max(0.1))

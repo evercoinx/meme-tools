@@ -24,8 +24,6 @@ import {
 } from "../modules";
 import { loadRaydiumPoolInfo, swapMintToSol, swapSolToMint } from "../modules/raydium";
 
-const TRADER_GROUP_SIZE = 1;
-
 (async () => {
     try {
         await checkIfStorageExists(storage.cacheId);
@@ -50,8 +48,8 @@ const TRADER_GROUP_SIZE = 1;
         const connection = connectionPool.next();
         const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
 
-        for (let i = 0; i < traders.length; i += TRADER_GROUP_SIZE) {
-            const traderGroup = traders.slice(i, i + TRADER_GROUP_SIZE);
+        for (let i = 0; i < traders.length; i += envVars.TRADER_GROUP_SIZE) {
+            const traderGroup = traders.slice(i, i + envVars.TRADER_GROUP_SIZE);
 
             const lamportsToBuy = await findLamportsToBuy(traderGroup);
             const sendSwapSolToMintTransactions = await swapSolToMint(
@@ -64,7 +62,7 @@ const TRADER_GROUP_SIZE = 1;
                 "Low"
             );
             if (sendSwapSolToMintTransactions.length === 0) {
-                logger.warn("0 buys left");
+                logger.warn("0 buys found");
                 continue;
             }
 
