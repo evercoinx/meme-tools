@@ -124,7 +124,7 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
 
         const solBalance = new Decimal(await connection.getBalance(trader.publicKey, "confirmed"));
         const residualSolBalance = solBalance.sub(
-            new Decimal(envVars.INITIAL_SWAPPER_BALANCE_SOL).mul(LAMPORTS_PER_SOL)
+            new Decimal(envVars.SWAPPER_MIN_BALANCE_SOL).mul(LAMPORTS_PER_SOL)
         );
 
         if (residualSolBalance.lte(0)) {

@@ -13,10 +13,10 @@ interface EnvironmentSchema {
     TOKEN_SYMBOL: string;
     TOKEN_DECIMALS: number;
     TOKEN_SUPPLY: number;
-    INITIAL_POOL_SIZE_PERCENT: number;
-    INITIAL_POOL_LIQUIDITY_SOL: number;
+    POOL_SIZE_PERCENT: number;
+    POOL_LIQUIDITY_SOL: number;
     SNIPER_SHARE_POOL_PERCENTS: number[];
-    INITIAL_SWAPPER_BALANCE_SOL: number;
+    SWAPPER_MIN_BALANCE_SOL: number;
     TRADER_COUNT: number;
     TRADER_GROUP_SIZE: number;
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
@@ -25,10 +25,10 @@ interface EnvironmentSchema {
 }
 
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
+const ARRAY_SEPARATOR = ",";
 
-const convertToPercent = (value: string) => new Decimal(value).div(100).toNumber();
-
-const convertToMilliseconds = (value: string) => new Decimal(value).mul(1_000).toNumber();
+const convertToPercent = (value: string) => new Decimal(value).div(100).toDP(4).toNumber();
+const convertToMilliseconds = (value: string) => new Decimal(value).mul(1_000).round().toNumber();
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()
@@ -81,29 +81,29 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(100_000_000_000)
                 .default(1_000_000_000)
                 .description("Token supply"),
-            INITIAL_POOL_SIZE_PERCENT: Joi.number()
+            POOL_SIZE_PERCENT: Joi.number()
                 .required()
-                .min(0.01)
+                .min(10)
                 .max(100)
                 .custom(convertToPercent)
-                .description("Initial pool size (in percent)"),
-            INITIAL_POOL_LIQUIDITY_SOL: Joi.number()
+                .description("Pool size (in percent)"),
+            POOL_LIQUIDITY_SOL: Joi.number()
                 .required()
                 .min(0.01)
                 .max(20)
-                .description("Initial pool liquidity (in SOL)"),
+                .description("Pool liquidity (in SOL)"),
             SNIPER_SHARE_POOL_PERCENTS: Joi.array()
                 .required()
-                .items(Joi.number().min(0.01).max(3).custom(convertToPercent))
+                .items(Joi.number().min(0.5).max(3).custom(convertToPercent))
                 .unique()
                 .min(1)
                 .max(100)
                 .description("Sniper share pool (in percents)"),
-            INITIAL_SWAPPER_BALANCE_SOL: Joi.number()
+            SWAPPER_MIN_BALANCE_SOL: Joi.number()
                 .required()
                 .min(0.005)
                 .max(0.1)
-                .description("Initial swapper balance (in SOL)"),
+                .description("Swapper minimal balance (in SOL)"),
             TRADER_COUNT: Joi.number()
                 .required()
                 .integer()
@@ -149,13 +149,17 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
         })
         .validate({
             ...process.env,
-            RPC_URIS: process.env.RPC_URIS?.split(","),
-            SNIPER_SHARE_POOL_PERCENTS: process.env.SNIPER_SHARE_POOL_PERCENTS?.split(","),
-            PRIORITIZATION_FEE_MULTIPLIERS: process.env.PRIORITIZATION_FEE_MULTIPLIERS?.split(","),
-            TRADER_BUY_AMOUNT_RANGE_SOL: process.env.TRADER_BUY_AMOUNT_RANGE_SOL?.split(","),
+            RPC_URIS: process.env.RPC_URIS?.split(ARRAY_SEPARATOR),
+            SNIPER_SHARE_POOL_PERCENTS:
+                process.env.SNIPER_SHARE_POOL_PERCENTS?.split(ARRAY_SEPARATOR),
+            PRIORITIZATION_FEE_MULTIPLIERS:
+                process.env.PRIORITIZATION_FEE_MULTIPLIERS?.split(ARRAY_SEPARATOR),
+            TRADER_BUY_AMOUNT_RANGE_SOL:
+                process.env.TRADER_BUY_AMOUNT_RANGE_SOL?.split(ARRAY_SEPARATOR),
             TRADER_SELL_AMOUNT_RANGE_PERCENT:
-                process.env.TRADER_SELL_AMOUNT_RANGE_PERCENT?.split(","),
-            TRADER_SWAP_DELAY_RANGE_SEC: process.env.TRADER_SWAP_DELAY_RANGE_SEC?.split(","),
+                process.env.TRADER_SELL_AMOUNT_RANGE_PERCENT?.split(ARRAY_SEPARATOR),
+            TRADER_SWAP_DELAY_RANGE_SEC:
+                process.env.TRADER_SWAP_DELAY_RANGE_SEC?.split(ARRAY_SEPARATOR),
         });
     if (error) {
         throw new Error(error.annotate());

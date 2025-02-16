@@ -67,7 +67,7 @@ import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from ".
         const lamportsToSwap = envVars.SNIPER_SHARE_POOL_PERCENTS.map(
             (percent) =>
                 new BN(
-                    new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL)
+                    new Decimal(envVars.POOL_LIQUIDITY_SOL)
                         .mul(percent)
                         .mul(LAMPORTS_PER_SOL)
                         .toFixed(0)
@@ -205,17 +205,17 @@ async function createPool(
     } as ApiV3Token;
 
     const mintAAmount = new BN(
-        new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL).mul(LAMPORTS_PER_SOL).toFixed(0)
+        new Decimal(envVars.POOL_LIQUIDITY_SOL).mul(LAMPORTS_PER_SOL).toFixed(0)
     );
     const mintBAmount = new BN(
         new Decimal(envVars.TOKEN_SUPPLY)
             .mul(10 ** envVars.TOKEN_DECIMALS)
-            .mul(envVars.INITIAL_POOL_SIZE_PERCENT)
+            .mul(envVars.POOL_SIZE_PERCENT)
             .toFixed(0)
     );
 
     const wrapSolInstructions = await getWrapSolInstructions(
-        new Decimal(envVars.INITIAL_POOL_LIQUIDITY_SOL),
+        new Decimal(envVars.POOL_LIQUIDITY_SOL),
         dev
     );
 
