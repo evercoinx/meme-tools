@@ -45,7 +45,7 @@ export const connectionPool = new Pool(
     envVars.RPC_URIS.map((rpcUri) => new Connection(rpcUri, "confirmed"))
 );
 export const heliusClientPool = new Pool(
-    envVars.RPC_URIS.map((rpcUri) => createHeliusClient(rpcUri))
+    envVars.RPC_URIS.map((rpcUri) => createHeliusClient(rpcUri, 10_000))
 );
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY);
 
@@ -56,9 +56,10 @@ export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 function detectCluster(rpcUri: string): "devnet" | "mainnet-beta" {
     if (/devnet/i.test(rpcUri)) {
         return "devnet";
-    } else if (/mainnet/i.test(rpcUri)) {
+    }
+    if (/mainnet/i.test(rpcUri)) {
         return "mainnet-beta";
     }
 
-    throw new Error(`Cluster not detected for RPC URI: ${rpcUri}`);
+    throw new Error(`Unknown cluster for RPC URI: ${rpcUri}`);
 }

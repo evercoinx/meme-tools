@@ -25,6 +25,11 @@ export interface TransactionOptions {
     commitment?: Commitment;
 }
 
+const TRANSACTION_TTL_MS = 60_000;
+const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
+const TRANSACTION_POLL_INTERVAL_MS = 1_000;
+const DEFAULT_COMPUTE_UNIT_LIMIT = 220_000;
+
 export async function getComputeBudgetInstructions(
     connection: Connection,
     heliusClient: HeliusClient,
@@ -33,7 +38,7 @@ export async function getComputeBudgetInstructions(
     payer: Keypair
 ): Promise<TransactionInstruction[]> {
     const setComputeUnitLimitInstruction = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 220_000,
+        units: DEFAULT_COMPUTE_UNIT_LIMIT,
     });
     const transaction = await createTransaction(
         connection,
@@ -122,12 +127,12 @@ export async function sendAndConfirmVersionedTransaction(
     transactionOptions?: TransactionOptions
 ): Promise<TransactionSignature | undefined> {
     let signature: TransactionSignature | undefined;
-    const timeout = 60_000;
 
     const transaction = await createTransaction(connection, instructions, signers[0]);
     transaction.sign(signers);
 
     const startTime = Date.now();
+    let errorMessage: string | undefined;
 
     do {
         try {
@@ -140,31 +145,36 @@ export async function sendAndConfirmVersionedTransaction(
 
             return await pollTransactionConfirmation(connection, signature);
         } catch (error: unknown) {
+            errorMessage = error instanceof Error ? error.message : String(error);
             logger.error(
-                "Transaction (%s) failed. Trying to resend for reason: %s",
+                "Resending failed transaction (%s). Reason: %s",
                 signature ? formatSignature(signature) : "?",
-                error instanceof Error ? error.message : String(error)
+                errorMessage
             );
             continue;
         }
-    } while (Date.now() - startTime < timeout);
+    } while (Date.now() - startTime < TRANSACTION_TTL_MS);
+
+    throw new Error(errorMessage);
 }
 
 async function pollTransactionConfirmation(
     connection: Connection,
     signature: TransactionSignature
 ): Promise<TransactionSignature> {
-    const timeout = 15_000;
-    const interval = 1_000;
     let elapsed = 0;
 
     return new Promise<TransactionSignature>((resolve, reject) => {
         const intervalId = setInterval(async () => {
-            elapsed += interval;
+            elapsed += TRANSACTION_POLL_INTERVAL_MS;
 
-            if (elapsed >= timeout) {
+            if (elapsed >= TRANSACTION_POLL_TIMEOUT_MS) {
                 clearInterval(intervalId);
-                reject(new Error(`Transaction (${formatSignature(signature)}) timed out`));
+                reject(
+                    new Error(
+                        `Transaction (${formatSignature(signature)}) timed out. Elapsed: ${elapsed / 1_000} sec`
+                    )
+                );
             }
 
             const status = await connection.getSignatureStatuses([signature]);
@@ -178,6 +188,6 @@ async function pollTransactionConfirmation(
 
                 resolve(signature);
             }
-        }, interval);
+        }, TRANSACTION_POLL_INTERVAL_MS);
     });
 }

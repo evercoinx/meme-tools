@@ -45,10 +45,10 @@ export interface GetPriorityFeeEstimateResponse {
     };
 }
 
-export function createHeliusClient(baseUrl: string): HeliusClient {
+export function createHeliusClient(baseUrl: string, timeout: number): HeliusClient {
     return axios.create({
         baseURL: baseUrl,
-        timeout: 10_000,
+        timeout,
         headers: {
             "Content-Type": "application/json",
         },
