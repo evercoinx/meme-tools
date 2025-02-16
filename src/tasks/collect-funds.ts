@@ -108,8 +108,26 @@ async function closeTokenAccounts(
                 ASSOCIATED_TOKEN_PROGRAM_ID
             );
 
-            const tokenAccountInfo = await connection.getAccountInfo(tokenAccount, "confirmed");
-            if (tokenAccountInfo) {
+            let tokenBalance: Decimal | null = null;
+            try {
+                const tokenAccountBalance = await connection.getTokenAccountBalance(
+                    tokenAccount,
+                    "confirmed"
+                );
+                tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
+            } catch {
+                // Ignore TokenAccountNotFoundError error
+            }
+
+            if (tokenBalance === null) {
+                logger.warn(
+                    "%s ATA (%s) not exists for %s (%s)",
+                    envVars.TOKEN_SYMBOL,
+                    formatPublicKey(tokenAccount),
+                    isDev ? "dev" : "account",
+                    formatPublicKey(account.publicKey)
+                );
+            } else if (tokenBalance.eq(0)) {
                 instructions.push(
                     createCloseAccountInstruction(
                         tokenAccount,
@@ -121,11 +139,15 @@ async function closeTokenAccounts(
                 );
             } else {
                 logger.warn(
-                    "%s ATA (%s) not exists for %s (%s)",
+                    "%s ATA (%s) has positive balance for %s (%s): %s %s",
                     envVars.TOKEN_SYMBOL,
                     formatPublicKey(tokenAccount),
                     isDev ? "dev" : "account",
-                    formatPublicKey(account.publicKey)
+                    formatPublicKey(account.publicKey),
+                    tokenBalance
+                        ? formatDecimal(tokenBalance.div(10 ** envVars.TOKEN_DECIMALS))
+                        : "?",
+                    envVars.TOKEN_SYMBOL
                 );
             }
         }
