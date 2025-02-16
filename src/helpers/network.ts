@@ -139,11 +139,11 @@ export async function sendAndConfirmVersionedTransaction(
             logger.info("Transaction (%s) sent %s", formatSignature(signature), logMessage);
 
             return await pollTransactionConfirmation(connection, signature);
-        } catch (err: unknown) {
+        } catch (error: unknown) {
             logger.error(
                 "Transaction (%s) failed. Trying to resend for reason: %s",
                 signature ? formatSignature(signature) : "?",
-                err instanceof Error ? err.message : String(err)
+                error instanceof Error ? error.message : String(error)
             );
             continue;
         }

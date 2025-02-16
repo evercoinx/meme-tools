@@ -64,24 +64,25 @@ import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from ".
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,
             SwapperType.Sniper
         );
-        const lamportsToSwap = envVars.SNIPER_SHARE_POOL_PERCENTS.map(
-            (percent) =>
+        const snipersToBuy = await findSnipersToBuy(snipers, mint);
+
+        const lamportsToBuy = envVars.SNIPER_SHARE_POOL_PERCENTS.map(
+            (sharePoolPercent) =>
                 new BN(
                     new Decimal(envVars.POOL_LIQUIDITY_SOL)
-                        .mul(percent)
+                        .mul(sharePoolPercent)
                         .mul(LAMPORTS_PER_SOL)
                         .toFixed(0)
                 )
         );
-        const snipersToExecuteSwap = await findSnipersToExecuteSwap(snipers, mint);
 
         const [sendCreatePoolTransaction, poolInfo] = await createPool(dev, mint);
         const sendSwapSolToMintTransactions = await swapSolToMint(
             connectionPool,
             heliusClientPool,
             poolInfo,
-            snipersToExecuteSwap,
-            lamportsToSwap,
+            snipersToBuy,
+            lamportsToBuy,
             SLIPPAGE,
             "VeryHigh",
             {
@@ -103,11 +104,8 @@ import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from ".
     }
 })();
 
-async function findSnipersToExecuteSwap(
-    snipers: Keypair[],
-    mint: Keypair
-): Promise<(Keypair | null)[]> {
-    const snipersToExecuteSwap: (Keypair | null)[] = [];
+async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Keypair | null)[]> {
+    const snipersToBuy: (Keypair | null)[] = [];
 
     for (const [i, sniper] of snipers.entries()) {
         const connection = connectionPool.next();
@@ -132,19 +130,20 @@ async function findSnipersToExecuteSwap(
         }
 
         if (mintBalance.gt(0)) {
-            snipersToExecuteSwap[i] = null;
+            snipersToBuy[i] = null;
             logger.warn(
-                "Sniper (%s) has positive mint balance: %s",
+                "Sniper (%s) has sufficient balance: %s %s",
                 formatPublicKey(sniper.publicKey),
-                formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS))
+                formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                envVars.TOKEN_SYMBOL
             );
             continue;
         }
 
-        snipersToExecuteSwap[i] = sniper;
+        snipersToBuy[i] = sniper;
     }
 
-    return snipersToExecuteSwap;
+    return snipersToBuy;
 }
 
 async function createPool(

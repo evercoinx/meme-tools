@@ -6,6 +6,7 @@ import {
     CurveCalculator,
     DEV_CREATE_CPMM_POOL_PROGRAM,
     Raydium,
+    SwapResult,
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
@@ -26,7 +27,7 @@ import {
     sendAndConfirmVersionedTransaction,
     TransactionOptions,
 } from "../helpers/network";
-import { CLUSTER, envVars } from "../modules";
+import { CLUSTER, envVars, logger } from "../modules";
 import { HeliusClient, PriorityLevel } from "./helius";
 import { Pool } from "./pool";
 
@@ -131,12 +132,29 @@ export async function swapSolToMint(
         const connection = connectionPool.next();
         const heliusClient = heliusClientPool.next();
 
-        const swapResult = CurveCalculator.swap(
-            lamportsToSwap[i],
-            baseIn ? baseReserve : quoteReserve,
-            baseIn ? quoteReserve : baseReserve,
-            tradeFee
-        );
+        let swapResult: SwapResult | null;
+        try {
+            swapResult = CurveCalculator.swap(
+                lamportsToSwap[i],
+                baseIn ? baseReserve : quoteReserve,
+                baseIn ? quoteReserve : baseReserve,
+                tradeFee
+            );
+        } catch (error: unknown) {
+            if (error instanceof Error && error.message === "destinationAmountSwapped is zero") {
+                logger.warn(
+                    "Account (%s) has too low amount for swap: %s SOL",
+                    account.publicKey.toBase58(),
+                    formatDecimal(
+                        new Decimal(lamportsToSwap[i].toString(10)).div(LAMPORTS_PER_SOL)
+                    ),
+                    envVars.TOKEN_SYMBOL
+                );
+                continue;
+            }
+
+            throw error;
+        }
 
         const raydium = await loadRaydium(connection, account);
         const {
@@ -205,12 +223,29 @@ export async function swapMintToSol(
         const connection = connectionPool.next();
         const heliusClient = heliusClientPool.next();
 
-        const swapResult = CurveCalculator.swap(
-            unitsToSwap[i],
-            baseIn ? baseReserve : quoteReserve,
-            baseIn ? quoteReserve : baseReserve,
-            tradeFee
-        );
+        let swapResult: SwapResult | null;
+        try {
+            swapResult = CurveCalculator.swap(
+                unitsToSwap[i],
+                baseIn ? baseReserve : quoteReserve,
+                baseIn ? quoteReserve : baseReserve,
+                tradeFee
+            );
+        } catch (error: unknown) {
+            if (error instanceof Error && error.message === "destinationAmountSwapped is zero") {
+                logger.warn(
+                    "Account (%s) has too low amount for swap: %s %s",
+                    account.publicKey.toBase58(),
+                    formatDecimal(
+                        new Decimal(unitsToSwap[i].toString(10)).div(10 ** envVars.TOKEN_DECIMALS)
+                    ),
+                    envVars.TOKEN_SYMBOL
+                );
+                continue;
+            }
+
+            throw error;
+        }
 
         const raydium = await loadRaydium(connection, account);
         const {

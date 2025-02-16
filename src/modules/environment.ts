@@ -2,7 +2,7 @@ import Decimal from "decimal.js";
 import Joi from "joi";
 
 interface EnvironmentSchema {
-    LOG_LEVEL: string;
+    LOG_LEVEL: "debug" | "info" | "warn" | "error" | "fatal";
     PINATA_JWT: string;
     IPFS_GATEWAY: string;
     RPC_URIS: string[];
@@ -15,8 +15,9 @@ interface EnvironmentSchema {
     TOKEN_SUPPLY: number;
     POOL_SIZE_PERCENT: number;
     POOL_LIQUIDITY_SOL: number;
+    POOL_TRADING_MODE: "volume" | "pump" | "dump";
     SNIPER_SHARE_POOL_PERCENTS: number[];
-    SWAPPER_MIN_BALANCE_SOL: number;
+    SWAPPER_BALANCE_SOL: number;
     TRADER_COUNT: number;
     TRADER_GROUP_SIZE: number;
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
@@ -35,38 +36,49 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
         .keys({
             LOG_LEVEL: Joi.string()
                 .optional()
+                .trim()
                 .valid("debug", "info", "warn", "error", "fatal")
                 .default("info"),
             PINATA_JWT: Joi.string()
                 .required()
+                .trim()
                 .pattern(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/)
                 .description("Pinata JWT"),
-            IPFS_GATEWAY: Joi.string().required().uri().description("IPFS Gateway"),
+            IPFS_GATEWAY: Joi.string().required().trim().uri().description("IPFS Gateway"),
             RPC_URIS: Joi.array()
                 .required()
-                .items(Joi.string().uri())
+                .items(Joi.string().required().trim().uri())
                 .unique()
                 .min(1)
                 .max(3)
                 .description("Solana RPC URIs"),
             EXPLORER_URI: Joi.string()
                 .optional()
+                .trim()
                 .uri()
                 .default("https://solana.fm")
                 .description("Solana explorer URI"),
             DEV_KEYPAIR_PATH: Joi.string()
                 .required()
+                .trim()
                 .pattern(FILE_PATH_PATTERN)
                 .description("Dev keypair path"),
             DISTRIBUTOR_KEYPAIR_PATH: Joi.string()
                 .required()
+                .trim()
                 .pattern(FILE_PATH_PATTERN)
                 .description("Distributor keypair path"),
             KEYPAIR_SECRET: Joi.string()
                 .required()
+                .trim()
                 .pattern(/^[0-9a-z]{32}$/)
                 .description("Key pair secret"),
-            TOKEN_SYMBOL: Joi.string().required().uppercase().max(20).description("Token symbol"),
+            TOKEN_SYMBOL: Joi.string()
+                .required()
+                .trim()
+                .uppercase()
+                .max(20)
+                .description("Token symbol"),
             TOKEN_DECIMALS: Joi.number()
                 .optional()
                 .integer()
@@ -92,6 +104,12 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(0.01)
                 .max(20)
                 .description("Pool liquidity (in SOL)"),
+            POOL_TRADING_MODE: Joi.string()
+                .optional()
+                .trim()
+                .valid("volume", "pump", "dump")
+                .default("volume")
+                .description("Pool trading mode"),
             SNIPER_SHARE_POOL_PERCENTS: Joi.array()
                 .required()
                 .items(Joi.number().min(0.5).max(3).custom(convertToPercent))
@@ -99,11 +117,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(1)
                 .max(100)
                 .description("Sniper share pool (in percents)"),
-            SWAPPER_MIN_BALANCE_SOL: Joi.number()
+            SWAPPER_BALANCE_SOL: Joi.number()
                 .required()
                 .min(0.005)
                 .max(0.1)
-                .description("Swapper minimal balance (in SOL)"),
+                .description("Swapper balance (in SOL)"),
             TRADER_COUNT: Joi.number()
                 .required()
                 .integer()

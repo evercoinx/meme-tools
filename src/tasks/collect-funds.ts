@@ -16,7 +16,7 @@ import {
 } from "@solana/web3.js";
 import { importLocalKeypair, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
-import { formatDecimal, formatPublicKey } from "../helpers/format";
+import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -60,8 +60,20 @@ import {
         );
         await Promise.all(sendCloseTokenAccountsTransactions);
 
-        const sendCollectFundsTransactions = await collectFunds(snipers, traders, distributor);
-        await Promise.all(sendCollectFundsTransactions);
+        const sendSniperCollectFundsTransactions = await collectFunds(
+            snipers,
+            distributor,
+            SwapperType.Sniper
+        );
+        const sendTraderCollectFundsTransactions = await collectFunds(
+            traders,
+            distributor,
+            SwapperType.Trader
+        );
+        await Promise.all([
+            ...sendSniperCollectFundsTransactions,
+            ...sendTraderCollectFundsTransactions,
+        ]);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -205,21 +217,22 @@ async function closeTokenAccounts(
 }
 
 async function collectFunds(
-    snipers: Keypair[],
-    traders: Keypair[],
-    distributor: Keypair
+    accounts: Keypair[],
+    distributor: Keypair,
+    swapperType: SwapperType
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     const computeBudgetInstructions: TransactionInstruction[] = [];
 
-    for (const account of [...snipers, ...traders]) {
+    for (const account of accounts) {
         const connection = connectionPool.next();
         const heliusClient = heliusClientPool.next();
 
         const solBalance = await connection.getBalance(account.publicKey, "confirmed");
         if (solBalance <= MIN_REMAINING_BALANCE_LAMPORTS) {
             logger.warn(
-                "Account (%s) has insufficient balance: %s SOL",
+                "%s (%s) has insufficient balance: %s SOL",
+                capitalize(swapperType),
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance)
             );
@@ -252,7 +265,7 @@ async function collectFunds(
                 connection,
                 [...computeBudgetInstructions, ...instructions],
                 [account],
-                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from account (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
+                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from ${swapperType} (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
             )
         );
     }

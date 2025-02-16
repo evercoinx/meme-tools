@@ -15,6 +15,7 @@ import {
     envVars,
     heliusClientPool,
     logger,
+    MIN_REMAINING_BALANCE_LAMPORTS,
     SLIPPAGE,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
@@ -22,7 +23,12 @@ import {
     SwapperType,
     ZERO_DECIMAL,
 } from "../modules";
-import { loadRaydiumPoolInfo, swapMintToSol, swapSolToMint } from "../modules/raydium";
+import {
+    CpmmPoolInfo,
+    loadRaydiumPoolInfo,
+    swapMintToSol,
+    swapSolToMint,
+} from "../modules/raydium";
 
 (async () => {
     try {
@@ -51,64 +57,28 @@ import { loadRaydiumPoolInfo, swapMintToSol, swapSolToMint } from "../modules/ra
         for (let i = 0; i < traders.length; i += envVars.TRADER_GROUP_SIZE) {
             const traderGroup = traders.slice(i, i + envVars.TRADER_GROUP_SIZE);
 
-            const lamportsToBuy = await findLamportsToBuy(traderGroup);
-            const sendSwapSolToMintTransactions = await swapSolToMint(
-                connectionPool,
-                heliusClientPool,
-                poolInfo,
-                traderGroup,
-                lamportsToBuy,
-                SLIPPAGE,
-                "Low"
-            );
-            if (sendSwapSolToMintTransactions.length === 0) {
-                logger.warn("0 buys found");
-                continue;
+            switch (envVars.POOL_TRADING_MODE) {
+                case "volume": {
+                    const buyTransactionCount = await pumpPool(poolInfo, traderGroup);
+                    if (buyTransactionCount > 0) {
+                        await dumpPool(poolInfo, shuffle(traderGroup), mint);
+                    }
+                    break;
+                }
+                case "pump": {
+                    await pumpPool(poolInfo, traderGroup);
+                    break;
+                }
+                case "dump": {
+                    await dumpPool(poolInfo, traderGroup, mint);
+                    break;
+                }
+                default: {
+                    throw new Error(`Unknown trading mode: ${envVars.POOL_TRADING_MODE}`);
+                }
             }
 
-            await Promise.all(sendSwapSolToMintTransactions);
-
-            await new Promise((resolve) => {
-                const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
-                logger.info(
-                    "%d buy(s) executed. Pausing: %d sec",
-                    sendSwapSolToMintTransactions.length,
-                    formatDecimal(delay / 1_000, 3)
-                );
-                setTimeout(resolve, delay);
-            });
-
-            const shuffledTraderGroup = shuffle(traderGroup) as Keypair[];
-            const unitsToSell = await findUnitsToSell(shuffledTraderGroup, mint);
-            const sendSwapMintToSolTransactions = await swapMintToSol(
-                connectionPool,
-                heliusClientPool,
-                poolInfo,
-                shuffledTraderGroup,
-                unitsToSell,
-                SLIPPAGE,
-                "Low"
-            );
-            if (sendSwapMintToSolTransactions.length !== sendSwapSolToMintTransactions.length) {
-                logger.warn(
-                    "Buys and sells mistmatch: %d != %d",
-                    sendSwapMintToSolTransactions.length,
-                    sendSwapSolToMintTransactions.length
-                );
-                continue;
-            }
-
-            await Promise.all(sendSwapMintToSolTransactions);
-
-            await new Promise((resolve) => {
-                const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
-                logger.info(
-                    "%d sell(s) executed. Pausing: %d sec",
-                    sendSwapMintToSolTransactions.length,
-                    formatDecimal(delay / 1_000, 3)
-                );
-                setTimeout(resolve, delay);
-            });
+            logger.info("-".repeat(80));
         }
     } catch (err) {
         logger.fatal(err);
@@ -116,21 +86,84 @@ import { loadRaydiumPoolInfo, swapMintToSol, swapSolToMint } from "../modules/ra
     }
 })();
 
+async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise<number> {
+    const lamportsToBuy = await findLamportsToBuy(traderGroup);
+    const sendSwapSolToMintTransactions = await swapSolToMint(
+        connectionPool,
+        heliusClientPool,
+        poolInfo,
+        traderGroup,
+        lamportsToBuy,
+        SLIPPAGE,
+        "Low"
+    );
+    if (sendSwapSolToMintTransactions.length === 0) {
+        logger.warn("0 buy transactions found");
+        return 0;
+    }
+
+    await Promise.all(sendSwapSolToMintTransactions);
+
+    await new Promise((resolve) => {
+        const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
+        logger.info(
+            "%d buy transaction(s) executed. Pausing: %d sec",
+            sendSwapSolToMintTransactions.length,
+            formatDecimal(delay / 1_000, 3)
+        );
+        setTimeout(resolve, delay);
+    });
+
+    return sendSwapSolToMintTransactions.length;
+}
+
+async function dumpPool(
+    poolInfo: CpmmPoolInfo,
+    traderGroup: Keypair[],
+    mint: Keypair
+): Promise<number> {
+    const unitsToSell = await findUnitsToSell(traderGroup, mint);
+    const sendSwapMintToSolTransactions = await swapMintToSol(
+        connectionPool,
+        heliusClientPool,
+        poolInfo,
+        traderGroup,
+        unitsToSell,
+        SLIPPAGE,
+        "Low"
+    );
+    if (sendSwapMintToSolTransactions.length === 0) {
+        logger.warn("0 sell transactions found");
+        return 0;
+    }
+
+    await Promise.all(sendSwapMintToSolTransactions);
+
+    await new Promise((resolve) => {
+        const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
+        logger.info(
+            "%d sell transaction(s) executed. Pausing: %d sec",
+            sendSwapMintToSolTransactions.length,
+            formatDecimal(delay / 1_000, 3)
+        );
+        setTimeout(resolve, delay);
+    });
+
+    return sendSwapMintToSolTransactions.length;
+}
+
 async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
     const lamportsToSwap: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
         const connection = connectionPool.next();
-
         const solBalance = new Decimal(await connection.getBalance(trader.publicKey, "confirmed"));
-        const residualSolBalance = solBalance.sub(
-            new Decimal(envVars.SWAPPER_MIN_BALANCE_SOL).mul(LAMPORTS_PER_SOL)
-        );
 
+        const residualSolBalance = solBalance.sub(MIN_REMAINING_BALANCE_LAMPORTS * 2);
         if (residualSolBalance.lte(0)) {
             lamportsToSwap[i] = null;
             logger.warn(
-                "Trader (%s) has insufficient SOL balance: %s",
+                "Trader (%s) has insufficient balance: %s SOL",
                 formatPublicKey(trader.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
@@ -144,7 +177,7 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
 }
 
 async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
-    const unitsToSwap: (BN | null)[] = [];
+    const unitsToSell: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
         const connection = connectionPool.next();
@@ -156,8 +189,8 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
-        let mintBalance = ZERO_DECIMAL;
 
+        let mintBalance = ZERO_DECIMAL;
         try {
             const mintTokenAccountBalance = await connection.getTokenAccountBalance(
                 mintTokenAccount,
@@ -169,16 +202,19 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
         }
 
         if (mintBalance.lte(ZERO_DECIMAL)) {
-            unitsToSwap[i] = null;
-            logger.warn("Trader (%s) has 0 mint balance", formatPublicKey(trader.publicKey));
+            unitsToSell[i] = null;
+            logger.warn(
+                "Trader (%s) has insufficient balance: %s %s",
+                formatPublicKey(trader.publicKey),
+                formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                envVars.TOKEN_SYMBOL
+            );
             continue;
         }
 
-        const sellPercent = new Decimal(
-            generateRandomFloat(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT)
-        );
-        unitsToSwap[i] = new BN(sellPercent.mul(mintBalance).toFixed(0));
+        const sellPercent = generateRandomFloat(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT);
+        unitsToSell[i] = new BN(mintBalance.mul(sellPercent).toFixed(0));
     }
 
-    return unitsToSwap;
+    return unitsToSell;
 }

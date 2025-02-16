@@ -35,16 +35,19 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
         );
         const traders = generateOrImportSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
-        const sniperAmounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((percent) =>
+        const sniperAmounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((sharePoolPercent) =>
             new Decimal(envVars.POOL_LIQUIDITY_SOL)
-                .mul(percent)
-                .plus(envVars.SWAPPER_MIN_BALANCE_SOL)
+                .mul(sharePoolPercent)
+                .plus(envVars.SWAPPER_BALANCE_SOL)
                 .mul(LAMPORTS_PER_SOL)
         );
-        const traderAmounts = new Array(envVars.TRADER_COUNT).fill(0).map(() => {
-            const amount = new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
-            return amount.plus(envVars.SWAPPER_MIN_BALANCE_SOL).mul(LAMPORTS_PER_SOL);
-        });
+        const traderAmounts = new Array(envVars.TRADER_COUNT)
+            .fill(0)
+            .map(() =>
+                new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
+                    .plus(envVars.SWAPPER_BALANCE_SOL)
+                    .mul(LAMPORTS_PER_SOL)
+            );
 
         const sendDistrubuteSniperFundsTransaction = await distributeFunds(
             sniperAmounts,

@@ -5,9 +5,10 @@ import {
 } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
+import Decimal from "decimal.js";
 import { importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
-import { formatPublicKey } from "../helpers/format";
+import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     connectionPool,
     envVars,
@@ -18,7 +19,7 @@ import {
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
     SwapperType,
-    ZERO_BN,
+    ZERO_DECIMAL,
 } from "../modules";
 import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
 
@@ -50,15 +51,15 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
         );
         const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
-        const sniperUnitsToSwap = await findUnitsToSwap(snipers, mint);
-        const traderUnitsToSwap = await findUnitsToSwap(traders, mint);
+        const sniperUnitsToSell = await findUnitsToSell(snipers, mint, SwapperType.Sniper);
+        const traderUnitsToSell = await findUnitsToSell(traders, mint, SwapperType.Trader);
 
         const sendSniperSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
             poolInfo,
             snipers,
-            sniperUnitsToSwap,
+            sniperUnitsToSell,
             SLIPPAGE,
             "VeryHigh",
             {
@@ -73,7 +74,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             heliusClientPool,
             poolInfo,
             traders,
-            traderUnitsToSwap,
+            traderUnitsToSell,
             SLIPPAGE,
             "Default",
             {
@@ -88,8 +89,12 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
     }
 })();
 
-async function findUnitsToSwap(accounts: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
-    const unitsToSwap: (BN | null)[] = [];
+async function findUnitsToSell(
+    accounts: Keypair[],
+    mint: Keypair,
+    swapperType: SwapperType
+): Promise<(BN | null)[]> {
+    const unitsToSell: (BN | null)[] = [];
 
     for (const [i, account] of accounts.entries()) {
         const connection = connectionPool.next();
@@ -101,26 +106,32 @@ async function findUnitsToSwap(accounts: Keypair[], mint: Keypair): Promise<(BN 
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
-        let mintBalance = ZERO_BN;
 
+        let mintBalance = ZERO_DECIMAL;
         try {
             const mintTokenAccountBalance = await connection.getTokenAccountBalance(
                 mintTokenAccount,
                 "confirmed"
             );
-            mintBalance = new BN(mintTokenAccountBalance.value.amount.toString());
+            mintBalance = new Decimal(mintTokenAccountBalance.value.amount.toString());
         } catch {
             // Ignore TokenAccountNotFoundError error
         }
 
-        if (mintBalance.lte(ZERO_BN)) {
-            unitsToSwap[i] = null;
-            logger.warn("Account (%s) has 0 mint balance", formatPublicKey(account.publicKey));
+        if (mintBalance.lte(ZERO_DECIMAL)) {
+            unitsToSell[i] = null;
+            logger.warn(
+                "%s (%s) has insufficient balance: %s %s",
+                capitalize(swapperType),
+                formatPublicKey(account.publicKey),
+                formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                envVars.TOKEN_SYMBOL
+            );
             continue;
         }
 
-        unitsToSwap[i] = mintBalance;
+        unitsToSell[i] = new BN(mintBalance.toFixed(0));
     }
 
-    return unitsToSwap;
+    return unitsToSell;
 }
