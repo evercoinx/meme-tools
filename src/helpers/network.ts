@@ -1,8 +1,18 @@
 import {
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    createAssociatedTokenAccountInstruction,
+    createSyncNativeInstruction,
+    getAccount,
+    getAssociatedTokenAddressSync,
+    NATIVE_MINT,
+    TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import {
     Commitment,
     ComputeBudgetProgram,
     Connection,
     Keypair,
+    SystemProgram,
     TransactionError,
     TransactionInstruction,
     TransactionMessage,
@@ -11,7 +21,8 @@ import {
 } from "@solana/web3.js";
 import axios, { AxiosResponse } from "axios";
 import bs58 from "bs58";
-import { CLUSTER, explorer, logger } from "../modules";
+import Decimal from "decimal.js";
+import { CLUSTER, explorer, logger, ZERO_DECIMAL } from "../modules";
 import {
     GetPriorityFeeEstimateRequest,
     GetPriorityFeeEstimateResponse,
@@ -23,7 +34,6 @@ import { formatSignature } from "./format";
 export interface TransactionOptions {
     skipPreflight?: boolean;
     preflightCommitment?: Commitment;
-    commitment?: Commitment;
 }
 
 const TRANSACTION_TTL_MS = 60_000;
@@ -71,6 +81,54 @@ export async function getComputeBudgetInstructions(
         setComputeUnitLimitInstruction,
         ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFeeEstimate }),
     ];
+}
+
+export async function getWrapSolInstructions(
+    connection: Connection,
+    account: Keypair,
+    payer: Keypair,
+    lamports: Decimal
+): Promise<TransactionInstruction[]> {
+    const tokenAccount = getAssociatedTokenAddressSync(
+        NATIVE_MINT,
+        account.publicKey,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    const instructions: TransactionInstruction[] = [];
+    let wsolBalance = ZERO_DECIMAL;
+
+    try {
+        const account = await getAccount(connection, tokenAccount, "confirmed", TOKEN_PROGRAM_ID);
+        wsolBalance = new Decimal(account.amount.toString(10));
+    } catch {
+        instructions.push(
+            createAssociatedTokenAccountInstruction(
+                payer.publicKey,
+                tokenAccount,
+                account.publicKey,
+                NATIVE_MINT,
+                TOKEN_PROGRAM_ID,
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+        );
+    }
+
+    if (wsolBalance.lt(lamports)) {
+        const residualLamports = lamports.sub(wsolBalance);
+        instructions.push(
+            SystemProgram.transfer({
+                fromPubkey: account.publicKey,
+                toPubkey: tokenAccount,
+                lamports: residualLamports.trunc().toNumber(),
+            }),
+            createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID)
+        );
+    }
+
+    return instructions;
 }
 
 async function createTransaction(

@@ -10,23 +10,13 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
-    createAssociatedTokenAccountInstruction,
     createBurnInstruction,
-    createSyncNativeInstruction,
-    getAccount,
     getAssociatedTokenAddressSync,
     NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-    Keypair,
-    LAMPORTS_PER_SOL,
-    PublicKey,
-    SystemProgram,
-    TransactionInstruction,
-    TransactionSignature,
-} from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, TransactionSignature } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
@@ -34,6 +24,7 @@ import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
+    getWrapSolInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import {
@@ -85,10 +76,7 @@ import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from ".
             lamportsToBuy,
             SLIPPAGE,
             "VeryHigh",
-            {
-                skipPreflight: true,
-                commitment: "confirmed",
-            }
+            { skipPreflight: true }
         );
         await Promise.all([sendCreatePoolTransaction]);
         await Promise.all(sendSwapSolToMintTransactions);
@@ -111,7 +99,7 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
     for (const [i, sniper] of snipers.entries()) {
         const connection = connectionPool.next();
 
-        const mintTokenAccount = getAssociatedTokenAddressSync(
+        const tokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
             sniper.publicKey,
             false,
@@ -119,23 +107,23 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
 
-        let mintBalance = new Decimal(0);
+        let tokenBalance = new Decimal(0);
         try {
             const tokenAccountBalance = await connection.getTokenAccountBalance(
-                mintTokenAccount,
+                tokenAccount,
                 "confirmed"
             );
-            mintBalance = new Decimal(tokenAccountBalance.value.amount.toString());
+            tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
         } catch {
             // Ignore TokenAccountNotFoundError error
         }
 
-        if (mintBalance.gt(0)) {
+        if (tokenBalance.gt(0)) {
             snipersToBuy[i] = null;
             logger.warn(
                 "Sniper (%s) has sufficient balance: %s %s",
                 formatPublicKey(sniper.publicKey),
-                formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                formatDecimal(tokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
                 envVars.TOKEN_SYMBOL
             );
             continue;
@@ -215,8 +203,10 @@ async function createPool(
     );
 
     const wrapSolInstructions = await getWrapSolInstructions(
-        new Decimal(envVars.POOL_LIQUIDITY_SOL),
-        dev
+        connection,
+        dev,
+        dev,
+        new Decimal(envVars.POOL_LIQUIDITY_SOL).mul(LAMPORTS_PER_SOL)
     );
 
     const {
@@ -293,55 +283,6 @@ async function createPool(
             tradeFee: new BN(feeConfig.tradeFeeRate),
         },
     ];
-}
-
-async function getWrapSolInstructions(
-    amount: Decimal,
-    owner: Keypair
-): Promise<TransactionInstruction[]> {
-    const tokenAccount = getAssociatedTokenAddressSync(
-        NATIVE_MINT,
-        owner.publicKey,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    const connection = connectionPool.next();
-    const instructions: TransactionInstruction[] = [];
-    let wsolBalance = new Decimal(0);
-
-    try {
-        const account = await getAccount(connection, tokenAccount, "confirmed", TOKEN_PROGRAM_ID);
-        wsolBalance = new Decimal(account.amount.toString(10));
-    } catch {
-        instructions.push(
-            createAssociatedTokenAccountInstruction(
-                owner.publicKey,
-                tokenAccount,
-                owner.publicKey,
-                NATIVE_MINT,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
-            )
-        );
-    }
-
-    const lamports = amount.mul(LAMPORTS_PER_SOL);
-    let residualLamports = new Decimal(0);
-    if (wsolBalance.lt(lamports)) {
-        residualLamports = lamports.sub(wsolBalance);
-        instructions.push(
-            SystemProgram.transfer({
-                fromPubkey: owner.publicKey,
-                toPubkey: tokenAccount,
-                lamports: residualLamports.toNumber(),
-            }),
-            createSyncNativeInstruction(tokenAccount, TOKEN_PROGRAM_ID)
-        );
-    }
-
-    return instructions;
 }
 
 async function burnLpMint(

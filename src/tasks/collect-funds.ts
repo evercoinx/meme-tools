@@ -99,7 +99,7 @@ async function closeTokenAccounts(
         const computeBudgetInstructions: TransactionInstruction[] = [];
 
         if (mint) {
-            const mintTokenAccount = getAssociatedTokenAddressSync(
+            const tokenAccount = getAssociatedTokenAddressSync(
                 mint.publicKey,
                 account.publicKey,
                 false,
@@ -107,11 +107,11 @@ async function closeTokenAccounts(
                 ASSOCIATED_TOKEN_PROGRAM_ID
             );
 
-            const mintAccountInfo = await connection.getAccountInfo(mintTokenAccount, "confirmed");
-            if (mintAccountInfo) {
+            const tokenAccountInfo = await connection.getAccountInfo(tokenAccount, "confirmed");
+            if (tokenAccountInfo) {
                 instructions.push(
                     createCloseAccountInstruction(
-                        mintTokenAccount,
+                        tokenAccount,
                         account.publicKey,
                         account.publicKey,
                         [],
@@ -122,7 +122,7 @@ async function closeTokenAccounts(
                 logger.warn(
                     "%s ATA (%s) not exists for %s (%s)",
                     envVars.TOKEN_SYMBOL,
-                    formatPublicKey(mintTokenAccount),
+                    formatPublicKey(tokenAccount),
                     isDev ? "dev" : "account",
                     formatPublicKey(account.publicKey)
                 );

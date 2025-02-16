@@ -62,10 +62,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             sniperUnitsToSell,
             SLIPPAGE,
             "VeryHigh",
-            {
-                skipPreflight: true,
-                commitment: "processed",
-            }
+            { skipPreflight: true }
         );
         await Promise.all(sendSniperSwapMintToSolTransactions);
 
@@ -77,10 +74,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             traderUnitsToSell,
             SLIPPAGE,
             "Default",
-            {
-                skipPreflight: true,
-                commitment: "confirmed",
-            }
+            { skipPreflight: true }
         );
         await Promise.all(sendTraderSwapMintToSolTransactions);
         process.exit(0);
@@ -100,7 +94,7 @@ async function findUnitsToSell(
     for (const [i, account] of accounts.entries()) {
         const connection = connectionPool.next();
 
-        const mintTokenAccount = getAssociatedTokenAddressSync(
+        const tokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
             account.publicKey,
             false,
@@ -108,30 +102,30 @@ async function findUnitsToSell(
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
 
-        let mintBalance = ZERO_DECIMAL;
+        let tokenBalance = ZERO_DECIMAL;
         try {
-            const mintTokenAccountBalance = await connection.getTokenAccountBalance(
-                mintTokenAccount,
+            const tokenAccountBalance = await connection.getTokenAccountBalance(
+                tokenAccount,
                 "confirmed"
             );
-            mintBalance = new Decimal(mintTokenAccountBalance.value.amount.toString());
+            tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
         } catch {
             // Ignore TokenAccountNotFoundError error
         }
 
-        if (mintBalance.lte(ZERO_DECIMAL)) {
+        if (tokenBalance.lte(ZERO_DECIMAL)) {
             unitsToSell[i] = null;
             logger.warn(
                 "%s (%s) has insufficient balance: %s %s",
                 capitalize(swapperType),
                 formatPublicKey(account.publicKey),
-                formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                formatDecimal(tokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
                 envVars.TOKEN_SYMBOL
             );
             continue;
         }
 
-        unitsToSell[i] = new BN(mintBalance.toFixed(0));
+        unitsToSell[i] = new BN(tokenBalance.toFixed(0));
     }
 
     return unitsToSell;

@@ -188,7 +188,7 @@ async function createMint(
         mintSize + metadataExtensionSize + metadataSize
     );
 
-    const mintTokenAccount = getAssociatedTokenAddressSync(
+    const tokenAccount = getAssociatedTokenAddressSync(
         mint.publicKey,
         dev.publicKey,
         false,
@@ -234,7 +234,7 @@ async function createMint(
         // Create the associated token account of the owner
         createAssociatedTokenAccountInstruction(
             dev.publicKey,
-            mintTokenAccount,
+            tokenAccount,
             dev.publicKey,
             mint.publicKey,
             TOKEN_2022_PROGRAM_ID,
@@ -243,7 +243,7 @@ async function createMint(
         // Mint to the associated token account of the owner
         createMintToInstruction(
             mint.publicKey,
-            mintTokenAccount,
+            tokenAccount,
             dev.publicKey,
             envVars.TOKEN_SUPPLY * 10 ** envVars.TOKEN_DECIMALS,
             [],

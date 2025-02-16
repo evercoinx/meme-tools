@@ -99,7 +99,7 @@ async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise
         "Low"
     );
     if (sendSwapSolToMintTransactions.length === 0) {
-        logger.warn("No buy transactions found");
+        logger.warn("No buy transactions found. Skipping");
         return 0;
     }
 
@@ -134,7 +134,7 @@ async function dumpPool(
         "Low"
     );
     if (sendSwapMintToSolTransactions.length === 0) {
-        logger.warn("No sell transactions found");
+        logger.warn("No sell transactions found. Skipping");
         return 0;
     }
 
@@ -159,9 +159,16 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
     for (const [i, trader] of traders.entries()) {
         const connection = connectionPool.next();
 
-        const currentSolBalance = new Decimal(
-            await connection.getBalance(trader.publicKey, "confirmed")
-        );
+        let currentSolBalance = ZERO_DECIMAL;
+        try {
+            currentSolBalance = new Decimal(
+                await connection.getBalance(trader.publicKey, "confirmed")
+            );
+        } catch {
+            logger.warn("Failed to get balance for trader (%s)", formatPublicKey(trader.publicKey));
+            continue;
+        }
+
         const buyAmount = new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
         const expectedSolBalance = new Decimal(envVars.TRADER_BALANCE_SOL)
             .add(buyAmount)
@@ -191,7 +198,7 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
     for (const [i, trader] of traders.entries()) {
         const connection = connectionPool.next();
 
-        const mintTokenAccount = getAssociatedTokenAddressSync(
+        const tokenAccount = getAssociatedTokenAddressSync(
             mint.publicKey,
             trader.publicKey,
             false,
@@ -199,30 +206,30 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
             ASSOCIATED_TOKEN_PROGRAM_ID
         );
 
-        let mintBalance = ZERO_DECIMAL;
+        let tokenBalance = ZERO_DECIMAL;
         try {
-            const mintTokenAccountBalance = await connection.getTokenAccountBalance(
-                mintTokenAccount,
+            const tokenAccountBalance = await connection.getTokenAccountBalance(
+                tokenAccount,
                 "confirmed"
             );
-            mintBalance = new Decimal(mintTokenAccountBalance.value.amount.toString());
+            tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
         } catch {
             // Ignore TokenAccountNotFoundError error
         }
 
-        if (mintBalance.lte(ZERO_DECIMAL)) {
+        if (tokenBalance.lte(ZERO_DECIMAL)) {
             unitsToSell[i] = null;
             logger.warn(
                 "Trader (%s) has insufficient balance: %s %s",
                 formatPublicKey(trader.publicKey),
-                formatDecimal(mintBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                formatDecimal(tokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
                 envVars.TOKEN_SYMBOL
             );
             continue;
         }
 
         const sellPercent = generateRandomFloat(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT);
-        unitsToSell[i] = new BN(mintBalance.mul(sellPercent).toFixed(0));
+        unitsToSell[i] = new BN(tokenBalance.mul(sellPercent).toFixed(0));
     }
 
     return unitsToSell;
