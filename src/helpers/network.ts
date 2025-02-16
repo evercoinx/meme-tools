@@ -3,6 +3,7 @@ import {
     ComputeBudgetProgram,
     Connection,
     Keypair,
+    TransactionError,
     TransactionInstruction,
     TransactionMessage,
     TransactionSignature,
@@ -29,6 +30,20 @@ const TRANSACTION_TTL_MS = 60_000;
 const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
 const TRANSACTION_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_COMPUTE_UNIT_LIMIT = 220_000;
+
+class ExpiredTransactionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "ExpiredTransactionError";
+    }
+}
+
+class FailedTransactionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "FailedTransactionError";
+    }
+}
 
 export async function getComputeBudgetInstructions(
     connection: Connection,
@@ -132,7 +147,6 @@ export async function sendAndConfirmVersionedTransaction(
     transaction.sign(signers);
 
     const startTime = Date.now();
-    let errorMessage: string | undefined;
 
     do {
         try {
@@ -145,17 +159,17 @@ export async function sendAndConfirmVersionedTransaction(
 
             return await pollTransactionConfirmation(connection, signature);
         } catch (error: unknown) {
-            errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error(
-                "Resending failed transaction (%s). Reason: %s",
-                signature ? formatSignature(signature) : "?",
-                errorMessage
-            );
-            continue;
+            if (error instanceof ExpiredTransactionError) {
+                logger.error(
+                    "Expired transaction (%s) resent",
+                    signature ? formatSignature(signature) : "?"
+                );
+                continue;
+            }
+
+            throw error;
         }
     } while (Date.now() - startTime < TRANSACTION_TTL_MS);
-
-    throw new Error(errorMessage);
 }
 
 async function pollTransactionConfirmation(
@@ -171,14 +185,22 @@ async function pollTransactionConfirmation(
             if (elapsed >= TRANSACTION_POLL_TIMEOUT_MS) {
                 clearInterval(intervalId);
                 reject(
-                    new Error(
-                        `Transaction (${formatSignature(signature)}) timed out. Elapsed: ${elapsed / 1_000} sec`
+                    new ExpiredTransactionError(
+                        `Transaction (${formatSignature(signature)}) expired`
                     )
                 );
             }
 
             const status = await connection.getSignatureStatuses([signature]);
-            if (status?.value[0]?.confirmationStatus === "confirmed") {
+            const result = status?.value[0];
+            if (result?.err) {
+                clearInterval(intervalId);
+                reject(
+                    new FailedTransactionError(
+                        `Transaction (${formatSignature(signature)}) failed. Reason: ${serializeRpcError(result.err)}`
+                    )
+                );
+            } else if (result?.confirmationStatus === "confirmed") {
                 clearInterval(intervalId);
                 logger.info(
                     "Transaction (%s) confirmed: %s",
@@ -190,4 +212,32 @@ async function pollTransactionConfirmation(
             }
         }, TRANSACTION_POLL_INTERVAL_MS);
     });
+}
+
+function serializeRpcError(error: TransactionError | null): string {
+    if (error == null) {
+        return "Unknown error";
+    }
+
+    if (typeof error === "object") {
+        if ("InstructionError" in error) {
+            const [instructionIndex, errorDetails] = error.InstructionError as [
+                number,
+                { Custom?: number },
+            ];
+            return `Error processing Instruction ${instructionIndex}. Details: ${
+                typeof errorDetails === "object" && errorDetails !== null
+                    ? JSON.stringify(errorDetails)
+                    : errorDetails
+            }`;
+        }
+
+        try {
+            return JSON.stringify(error);
+        } catch {
+            // Ignore JSON error
+        }
+    }
+
+    return String(error);
 }
