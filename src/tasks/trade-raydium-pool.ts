@@ -38,8 +38,6 @@ import {
             throw new Error("Mint not imported");
         }
 
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
-
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {
             throw new Error("Raydium pool id not loaded from storage");
@@ -49,6 +47,8 @@ import {
         if (!raydiumLpMint) {
             throw new Error("Raydium LP mint not loaded from storage");
         }
+
+        const traders = shuffle(importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader));
 
         const connection = connectionPool.next();
         const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
@@ -79,6 +79,8 @@ import {
 
             logger.info("-".repeat(80));
         }
+
+        process.exit(0);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
@@ -97,7 +99,7 @@ async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise
         "Low"
     );
     if (sendSwapSolToMintTransactions.length === 0) {
-        logger.warn("0 buy transactions found");
+        logger.warn("No buy transactions found");
         return 0;
     }
 
@@ -132,7 +134,7 @@ async function dumpPool(
         "Low"
     );
     if (sendSwapMintToSolTransactions.length === 0) {
-        logger.warn("0 sell transactions found");
+        logger.warn("No sell transactions found");
         return 0;
     }
 
@@ -156,22 +158,28 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
 
     for (const [i, trader] of traders.entries()) {
         const connection = connectionPool.next();
-        const solBalance = new Decimal(await connection.getBalance(trader.publicKey, "confirmed"));
 
-        const residualSolBalance = solBalance.sub(
-            new Decimal(envVars.TRADER_BALANCE_SOL).mul(LAMPORTS_PER_SOL)
+        const currentSolBalance = new Decimal(
+            await connection.getBalance(trader.publicKey, "confirmed")
         );
+        const buyAmount = new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
+        const expectedSolBalance = new Decimal(envVars.TRADER_BALANCE_SOL)
+            .add(buyAmount)
+            .mul(LAMPORTS_PER_SOL);
+
+        const residualSolBalance = currentSolBalance.sub(expectedSolBalance);
         if (residualSolBalance.lte(0)) {
             lamportsToSwap[i] = null;
             logger.warn(
-                "Trader (%s) has insufficient balance: %s SOL",
+                "Trader (%s) has insufficient balance: %s SOL. Expected: %s SOL",
                 formatPublicKey(trader.publicKey),
-                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
+                formatDecimal(currentSolBalance.div(LAMPORTS_PER_SOL)),
+                formatDecimal(expectedSolBalance.div(LAMPORTS_PER_SOL))
             );
             continue;
         }
 
-        lamportsToSwap[i] = new BN(residualSolBalance.toFixed(0));
+        lamportsToSwap[i] = new BN(buyAmount.mul(LAMPORTS_PER_SOL).toFixed(0));
     }
 
     return lamportsToSwap;

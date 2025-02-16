@@ -83,6 +83,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             }
         );
         await Promise.all(sendTraderSwapMintToSolTransactions);
+        process.exit(0);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);

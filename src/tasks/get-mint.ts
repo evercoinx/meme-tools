@@ -16,6 +16,7 @@ import { CLUSTER, connectionPool, envVars, logger, storage } from "../modules";
         }
 
         await getMint(mint);
+        process.exit(0);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);

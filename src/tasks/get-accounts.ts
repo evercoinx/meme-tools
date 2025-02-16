@@ -22,6 +22,7 @@ import { envVars, logger, storage, SwapperType, UNKNOWN_KEY } from "../modules";
         const mint = importMintKeypair();
 
         getAccounts(dev, distributor, snipers, traders, mint);
+        process.exit(0);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);

@@ -156,6 +156,13 @@ export async function swapSolToMint(
             throw error;
         }
 
+        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
+            LAMPORTS_PER_SOL
+        );
+        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
+            10 ** envVars.TOKEN_DECIMALS
+        );
+
         const raydium = await loadRaydium(connection, account);
         const {
             transaction: { instructions },
@@ -167,13 +174,6 @@ export async function swapSolToMint(
             slippage,
             baseIn,
         });
-
-        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
-            LAMPORTS_PER_SOL
-        );
-        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
-            10 ** envVars.TOKEN_DECIMALS
-        );
 
         if (computeBudgetInstructions.length === 0) {
             computeBudgetInstructions.push(
@@ -247,6 +247,13 @@ export async function swapMintToSol(
             throw error;
         }
 
+        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
+            10 ** envVars.TOKEN_DECIMALS
+        );
+        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
+            LAMPORTS_PER_SOL
+        );
+
         const raydium = await loadRaydium(connection, account);
         const {
             transaction: { instructions },
@@ -258,13 +265,6 @@ export async function swapMintToSol(
             slippage,
             baseIn,
         });
-
-        const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
-            10 ** envVars.TOKEN_DECIMALS
-        );
-        const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
-            LAMPORTS_PER_SOL
-        );
 
         if (computeBudgetInstructions.length === 0) {
             computeBudgetInstructions.push(

@@ -38,14 +38,15 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
         const sniperAmounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((sharePoolPercent) =>
             new Decimal(envVars.POOL_LIQUIDITY_SOL)
                 .mul(sharePoolPercent)
-                .plus(envVars.SNIPER_BALANCE_SOL)
+                .add(envVars.SNIPER_BALANCE_SOL)
                 .mul(LAMPORTS_PER_SOL)
         );
         const traderAmounts = new Array(envVars.TRADER_COUNT)
             .fill(0)
             .map(() =>
                 new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
-                    .plus(envVars.TRADER_BALANCE_SOL)
+                    .mul(envVars.TRADER_BUY_AVERAGE)
+                    .add(envVars.TRADER_BALANCE_SOL)
                     .mul(LAMPORTS_PER_SOL)
             );
 
@@ -61,11 +62,11 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
             traders,
             SwapperType.Trader
         );
-
         await Promise.all([
             sendDistrubuteSniperFundsTransaction,
             sendDistrubuteTraderFundsTransaction,
         ]);
+        process.exit(0);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);

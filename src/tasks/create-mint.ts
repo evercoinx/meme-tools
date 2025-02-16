@@ -64,6 +64,7 @@ const generatePinataUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${
 
         const sendCreateMintTransaction = await createMint(metadata, dev, mint);
         await Promise.all([sendCreateMintTransaction]);
+        process.exit(0);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);

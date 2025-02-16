@@ -98,6 +98,7 @@ import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from ".
             dev
         );
         await Promise.all([sendBurnLpMintTransaction]);
+        process.exit(0);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);

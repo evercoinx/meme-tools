@@ -74,6 +74,7 @@ import {
             ...sendSniperCollectFundsTransactions,
             ...sendTraderCollectFundsTransactions,
         ]);
+        process.exit(0);
     } catch (err) {
         logger.fatal(err);
         process.exit(1);
