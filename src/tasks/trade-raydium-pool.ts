@@ -15,7 +15,6 @@ import {
     envVars,
     heliusClientPool,
     logger,
-    MIN_REMAINING_BALANCE_LAMPORTS,
     SLIPPAGE,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
@@ -159,7 +158,9 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
         const connection = connectionPool.next();
         const solBalance = new Decimal(await connection.getBalance(trader.publicKey, "confirmed"));
 
-        const residualSolBalance = solBalance.sub(MIN_REMAINING_BALANCE_LAMPORTS * 2);
+        const residualSolBalance = solBalance.sub(
+            new Decimal(envVars.TRADER_BALANCE_SOL).mul(LAMPORTS_PER_SOL)
+        );
         if (residualSolBalance.lte(0)) {
             lamportsToSwap[i] = null;
             logger.warn(

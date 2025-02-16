@@ -17,9 +17,10 @@ interface EnvironmentSchema {
     POOL_LIQUIDITY_SOL: number;
     POOL_TRADING_MODE: "volume" | "pump" | "dump";
     SNIPER_SHARE_POOL_PERCENTS: number[];
-    SWAPPER_BALANCE_SOL: number;
+    SNIPER_BALANCE_SOL: number;
     TRADER_COUNT: number;
     TRADER_GROUP_SIZE: number;
+    TRADER_BALANCE_SOL: number;
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
     TRADER_SELL_AMOUNT_RANGE_PERCENT: [number, number];
     TRADER_SWAP_DELAY_RANGE_SEC: [number, number];
@@ -117,11 +118,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(1)
                 .max(100)
                 .description("Sniper share pool (in percents)"),
-            SWAPPER_BALANCE_SOL: Joi.number()
+            SNIPER_BALANCE_SOL: Joi.number()
                 .required()
-                .min(0.005)
+                .min(0.001)
                 .max(0.1)
-                .description("Swapper balance (in SOL)"),
+                .description("Sniper balance (in SOL)"),
             TRADER_COUNT: Joi.number()
                 .required()
                 .integer()
@@ -135,6 +136,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(3)
                 .default(1)
                 .description("Trader group size"),
+            TRADER_BALANCE_SOL: Joi.number()
+                .required()
+                .min(0.001)
+                .max(0.1)
+                .description("Trader balance (in SOL)"),
             TRADER_BUY_AMOUNT_RANGE_SOL: Joi.array()
                 .required()
                 .items(Joi.number().min(0.001).max(0.1))

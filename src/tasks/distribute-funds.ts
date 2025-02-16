@@ -38,14 +38,14 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
         const sniperAmounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((sharePoolPercent) =>
             new Decimal(envVars.POOL_LIQUIDITY_SOL)
                 .mul(sharePoolPercent)
-                .plus(envVars.SWAPPER_BALANCE_SOL)
+                .plus(envVars.SNIPER_BALANCE_SOL)
                 .mul(LAMPORTS_PER_SOL)
         );
         const traderAmounts = new Array(envVars.TRADER_COUNT)
             .fill(0)
             .map(() =>
                 new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
-                    .plus(envVars.SWAPPER_BALANCE_SOL)
+                    .plus(envVars.TRADER_BALANCE_SOL)
                     .mul(LAMPORTS_PER_SOL)
             );
 
