@@ -51,9 +51,16 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         const isDistributor = i === 1;
         const isSniper = i >= 2 && i < 2 + envVars.SNIPER_SHARE_POOL_PERCENTS.length;
 
-        const connection = connectionPool.next();
+        let connection = connectionPool.next();
 
-        const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+        let solBalance: Decimal | null = null;
+        try {
+            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+        } catch {
+            connection = connectionPool.next();
+            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+        }
+
         const wsolTokenAccount = getAssociatedTokenAddressSync(
             NATIVE_MINT,
             account.publicKey,

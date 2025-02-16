@@ -13,7 +13,14 @@ import {
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import { generateRandomFloat } from "../helpers/random";
-import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "../modules";
+import {
+    connectionPool,
+    envVars,
+    heliusClientPool,
+    logger,
+    SwapperType,
+    ZERO_DECIMAL,
+} from "../modules";
 
 (async () => {
     try {
@@ -78,7 +85,13 @@ async function distributeFunds(
     let fundedAccountCount = 0;
 
     for (const [i, account] of accounts.entries()) {
-        const solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+        let solBalance = ZERO_DECIMAL;
+        try {
+            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+        } catch {
+            connection = connectionPool.next();
+            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+        }
 
         if (solBalance.gte(lamports[i])) {
             logger.warn(

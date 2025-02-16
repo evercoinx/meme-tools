@@ -42,7 +42,14 @@ export const ZERO_DECIMAL = new Decimal(0);
 
 export const logger = createLogger(envVars.LOG_LEVEL);
 export const connectionPool = new Pool(
-    envVars.RPC_URIS.map((rpcUri) => new Connection(rpcUri, "confirmed"))
+    envVars.RPC_URIS.map(
+        (rpcUri) =>
+            new Connection(rpcUri, {
+                commitment: "confirmed",
+                confirmTransactionInitialTimeout: 60_000,
+                disableRetryOnRateLimit: true,
+            })
+    )
 );
 export const heliusClientPool = new Pool(
     envVars.RPC_URIS.map((rpcUri) => createHeliusClient(rpcUri, 10_000))

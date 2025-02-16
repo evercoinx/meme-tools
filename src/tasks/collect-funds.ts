@@ -13,6 +13,7 @@ import {
     TransactionInstruction,
     TransactionSignature,
 } from "@solana/web3.js";
+import Decimal from "decimal.js";
 import { importLocalKeypair, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
@@ -29,6 +30,7 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
+    ZERO_DECIMAL,
 } from "../modules";
 
 (async () => {
@@ -224,11 +226,17 @@ async function collectFunds(
     const computeBudgetInstructions: TransactionInstruction[] = [];
 
     for (const account of accounts) {
-        const connection = connectionPool.next();
+        let connection = connectionPool.next();
         const heliusClient = heliusClientPool.next();
 
-        const solBalance = await connection.getBalance(account.publicKey, "confirmed");
-        if (solBalance <= MIN_REMAINING_BALANCE_LAMPORTS) {
+        let solBalance = ZERO_DECIMAL;
+        try {
+            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+        } catch {
+            connection = connectionPool.next();
+            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+        }
+        if (solBalance.lte(MIN_REMAINING_BALANCE_LAMPORTS)) {
             logger.warn(
                 "%s (%s) has insufficient balance: %s SOL",
                 capitalize(swapperType),
@@ -238,12 +246,12 @@ async function collectFunds(
             continue;
         }
 
-        const lamports = solBalance - MIN_REMAINING_BALANCE_LAMPORTS;
+        const residualLamports = solBalance.sub(MIN_REMAINING_BALANCE_LAMPORTS);
         const instructions = [
             SystemProgram.transfer({
                 fromPubkey: account.publicKey,
                 toPubkey: distributor.publicKey,
-                lamports,
+                lamports: residualLamports.trunc().toNumber(),
             }),
         ];
 
@@ -264,7 +272,7 @@ async function collectFunds(
                 connection,
                 [...computeBudgetInstructions, ...instructions],
                 [account],
-                `to transfer ${formatDecimal(lamports / LAMPORTS_PER_SOL)} SOL from ${swapperType} (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
+                `to transfer ${formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))} SOL from ${swapperType} (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
             )
         );
     }
