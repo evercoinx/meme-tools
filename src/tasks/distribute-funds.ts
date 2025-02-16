@@ -1,11 +1,4 @@
 import {
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    createAssociatedTokenAccountInstruction,
-    getAssociatedTokenAddressSync,
-    NATIVE_MINT,
-    TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
-import {
     Keypair,
     LAMPORTS_PER_SOL,
     SystemProgram,
@@ -106,34 +99,34 @@ async function distributeFunds(
             fundedAccountCount++;
         }
 
-        const wsolTokenAccount = getAssociatedTokenAddressSync(
-            NATIVE_MINT,
-            account.publicKey,
-            false,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
+        // const wsolTokenAccount = getAssociatedTokenAddressSync(
+        //     NATIVE_MINT,
+        //     account.publicKey,
+        //     false,
+        //     TOKEN_PROGRAM_ID,
+        //     ASSOCIATED_TOKEN_PROGRAM_ID
+        // );
 
-        const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
-        if (wsolAccountInfo) {
-            logger.warn(
-                "WSOL ATA (%s) exists for %s (%s)",
-                wsolTokenAccount.toBase58(),
-                swapperType,
-                account.publicKey.toBase58()
-            );
-        } else {
-            instructions.push(
-                createAssociatedTokenAccountInstruction(
-                    distributor.publicKey,
-                    wsolTokenAccount,
-                    account.publicKey,
-                    NATIVE_MINT,
-                    TOKEN_PROGRAM_ID,
-                    ASSOCIATED_TOKEN_PROGRAM_ID
-                )
-            );
-        }
+        // const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
+        // if (wsolAccountInfo) {
+        //     logger.warn(
+        //         "WSOL ATA (%s) exists for %s (%s)",
+        //         wsolTokenAccount.toBase58(),
+        //         swapperType,
+        //         account.publicKey.toBase58()
+        //     );
+        // } else {
+        //     instructions.push(
+        //         createAssociatedTokenAccountInstruction(
+        //             distributor.publicKey,
+        //             wsolTokenAccount,
+        //             account.publicKey,
+        //             NATIVE_MINT,
+        //             TOKEN_PROGRAM_ID,
+        //             ASSOCIATED_TOKEN_PROGRAM_ID
+        //         )
+        //     );
+        // }
 
         connection = connectionPool.next();
         heliusClient = heliusClientPool.next();

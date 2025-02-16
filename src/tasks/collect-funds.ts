@@ -2,7 +2,6 @@ import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     createCloseAccountInstruction,
     getAssociatedTokenAddressSync,
-    NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
@@ -162,32 +161,31 @@ async function closeTokenAccounts(
                 }
             }
         } else {
-            const wsolTokenAccount = getAssociatedTokenAddressSync(
-                NATIVE_MINT,
-                account.publicKey,
-                false,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
-            );
-
-            const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
-            if (wsolAccountInfo) {
-                instructions.push(
-                    createCloseAccountInstruction(
-                        wsolTokenAccount,
-                        account.publicKey,
-                        account.publicKey,
-                        [],
-                        TOKEN_PROGRAM_ID
-                    )
-                );
-            } else {
-                logger.warn(
-                    "WSOL ATA (%s) not exists for account (%s)",
-                    formatPublicKey(wsolTokenAccount),
-                    formatPublicKey(account.publicKey)
-                );
-            }
+            // const wsolTokenAccount = getAssociatedTokenAddressSync(
+            //     NATIVE_MINT,
+            //     account.publicKey,
+            //     false,
+            //     TOKEN_PROGRAM_ID,
+            //     ASSOCIATED_TOKEN_PROGRAM_ID
+            // );
+            // const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
+            // if (wsolAccountInfo) {
+            //     instructions.push(
+            //         createCloseAccountInstruction(
+            //             wsolTokenAccount,
+            //             account.publicKey,
+            //             account.publicKey,
+            //             [],
+            //             TOKEN_PROGRAM_ID
+            //         )
+            //     );
+            // } else {
+            //     logger.warn(
+            //         "WSOL ATA (%s) not exists for account (%s)",
+            //         formatPublicKey(wsolTokenAccount),
+            //         formatPublicKey(account.publicKey)
+            //     );
+            // }
         }
 
         if (instructions.length > 0) {
