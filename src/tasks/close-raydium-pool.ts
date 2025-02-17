@@ -37,8 +37,11 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const connection = connectionPool.next();
-        const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
+        const poolInfo = await loadRaydiumPoolInfo(
+            connectionPool.current(),
+            new PublicKey(raydiumPoolId),
+            mint
+        );
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,

@@ -51,8 +51,11 @@ import {
 
         const traders = shuffle(importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader));
 
-        const connection = connectionPool.next();
-        const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
+        const poolInfo = await loadRaydiumPoolInfo(
+            connectionPool.current(),
+            new PublicKey(raydiumPoolId),
+            mint
+        );
 
         for (let i = 0; i < traders.length; i += envVars.TRADER_GROUP_SIZE) {
             const traderGroup = traders.slice(i, i + envVars.TRADER_GROUP_SIZE);

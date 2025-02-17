@@ -96,11 +96,11 @@ async function closeTokenAccounts(
     lpMint?: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
+    let connection = connectionPool.current();
+    let heliusClient = heliusClientPool.current();
+
     for (const [i, account] of [dev, ...snipers, ...traders].entries()) {
         const isDev = i === 0;
-
-        const connection = connectionPool.next();
-        const heliusClient = heliusClientPool.next();
 
         const instructions: TransactionInstruction[] = [];
         const computeBudgetInstructions: TransactionInstruction[] = [];
@@ -195,6 +195,9 @@ async function closeTokenAccounts(
                     `to close ATAs for account (${formatPublicKey(account.publicKey)})`
                 )
             );
+
+            connection = connectionPool.next();
+            heliusClient = heliusClientPool.next();
         }
     }
 

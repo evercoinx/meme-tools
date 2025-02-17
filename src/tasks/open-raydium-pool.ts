@@ -129,7 +129,8 @@ async function createPool(
     dev: Keypair,
     mint: Keypair
 ): Promise<[Promise<TransactionSignature | undefined>, CpmmPoolInfo]> {
-    const connection = connectionPool.next();
+    const connection = connectionPool.current();
+    const heliusClient = heliusClientPool.current();
 
     const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
     if (raydiumPoolId) {
@@ -222,8 +223,6 @@ async function createPool(
         },
     });
 
-    const heliusClient = heliusClientPool.next();
-
     const instructions = [...wrapSolInstructions, ...createPoolInstructions];
     const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
@@ -279,7 +278,8 @@ async function burnLpMint(
     lpMint: PublicKey,
     dev: Keypair
 ): Promise<Promise<TransactionSignature | undefined>> {
-    const connection = connectionPool.next();
+    const connection = connectionPool.current();
+    const heliusClient = heliusClientPool.current();
 
     const [lpMintTokenAccount, lpMintBalance] = await getTokenAccountInfo(
         connectionPool,
@@ -318,7 +318,7 @@ async function burnLpMint(
 
     const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
-        heliusClientPool.next(),
+        heliusClient,
         "Default",
         instructions,
         dev

@@ -1,5 +1,7 @@
+import { shuffle } from "../helpers/random";
+
 export class Pool<T> {
-    private pool: T[];
+    private readonly pool: T[];
     private capacity: number;
     private currentIndex = 0;
 
@@ -7,7 +9,8 @@ export class Pool<T> {
         if (items.length === 0) {
             throw new Error("Pool must be initialized with at least one item");
         }
-        this.pool = [...items];
+
+        this.pool = shuffle(items);
         this.capacity = items.length;
     }
 

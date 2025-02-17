@@ -166,8 +166,8 @@ async function createMint(
         return Promise.resolve(undefined);
     }
 
-    const connection = connectionPool.next();
-    const heliusClient = heliusClientPool.next();
+    const connection = connectionPool.current();
+    const heliusClient = heliusClientPool.current();
 
     const metadata: TokenMetadata = {
         mint: mint.publicKey,
