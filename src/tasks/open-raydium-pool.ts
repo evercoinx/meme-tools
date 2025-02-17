@@ -9,9 +9,7 @@ import {
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import {
-    ASSOCIATED_TOKEN_PROGRAM_ID,
     createBurnInstruction,
-    getAssociatedTokenAddressSync,
     NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
@@ -19,7 +17,12 @@ import {
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, TransactionSignature } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import {
+    importSwapperKeypairs,
+    importLocalKeypair,
+    importMintKeypair,
+    getTokenAccountInfo,
+} from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
@@ -97,30 +100,29 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
     const snipersToBuy: (Keypair | null)[] = [];
 
     for (const [i, sniper] of snipers.entries()) {
-        const connection = connectionPool.next();
-
-        const tokenAccount = getAssociatedTokenAddressSync(
+        const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+            connectionPool,
+            sniper,
             mint.publicKey,
-            sniper.publicKey,
-            false,
-            TOKEN_2022_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            TOKEN_2022_PROGRAM_ID
         );
 
-        let tokenBalance = new Decimal(0);
-        try {
-            const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount);
-            tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
-        } catch {
-            // Ignore TokenAccountNotFoundError error
+        if (!mintTokenBalance) {
+            logger.warn(
+                "Sniper (%s) has uninitialized %s ATA (%s)",
+                formatPublicKey(sniper.publicKey),
+                envVars.TOKEN_SYMBOL,
+                formatPublicKey(mintTokenAccount)
+            );
+            continue;
         }
-
-        if (tokenBalance.gt(0)) {
+        if (mintTokenBalance.gt(0)) {
             snipersToBuy[i] = null;
             logger.warn(
-                "Sniper (%s) has sufficient balance: %s %s",
+                "Sniper (%s) has sufficient balance on ATA (%s): %s %s",
                 formatPublicKey(sniper.publicKey),
-                formatDecimal(tokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                formatPublicKey(mintTokenAccount),
+                formatDecimal(mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
                 envVars.TOKEN_SYMBOL
             );
             continue;
@@ -288,28 +290,27 @@ async function burnLpMint(
 ): Promise<Promise<TransactionSignature | undefined>> {
     const connection = connectionPool.next();
 
-    const lpMintTokenAccount = getAssociatedTokenAddressSync(
+    const [lpMintTokenAccount, lpMintBalance] = await getTokenAccountInfo(
+        connectionPool,
+        dev,
         lpMint,
-        dev.publicKey,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
+        TOKEN_PROGRAM_ID
     );
-
-    let lpMintBalance = new Decimal(0);
-    try {
-        const lpMintAccountBalance = await connection.getTokenAccountBalance(lpMintTokenAccount);
-        lpMintBalance = new Decimal(lpMintAccountBalance.value.amount);
-    } catch {
+    if (!lpMintBalance) {
         logger.warn(
-            "LP mint ATA (%s) not exists for dev (%s)",
-            formatPublicKey(lpMintTokenAccount),
-            formatPublicKey(dev.publicKey)
+            "Dev (%s) has uninitialized %s ATA (%s)",
+            formatPublicKey(dev.publicKey),
+            envVars.TOKEN_SYMBOL,
+            formatPublicKey(lpMintTokenAccount)
         );
         return;
     }
     if (lpMintBalance.lte(0)) {
-        logger.warn("Dev (%s) has 0 LP mint balance", formatPublicKey(dev.publicKey));
+        logger.warn(
+            "Dev (%s) has insufficient balance on ATA (%s): 0 LPMint",
+            formatPublicKey(dev.publicKey),
+            formatPublicKey(lpMintTokenAccount)
+        );
         return;
     }
 

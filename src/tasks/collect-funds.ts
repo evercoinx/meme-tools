@@ -1,8 +1,6 @@
 import {
-    ASSOCIATED_TOKEN_PROGRAM_ID,
     createBurnInstruction,
     createCloseAccountInstruction,
-    getAssociatedTokenAddressSync,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
@@ -14,9 +12,9 @@ import {
     TransactionInstruction,
     TransactionSignature,
 } from "@solana/web3.js";
-import Decimal from "decimal.js";
 import {
-    getAccountSolBalance,
+    getSolBalance,
+    getTokenAccountInfo,
     importLocalKeypair,
     importMintKeypair,
     importSwapperKeypairs,
@@ -105,52 +103,37 @@ async function closeTokenAccounts(
         const computeBudgetInstructions: TransactionInstruction[] = [];
 
         if (mint) {
-            const tokenAccount = getAssociatedTokenAddressSync(
+            const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+                connectionPool,
+                account,
                 mint.publicKey,
-                account.publicKey,
-                false,
-                TOKEN_2022_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
+                TOKEN_2022_PROGRAM_ID
             );
 
-            let tokenBalance: Decimal | null = null;
-            try {
-                const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount);
-                tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
-            } catch {
-                // Ignore TokenAccountNotFoundError error
-            }
-
-            if (tokenBalance === null) {
+            if (!mintTokenBalance) {
                 logger.warn(
-                    "%s ATA (%s) not exists for %s (%s)",
+                    "Account (%s) has uninitialized %s ATA (%s)",
+                    formatPublicKey(account.publicKey),
                     envVars.TOKEN_SYMBOL,
-                    formatPublicKey(tokenAccount),
-                    isDev ? "dev" : "account",
-                    formatPublicKey(account.publicKey)
-                );
-            } else if (tokenBalance.eq(0)) {
-                instructions.push(
-                    createCloseAccountInstruction(
-                        tokenAccount,
-                        account.publicKey,
-                        account.publicKey,
-                        [],
-                        TOKEN_2022_PROGRAM_ID
-                    )
+                    formatPublicKey(mintTokenAccount)
                 );
             } else {
+                if (mintTokenBalance.gt(0)) {
+                    instructions.push(
+                        createBurnInstruction(
+                            mintTokenAccount,
+                            mint.publicKey,
+                            account.publicKey,
+                            mintTokenBalance.toNumber(),
+                            [],
+                            TOKEN_2022_PROGRAM_ID
+                        )
+                    );
+                }
+
                 instructions.push(
-                    createBurnInstruction(
-                        tokenAccount,
-                        mint.publicKey,
-                        account.publicKey,
-                        tokenBalance.toNumber(),
-                        [],
-                        TOKEN_2022_PROGRAM_ID
-                    ),
                     createCloseAccountInstruction(
-                        tokenAccount,
+                        mintTokenAccount,
                         account.publicKey,
                         account.publicKey,
                         [],
@@ -162,16 +145,19 @@ async function closeTokenAccounts(
 
         if (isDev) {
             if (lpMint) {
-                const lpMintTokenAccount = getAssociatedTokenAddressSync(
+                const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
+                    connectionPool,
+                    dev,
                     lpMint,
-                    dev.publicKey,
-                    false,
-                    TOKEN_PROGRAM_ID,
-                    ASSOCIATED_TOKEN_PROGRAM_ID
+                    TOKEN_PROGRAM_ID
                 );
-
-                const lpMintAccountInfo = await connection.getAccountInfo(lpMintTokenAccount);
-                if (lpMintAccountInfo) {
+                if (!lpMintTokenBalance) {
+                    logger.warn(
+                        "Dev (%s) has uninitialized LP mint ATA (%s)",
+                        formatPublicKey(dev.publicKey),
+                        formatPublicKey(lpMintTokenAccount)
+                    );
+                } else if (lpMintTokenBalance.eq(0)) {
                     instructions.push(
                         createCloseAccountInstruction(
                             lpMintTokenAccount,
@@ -180,12 +166,6 @@ async function closeTokenAccounts(
                             [],
                             TOKEN_PROGRAM_ID
                         )
-                    );
-                } else {
-                    logger.warn(
-                        "LP mint ATA (%s) not exists for dev (%s)",
-                        formatPublicKey(lpMintTokenAccount),
-                        formatPublicKey(dev.publicKey)
                     );
                 }
             }
@@ -230,10 +210,10 @@ async function collectFunds(
     let heliusClient = heliusClientPool.current();
 
     for (const account of accounts) {
-        const solBalance = await getAccountSolBalance(connectionPool, account.publicKey);
+        const solBalance = await getSolBalance(connectionPool, account);
         if (solBalance.lte(MIN_REMAINING_BALANCE_LAMPORTS)) {
             logger.warn(
-                "%s (%s) has insufficient balance: %s SOL. Skipping",
+                "%s (%s) has insufficient balance on wallet: %s SOL",
                 capitalize(swapperType),
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))

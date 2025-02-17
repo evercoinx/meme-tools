@@ -1,12 +1,7 @@
-import {
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    getAssociatedTokenAddressSync,
-    TOKEN_2022_PROGRAM_ID,
-} from "@solana/spl-token";
+import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import Decimal from "decimal.js";
-import { importMintKeypair, importSwapperKeypairs } from "../helpers/account";
+import { getTokenAccountInfo, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
@@ -92,37 +87,38 @@ async function findUnitsToSell(
     const unitsToSell: (BN | null)[] = [];
 
     for (const [i, account] of accounts.entries()) {
-        const connection = connectionPool.next();
-
-        const tokenAccount = getAssociatedTokenAddressSync(
+        const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+            connectionPool,
+            account,
             mint.publicKey,
-            account.publicKey,
-            false,
-            TOKEN_2022_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            TOKEN_2022_PROGRAM_ID
         );
 
-        let tokenBalance = ZERO_DECIMAL;
-        try {
-            const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount);
-            tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
-        } catch {
-            // Ignore TokenAccountNotFoundError error
-        }
-
-        if (tokenBalance.lte(ZERO_DECIMAL)) {
+        if (!mintTokenBalance) {
             unitsToSell[i] = null;
             logger.warn(
-                "%s (%s) has insufficient balance: %s %s",
+                "%s (%s) has uninitialized %s ATA (%s)",
                 capitalize(swapperType),
                 formatPublicKey(account.publicKey),
-                formatDecimal(tokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                envVars.TOKEN_SYMBOL,
+                formatPublicKey(mintTokenAccount)
+            );
+            continue;
+        }
+        if (mintTokenBalance.lte(ZERO_DECIMAL)) {
+            unitsToSell[i] = null;
+            logger.warn(
+                "%s (%s) has insufficient balance on ATA (%s): %s %s",
+                capitalize(swapperType),
+                formatPublicKey(account.publicKey),
+                formatPublicKey(mintTokenAccount),
+                formatDecimal(mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
                 envVars.TOKEN_SYMBOL
             );
             continue;
         }
 
-        unitsToSell[i] = new BN(tokenBalance.toFixed(0));
+        unitsToSell[i] = new BN(mintTokenBalance.toFixed(0));
     }
 
     return unitsToSell;

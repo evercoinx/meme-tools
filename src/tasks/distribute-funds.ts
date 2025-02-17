@@ -8,7 +8,7 @@ import {
 import Decimal from "decimal.js";
 import {
     generateOrImportSwapperKeypairs,
-    getAccountSolBalance,
+    getSolBalance,
     importLocalKeypair,
 } from "../helpers/account";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
@@ -83,10 +83,10 @@ async function distributeFunds(
     let heliusClient = heliusClientPool.current();
 
     for (const [i, account] of accounts.entries()) {
-        const solBalance = await getAccountSolBalance(connectionPool, account.publicKey);
+        const solBalance = await getSolBalance(connectionPool, account);
         if (solBalance.gte(lamports[i])) {
             logger.warn(
-                "%s (%s) has sufficient balance: %s SOL.Skipping",
+                "%s (%s) has sufficient balance on wallet: %s SOL",
                 capitalize(swapperType),
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))

@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { capitalize, formatPublicKey } from "./format";
@@ -126,29 +127,80 @@ function generateSecretStorageKeys(
     return secretKeyRecord;
 }
 
-export async function getAccountSolBalance(
+export async function getSolBalance(
     connectionPool: Pool<Connection>,
-    publicKey: PublicKey
+    account: Keypair
 ): Promise<Decimal> {
     const connection = connectionPool.current();
 
     try {
-        return getBalance(connection, publicKey);
+        return getBalance(connection, account.publicKey);
     } catch {
-        logger.warn("Failed to get balance for account (%s). Retrying 1/2");
+        logger.warn("Failed to get SOL balance for account (%s). Attempt: 1/2");
         connectionPool.next();
 
         try {
-            return getBalance(connection, publicKey);
+            return getBalance(connection, account.publicKey);
         } catch {
-            logger.warn("Failed to get balance for account (%s). Retrying 2/2");
+            logger.warn("Failed to get SOL balance for account (%s). Attempt: 2/2");
             connectionPool.next();
 
-            return getBalance(connection, publicKey);
+            return getBalance(connection, account.publicKey);
         }
     }
 }
 
 async function getBalance(connection: Connection, publicKey: PublicKey): Promise<Decimal> {
     return new Decimal(await connection.getBalance(publicKey));
+}
+
+export async function getTokenAccountInfo(
+    connectionPool: Pool<Connection>,
+    account: Keypair,
+    mint: PublicKey,
+    splTokenProgram: PublicKey
+): Promise<[PublicKey, Decimal | undefined]> {
+    const tokenAccount = getAssociatedTokenAddressSync(
+        mint,
+        account.publicKey,
+        false,
+        splTokenProgram,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    const connection = connectionPool.current();
+
+    try {
+        return [tokenAccount, await getTokenAccountBalance(connection, tokenAccount)];
+    } catch (err: unknown) {
+        if (err instanceof Error && err.message.includes("could not find account")) {
+            return [tokenAccount, undefined];
+        }
+
+        logger.warn("Failed to get token balance for account (%s). Attempt: 1/2");
+        connectionPool.next();
+
+        try {
+            return [tokenAccount, await getTokenAccountBalance(connection, tokenAccount)];
+        } catch (err: unknown) {
+            if (err instanceof Error && err.message.includes("could not find account")) {
+                return [tokenAccount, undefined];
+            }
+
+            logger.warn("Failed to get token balance for account (%s). Attempt: 2/2");
+            connectionPool.next();
+
+            return [tokenAccount, await getTokenAccountBalance(connection, tokenAccount)];
+        }
+    }
+}
+
+async function getTokenAccountBalance(
+    connection: Connection,
+    publicKey: PublicKey
+): Promise<Decimal | undefined> {
+    const {
+        value: { amount },
+    } = await connection.getTokenAccountBalance(publicKey);
+    return new Decimal(amount.toString());
 }

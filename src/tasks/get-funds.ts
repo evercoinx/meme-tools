@@ -1,14 +1,9 @@
-import {
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    getAssociatedTokenAddressSync,
-    NATIVE_MINT,
-    TOKEN_2022_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import {
-    getAccountSolBalance,
+    getSolBalance,
+    getTokenAccountInfo,
     importLocalKeypair,
     importMintKeypair,
     importSwapperKeypairs,
@@ -51,49 +46,29 @@ import {
 })();
 
 async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
-    const connection = connectionPool.current();
-
     for (const [i, account] of accounts.entries()) {
         const isDev = i === 0;
         const isDistributor = i === 1;
         const isSniper = i >= 2 && i < 2 + envVars.SNIPER_SHARE_POOL_PERCENTS.length;
 
-        const solBalance = await getAccountSolBalance(connectionPool, account.publicKey);
+        const solBalance = await getSolBalance(connectionPool, account);
 
-        const wsolTokenAccount = getAssociatedTokenAddressSync(
+        const [wsolTokenAccount, wsolBalance] = await getTokenAccountInfo(
+            connectionPool,
+            account,
             NATIVE_MINT,
-            account.publicKey,
-            false,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            TOKEN_PROGRAM_ID
         );
 
-        let wsolBalance: Decimal | null = null;
-        try {
-            const wsolTokenAccountBalance =
-                await connection.getTokenAccountBalance(wsolTokenAccount);
-            wsolBalance = new Decimal(wsolTokenAccountBalance.value.amount.toString());
-        } catch {
-            // Ignore TokenAccountNotFoundError error
-        }
-
-        let tokenAccount: PublicKey | null = null;
-        let tokenBalance: Decimal | null = null;
+        let mintTokenAccount: PublicKey | undefined;
+        let mintTokenBalance: Decimal | undefined;
         if (mint) {
-            tokenAccount = getAssociatedTokenAddressSync(
+            [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+                connectionPool,
+                account,
                 mint.publicKey,
-                account.publicKey,
-                false,
-                TOKEN_2022_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
+                TOKEN_2022_PROGRAM_ID
             );
-
-            try {
-                const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount);
-                tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
-            } catch {
-                // Ignore TokenAccountNotFoundError error
-            }
         }
 
         const logParams = [
@@ -101,10 +76,10 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
             wsolTokenAccount.toBase58(),
             wsolBalance ? formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL)) : "?",
-            tokenAccount ? tokenAccount : UNKNOWN_KEY,
-            tokenBalance
+            mintTokenAccount,
+            mintTokenBalance
                 ? formatDecimal(
-                      tokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
+                      mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
                       envVars.TOKEN_DECIMALS
                   )
                 : "?",
@@ -112,35 +87,26 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         ];
 
         if (isDev) {
-            let lpMintTokenAccount: PublicKey | null = null;
-            let lpMintBalance: Decimal | null = null;
+            let lpMintTokenAccount: PublicKey | undefined;
+            let lpMintTokenBalance: Decimal | undefined;
 
             const lpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
             if (lpMint) {
-                lpMintTokenAccount = getAssociatedTokenAddressSync(
+                [mintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
+                    connectionPool,
+                    account,
                     new PublicKey(lpMint),
-                    account.publicKey,
-                    false,
-                    TOKEN_PROGRAM_ID,
-                    ASSOCIATED_TOKEN_PROGRAM_ID
+                    TOKEN_PROGRAM_ID
                 );
-
-                try {
-                    const lpMintTokenAccountBalance =
-                        await connection.getTokenAccountBalance(lpMintTokenAccount);
-                    lpMintBalance = new Decimal(lpMintTokenAccountBalance.value.amount.toString());
-                } catch {
-                    // Ignore TokenAccountNotFoundError error
-                }
             }
 
             logger.info(
                 "Dev funds\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s\n",
                 ...logParams,
                 lpMintTokenAccount ? lpMintTokenAccount.toBase58() : UNKNOWN_KEY,
-                lpMintBalance
+                lpMintTokenBalance
                     ? formatDecimal(
-                          lpMintBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
+                          lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
                           RAYDIUM_LP_MINT_DECIMALS
                       )
                     : "?",

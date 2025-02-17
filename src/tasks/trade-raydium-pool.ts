@@ -1,12 +1,13 @@
-import {
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    getAssociatedTokenAddressSync,
-    TOKEN_2022_PROGRAM_ID,
-} from "@solana/spl-token";
+import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { getAccountSolBalance, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
+import {
+    getSolBalance,
+    getTokenAccountInfo,
+    importMintKeypair,
+    importSwapperKeypairs,
+} from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { generateRandomFloat, generateRandomInteger, shuffle } from "../helpers/random";
@@ -157,7 +158,7 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
     const lamportsToSwap: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
-        const solBalance = await getAccountSolBalance(connectionPool, trader.publicKey);
+        const solBalance = await getSolBalance(connectionPool, trader);
 
         const buyAmount = new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
         const expectedSolBalance = new Decimal(envVars.TRADER_BALANCE_SOL)
@@ -168,7 +169,7 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
         if (residualSolBalance.lte(0)) {
             lamportsToSwap[i] = null;
             logger.warn(
-                "Trader (%s) has insufficient balance: %s SOL. Expected: %s SOL",
+                "Trader (%s) has insufficient balance on wallet: %s SOL. Expected: %s SOL",
                 formatPublicKey(trader.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                 formatDecimal(expectedSolBalance.div(LAMPORTS_PER_SOL))
@@ -186,37 +187,36 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
     const unitsToSell: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
-        const connection = connectionPool.next();
-
-        const tokenAccount = getAssociatedTokenAddressSync(
+        const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+            connectionPool,
+            trader,
             mint.publicKey,
-            trader.publicKey,
-            false,
-            TOKEN_2022_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            TOKEN_2022_PROGRAM_ID
         );
 
-        let tokenBalance = ZERO_DECIMAL;
-        try {
-            const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount);
-            tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
-        } catch {
-            // Ignore TokenAccountNotFoundError error
+        if (!mintTokenBalance) {
+            logger.warn(
+                "Trader (%s) has uninitialized %s ATA (%s)",
+                formatPublicKey(trader.publicKey),
+                envVars.TOKEN_SYMBOL,
+                formatPublicKey(mintTokenAccount)
+            );
+            continue;
         }
-
-        if (tokenBalance.lte(ZERO_DECIMAL)) {
+        if (mintTokenBalance.lte(ZERO_DECIMAL)) {
             unitsToSell[i] = null;
             logger.warn(
-                "Trader (%s) has insufficient balance: %s %s",
+                "Trader (%s) has insufficient balance on ATA (%s): %s %s",
                 formatPublicKey(trader.publicKey),
-                formatDecimal(tokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                formatPublicKey(mintTokenAccount),
+                formatDecimal(mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
                 envVars.TOKEN_SYMBOL
             );
             continue;
         }
 
         const sellPercent = generateRandomFloat(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT);
-        unitsToSell[i] = new BN(tokenBalance.mul(sellPercent).toFixed(0));
+        unitsToSell[i] = new BN(mintTokenBalance.mul(sellPercent).toFixed(0));
     }
 
     return unitsToSell;
