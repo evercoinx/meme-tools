@@ -107,16 +107,7 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
             TOKEN_2022_PROGRAM_ID
         );
 
-        if (!mintTokenBalance) {
-            logger.warn(
-                "Sniper (%s) has uninitialized %s ATA (%s)",
-                formatPublicKey(sniper.publicKey),
-                envVars.TOKEN_SYMBOL,
-                formatPublicKey(mintTokenAccount)
-            );
-            continue;
-        }
-        if (mintTokenBalance.gt(0)) {
+        if (mintTokenBalance && mintTokenBalance.gt(0)) {
             snipersToBuy[i] = null;
             logger.warn(
                 "Sniper (%s) has sufficient balance on ATA (%s): %s %s",

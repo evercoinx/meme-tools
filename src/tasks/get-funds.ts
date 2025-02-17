@@ -76,7 +76,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
             wsolTokenAccount.toBase58(),
             wsolBalance ? formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL)) : "?",
-            mintTokenAccount,
+            mintTokenAccount ? mintTokenAccount.toBase58() : UNKNOWN_KEY,
             mintTokenBalance
                 ? formatDecimal(
                       mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
@@ -92,7 +92,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
 
             const lpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
             if (lpMint) {
-                [mintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
+                [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
                     connectionPool,
                     account,
                     new PublicKey(lpMint),

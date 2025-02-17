@@ -131,21 +131,18 @@ export async function getSolBalance(
     connectionPool: Pool<Connection>,
     account: Keypair
 ): Promise<Decimal> {
-    const connection = connectionPool.current();
-
     try {
-        return getBalance(connection, account.publicKey);
+        return getBalance(connectionPool.current(), account.publicKey);
     } catch {
         logger.warn("Failed to get SOL balance for account (%s). Attempt: 1/2");
-        connectionPool.next();
 
         try {
-            return getBalance(connection, account.publicKey);
+            return getBalance(connectionPool.next(), account.publicKey);
         } catch {
             logger.warn("Failed to get SOL balance for account (%s). Attempt: 2/2");
             connectionPool.next();
 
-            return getBalance(connection, account.publicKey);
+            return getBalance(connectionPool.next(), account.publicKey);
         }
     }
 }
@@ -168,29 +165,31 @@ export async function getTokenAccountInfo(
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
-    const connection = connectionPool.current();
-
     try {
-        return [tokenAccount, await getTokenAccountBalance(connection, tokenAccount)];
+        return [tokenAccount, await getTokenAccountBalance(connectionPool.current(), tokenAccount)];
     } catch (err: unknown) {
         if (err instanceof Error && err.message.includes("could not find account")) {
             return [tokenAccount, undefined];
         }
 
-        logger.warn("Failed to get token balance for account (%s). Attempt: 1/2");
-        connectionPool.next();
+        logger.warn("Failed to get mint balance for account (%s). Attempt: 1/2");
 
         try {
-            return [tokenAccount, await getTokenAccountBalance(connection, tokenAccount)];
+            return [
+                tokenAccount,
+                await getTokenAccountBalance(connectionPool.next(), tokenAccount),
+            ];
         } catch (err: unknown) {
             if (err instanceof Error && err.message.includes("could not find account")) {
                 return [tokenAccount, undefined];
             }
 
-            logger.warn("Failed to get token balance for account (%s). Attempt: 2/2");
-            connectionPool.next();
+            logger.warn("Failed to get mint balance for account (%s). Attempt: 2/2");
 
-            return [tokenAccount, await getTokenAccountBalance(connection, tokenAccount)];
+            return [
+                tokenAccount,
+                await getTokenAccountBalance(connectionPool.next(), tokenAccount),
+            ];
         }
     }
 }

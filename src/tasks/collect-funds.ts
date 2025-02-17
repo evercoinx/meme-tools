@@ -12,6 +12,7 @@ import {
     TransactionInstruction,
     TransactionSignature,
 } from "@solana/web3.js";
+import Decimal from "decimal.js";
 import {
     getSolBalance,
     getTokenAccountInfo,
@@ -35,6 +36,8 @@ import {
     STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
 } from "../modules";
+
+const DUST_TOKEN_AMOUNT = new Decimal(500).mul(10 ** envVars.TOKEN_DECIMALS);
 
 (async () => {
     try {
@@ -118,7 +121,7 @@ async function closeTokenAccounts(
                     formatPublicKey(mintTokenAccount)
                 );
             } else {
-                if (mintTokenBalance.gt(0)) {
+                if (mintTokenBalance.gt(0) && mintTokenBalance.lt(DUST_TOKEN_AMOUNT)) {
                     instructions.push(
                         createBurnInstruction(
                             mintTokenAccount,
