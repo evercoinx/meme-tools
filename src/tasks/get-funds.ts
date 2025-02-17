@@ -1,4 +1,4 @@
-import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import {
@@ -37,7 +37,7 @@ import {
         const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
         const mint = importMintKeypair();
 
-        await getFunds([dev, distributor, ...snipers, ...traders], mint);
+        await getFunds(dev, distributor, snipers, traders, mint);
         process.exit(0);
     } catch (err) {
         logger.fatal(err);
@@ -45,20 +45,19 @@ import {
     }
 })();
 
-async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
-    for (const [i, account] of accounts.entries()) {
+async function getFunds(
+    dev: Keypair,
+    distributor: Keypair,
+    snipers: Keypair[],
+    traders: Keypair[],
+    mint?: Keypair
+): Promise<void> {
+    for (const [i, account] of [dev, distributor, ...snipers, ...traders].entries()) {
         const isDev = i === 0;
         const isDistributor = i === 1;
-        const isSniper = i >= 2 && i < 2 + envVars.SNIPER_SHARE_POOL_PERCENTS.length;
+        const isSniper = i >= 2 && i < 2 + snipers.length;
 
         const solBalance = await getSolBalance(connectionPool, account);
-
-        const [wsolTokenAccount, wsolBalance] = await getTokenAccountInfo(
-            connectionPool,
-            account,
-            NATIVE_MINT,
-            TOKEN_PROGRAM_ID
-        );
 
         let mintTokenAccount: PublicKey | undefined;
         let mintTokenBalance: Decimal | undefined;
@@ -74,8 +73,6 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
         const logParams = [
             account.publicKey.toBase58(),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            wsolTokenAccount.toBase58(),
-            wsolBalance ? formatDecimal(wsolBalance.div(LAMPORTS_PER_SOL)) : "?",
             mintTokenAccount ? mintTokenAccount.toBase58() : UNKNOWN_KEY,
             mintTokenBalance
                 ? formatDecimal(
@@ -101,7 +98,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             }
 
             logger.info(
-                "Dev funds\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s\n",
+                "Dev funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s\n",
                 ...logParams,
                 lpMintTokenAccount ? lpMintTokenAccount.toBase58() : UNKNOWN_KEY,
                 lpMintTokenBalance
@@ -114,12 +111,12 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             );
         } else {
             logger.info(
-                "%s funds\n\t\t%s - %s SOL\n\t\t%s - %s WSOL\n\t\t%s - %s %s\n",
+                "%s funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n",
                 isDistributor
                     ? "Distributor"
                     : isSniper
                       ? `Sniper #${i - 2}`
-                      : `Trader #${i - 2 - envVars.SNIPER_SHARE_POOL_PERCENTS.length}`,
+                      : `Trader #${i - 2 - snipers.length}`,
                 ...logParams
             );
         }
