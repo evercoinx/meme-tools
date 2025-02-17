@@ -11,6 +11,10 @@ export class Pool<T> {
         this.capacity = items.length;
     }
 
+    current(): T {
+        return this.pool[this.currentIndex];
+    }
+
     next(): T {
         const item = this.pool[this.currentIndex];
         this.currentIndex = (this.currentIndex + 1) % this.capacity;

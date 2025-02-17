@@ -15,7 +15,12 @@ import {
     TransactionSignature,
 } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { importLocalKeypair, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
+import {
+    getAccountSolBalance,
+    importLocalKeypair,
+    importMintKeypair,
+    importSwapperKeypairs,
+} from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
@@ -31,7 +36,6 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
-    ZERO_DECIMAL,
 } from "../modules";
 
 (async () => {
@@ -185,32 +189,6 @@ async function closeTokenAccounts(
                     );
                 }
             }
-        } else {
-            // const wsolTokenAccount = getAssociatedTokenAddressSync(
-            //     NATIVE_MINT,
-            //     account.publicKey,
-            //     false,
-            //     TOKEN_PROGRAM_ID,
-            //     ASSOCIATED_TOKEN_PROGRAM_ID
-            // );
-            // const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount);
-            // if (wsolAccountInfo) {
-            //     instructions.push(
-            //         createCloseAccountInstruction(
-            //             wsolTokenAccount,
-            //             account.publicKey,
-            //             account.publicKey,
-            //             [],
-            //             TOKEN_PROGRAM_ID
-            //         )
-            //     );
-            // } else {
-            //     logger.warn(
-            //         "WSOL ATA (%s) not exists for account (%s)",
-            //         formatPublicKey(wsolTokenAccount),
-            //         formatPublicKey(account.publicKey)
-            //     );
-            // }
         }
 
         if (instructions.length > 0) {
@@ -248,23 +226,17 @@ async function collectFunds(
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     const computeBudgetInstructions: TransactionInstruction[] = [];
 
-    for (const account of accounts) {
-        let connection = connectionPool.next();
-        const heliusClient = heliusClientPool.next();
+    let connection = connectionPool.current();
+    let heliusClient = heliusClientPool.current();
 
-        let solBalance = ZERO_DECIMAL;
-        try {
-            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
-        } catch {
-            connection = connectionPool.next();
-            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
-        }
+    for (const account of accounts) {
+        const solBalance = await getAccountSolBalance(connectionPool, account.publicKey);
         if (solBalance.lte(MIN_REMAINING_BALANCE_LAMPORTS)) {
             logger.warn(
-                "%s (%s) has insufficient balance: %s SOL",
+                "%s (%s) has insufficient balance: %s SOL. Skipping",
                 capitalize(swapperType),
                 formatPublicKey(account.publicKey),
-                formatDecimal(solBalance)
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
             continue;
         }
@@ -298,6 +270,9 @@ async function collectFunds(
                 `to transfer ${formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))} SOL from ${swapperType} (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
             )
         );
+
+        connection = connectionPool.next();
+        heliusClient = heliusClientPool.next();
     }
 
     return sendTransactions;

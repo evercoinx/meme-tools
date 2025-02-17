@@ -6,7 +6,7 @@ import {
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { importMintKeypair, importSwapperKeypairs } from "../helpers/account";
+import { getAccountSolBalance, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { generateRandomFloat, generateRandomInteger, shuffle } from "../helpers/random";
@@ -157,30 +157,20 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
     const lamportsToSwap: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
-        const connection = connectionPool.next();
-
-        let currentSolBalance = ZERO_DECIMAL;
-        try {
-            currentSolBalance = new Decimal(
-                await connection.getBalance(trader.publicKey, "confirmed")
-            );
-        } catch {
-            logger.warn("Failed to get balance for trader (%s)", formatPublicKey(trader.publicKey));
-            continue;
-        }
+        const solBalance = await getAccountSolBalance(connectionPool, trader.publicKey);
 
         const buyAmount = new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
         const expectedSolBalance = new Decimal(envVars.TRADER_BALANCE_SOL)
             .add(buyAmount)
             .mul(LAMPORTS_PER_SOL);
 
-        const residualSolBalance = currentSolBalance.sub(expectedSolBalance);
+        const residualSolBalance = solBalance.sub(expectedSolBalance);
         if (residualSolBalance.lte(0)) {
             lamportsToSwap[i] = null;
             logger.warn(
                 "Trader (%s) has insufficient balance: %s SOL. Expected: %s SOL",
                 formatPublicKey(trader.publicKey),
-                formatDecimal(currentSolBalance.div(LAMPORTS_PER_SOL)),
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                 formatDecimal(expectedSolBalance.div(LAMPORTS_PER_SOL))
             );
             continue;

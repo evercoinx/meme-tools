@@ -1,7 +1,9 @@
 import fs from "node:fs/promises";
-import { Keypair } from "@solana/web3.js";
-import { encryption, logger, storage, STORAGE_MINT_SECRET_KEY, SwapperType } from "../modules";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import Decimal from "decimal.js";
 import { capitalize, formatPublicKey } from "./format";
+import { encryption, logger, storage, STORAGE_MINT_SECRET_KEY, SwapperType } from "../modules";
+import { Pool } from "../modules/pool";
 
 export async function importLocalKeypair(path: string, id: string): Promise<Keypair> {
     const secretKey: number[] = JSON.parse(await fs.readFile(path, "utf8"));
@@ -122,4 +124,31 @@ function generateSecretStorageKeys(
         secretKeyRecord[i] = `${swapperType}_${i}_secret_key`;
     }
     return secretKeyRecord;
+}
+
+export async function getAccountSolBalance(
+    connectionPool: Pool<Connection>,
+    publicKey: PublicKey
+): Promise<Decimal> {
+    const connection = connectionPool.current();
+
+    try {
+        return getBalance(connection, publicKey);
+    } catch {
+        logger.warn("Failed to get balance for account (%s). Retrying 1/2");
+        connectionPool.next();
+
+        try {
+            return getBalance(connection, publicKey);
+        } catch {
+            logger.warn("Failed to get balance for account (%s). Retrying 2/2");
+            connectionPool.next();
+
+            return getBalance(connection, publicKey);
+        }
+    }
+}
+
+async function getBalance(connection: Connection, publicKey: PublicKey): Promise<Decimal> {
+    return new Decimal(await connection.getBalance(publicKey));
 }

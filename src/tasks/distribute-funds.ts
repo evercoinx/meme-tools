@@ -6,21 +6,18 @@ import {
     TransactionSignature,
 } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { generateOrImportSwapperKeypairs, importLocalKeypair } from "../helpers/account";
+import {
+    generateOrImportSwapperKeypairs,
+    getAccountSolBalance,
+    importLocalKeypair,
+} from "../helpers/account";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import { generateRandomFloat } from "../helpers/random";
-import {
-    connectionPool,
-    envVars,
-    heliusClientPool,
-    logger,
-    SwapperType,
-    ZERO_DECIMAL,
-} from "../modules";
+import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "../modules";
 
 (async () => {
     try {
@@ -79,67 +76,33 @@ async function distributeFunds(
     accounts: Keypair[],
     swapperType: SwapperType
 ): Promise<Promise<TransactionSignature | undefined>> {
-    let connection = connectionPool.next();
-    let heliusClient = heliusClientPool.next();
     const instructions: TransactionInstruction[] = [];
     let fundedAccountCount = 0;
 
-    for (const [i, account] of accounts.entries()) {
-        let solBalance = ZERO_DECIMAL;
-        try {
-            solBalance = new Decimal(await connection.getBalance(account.publicKey));
-        } catch {
-            connection = connectionPool.next();
-            solBalance = new Decimal(await connection.getBalance(account.publicKey));
-        }
+    let connection = connectionPool.current();
+    let heliusClient = heliusClientPool.current();
 
+    for (const [i, account] of accounts.entries()) {
+        const solBalance = await getAccountSolBalance(connectionPool, account.publicKey);
         if (solBalance.gte(lamports[i])) {
             logger.warn(
-                "%s (%s) has sufficient balance: %s SOL",
+                "%s (%s) has sufficient balance: %s SOL.Skipping",
                 capitalize(swapperType),
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
-        } else {
-            const residualLamports = lamports[i].sub(solBalance);
-            instructions.push(
-                SystemProgram.transfer({
-                    fromPubkey: distributor.publicKey,
-                    toPubkey: account.publicKey,
-                    lamports: residualLamports.trunc().toNumber(),
-                })
-            );
-            fundedAccountCount++;
+            continue;
         }
 
-        // const wsolTokenAccount = getAssociatedTokenAddressSync(
-        //     NATIVE_MINT,
-        //     account.publicKey,
-        //     false,
-        //     TOKEN_PROGRAM_ID,
-        //     ASSOCIATED_TOKEN_PROGRAM_ID
-        // );
-
-        // const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount);
-        // if (wsolAccountInfo) {
-        //     logger.warn(
-        //         "WSOL ATA (%s) exists for %s (%s)",
-        //         wsolTokenAccount.toBase58(),
-        //         swapperType,
-        //         account.publicKey.toBase58()
-        //     );
-        // } else {
-        //     instructions.push(
-        //         createAssociatedTokenAccountInstruction(
-        //             distributor.publicKey,
-        //             wsolTokenAccount,
-        //             account.publicKey,
-        //             NATIVE_MINT,
-        //             TOKEN_PROGRAM_ID,
-        //             ASSOCIATED_TOKEN_PROGRAM_ID
-        //         )
-        //     );
-        // }
+        const residualLamports = lamports[i].sub(solBalance);
+        instructions.push(
+            SystemProgram.transfer({
+                fromPubkey: distributor.publicKey,
+                toPubkey: account.publicKey,
+                lamports: residualLamports.trunc().toNumber(),
+            })
+        );
+        fundedAccountCount++;
 
         connection = connectionPool.next();
         heliusClient = heliusClientPool.next();
