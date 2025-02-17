@@ -22,7 +22,13 @@ import {
 import axios, { AxiosResponse } from "axios";
 import bs58 from "bs58";
 import Decimal from "decimal.js";
-import { CLUSTER, explorer, logger, ZERO_DECIMAL } from "../modules";
+import {
+    CLUSTER,
+    explorer,
+    logger,
+    TRANSACTION_CONFIRMATION_TIMEOUT_MS,
+    ZERO_DECIMAL,
+} from "../modules";
 import {
     GetPriorityFeeEstimateRequest,
     GetPriorityFeeEstimateResponse,
@@ -36,7 +42,6 @@ export interface TransactionOptions {
     preflightCommitment?: Commitment;
 }
 
-const TRANSACTION_TTL_MS = 60_000;
 const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
 const TRANSACTION_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_COMPUTE_UNIT_LIMIT = 220_000;
@@ -79,7 +84,9 @@ export async function getComputeBudgetInstructions(
 
     return [
         setComputeUnitLimitInstruction,
-        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFeeEstimate }),
+        ComputeBudgetProgram.setComputeUnitPrice({
+            microLamports: priorityFeeEstimate,
+        }),
     ];
 }
 
@@ -227,7 +234,7 @@ export async function sendAndConfirmVersionedTransaction(
 
             throw error;
         }
-    } while (Date.now() - startTime < TRANSACTION_TTL_MS);
+    } while (Date.now() - startTime < TRANSACTION_CONFIRMATION_TIMEOUT_MS);
 }
 
 async function pollTransactionConfirmation(

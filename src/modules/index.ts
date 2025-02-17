@@ -36,7 +36,8 @@ export const SLIPPAGE = 1;
 export const UNKNOWN_KEY = "?".repeat(44);
 
 export const envVars = extractEnvironmentVariables();
-export const CLUSTER = detectCluster(envVars.RPC_URIS[0]);
+export const CLUSTER = getCluster(envVars.RPC_URIS);
+export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
@@ -46,7 +47,7 @@ export const connectionPool = new Pool(
         (rpcUri) =>
             new Connection(rpcUri, {
                 commitment: "confirmed",
-                confirmTransactionInitialTimeout: 60_000,
+                confirmTransactionInitialTimeout: TRANSACTION_CONFIRMATION_TIMEOUT_MS,
                 disableRetryOnRateLimit: true,
             })
     )
@@ -60,13 +61,28 @@ export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
 export const explorer = new Explorer(envVars.EXPLORER_URI, CLUSTER);
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 
-function detectCluster(rpcUri: string): "devnet" | "mainnet-beta" {
-    if (/devnet/i.test(rpcUri)) {
-        return "devnet";
-    }
-    if (/mainnet/i.test(rpcUri)) {
-        return "mainnet-beta";
+function getCluster(rpcUris: string[]): "devnet" | "mainnet-beta" {
+    const counters = {
+        devnet: 0,
+        mainnet: 0,
+    };
+
+    for (const rpcUri of rpcUris) {
+        if (/mainnet/i.test(rpcUri)) {
+            counters.mainnet++;
+        } else if (/devnet/i.test(rpcUri)) {
+            counters.devnet++;
+        } else {
+            throw new Error(`Unknown cluster for RPC URI: ${rpcUri}`);
+        }
     }
 
-    throw new Error(`Unknown cluster for RPC URI: ${rpcUri}`);
+    if (counters.mainnet === rpcUris.length) {
+        return "mainnet-beta";
+    }
+    if (counters.devnet === rpcUris.length) {
+        return "devnet";
+    }
+
+    throw new Error("Mixed clusters detected");
 }
