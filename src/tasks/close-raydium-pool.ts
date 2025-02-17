@@ -104,10 +104,7 @@ async function findUnitsToSell(
 
         let tokenBalance = ZERO_DECIMAL;
         try {
-            const tokenAccountBalance = await connection.getTokenAccountBalance(
-                tokenAccount,
-                "confirmed"
-            );
+            const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount);
             tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
         } catch {
             // Ignore TokenAccountNotFoundError error

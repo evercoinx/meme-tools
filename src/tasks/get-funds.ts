@@ -71,10 +71,8 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
 
         let wsolBalance: Decimal | null = null;
         try {
-            const wsolTokenAccountBalance = await connection.getTokenAccountBalance(
-                wsolTokenAccount,
-                "confirmed"
-            );
+            const wsolTokenAccountBalance =
+                await connection.getTokenAccountBalance(wsolTokenAccount);
             wsolBalance = new Decimal(wsolTokenAccountBalance.value.amount.toString());
         } catch {
             // Ignore TokenAccountNotFoundError error
@@ -92,10 +90,7 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
             );
 
             try {
-                const tokenAccountBalance = await connection.getTokenAccountBalance(
-                    tokenAccount,
-                    "confirmed"
-                );
+                const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount);
                 tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
             } catch {
                 // Ignore TokenAccountNotFoundError error
@@ -132,10 +127,8 @@ async function getFunds(accounts: Keypair[], mint?: Keypair): Promise<void> {
                 );
 
                 try {
-                    const lpMintTokenAccountBalance = await connection.getTokenAccountBalance(
-                        lpMintTokenAccount,
-                        "confirmed"
-                    );
+                    const lpMintTokenAccountBalance =
+                        await connection.getTokenAccountBalance(lpMintTokenAccount);
                     lpMintBalance = new Decimal(lpMintTokenAccountBalance.value.amount.toString());
                 } catch {
                     // Ignore TokenAccountNotFoundError error

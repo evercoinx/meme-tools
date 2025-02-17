@@ -1,5 +1,6 @@
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
+    createBurnInstruction,
     createCloseAccountInstruction,
     getAssociatedTokenAddressSync,
     TOKEN_2022_PROGRAM_ID,
@@ -110,10 +111,7 @@ async function closeTokenAccounts(
 
             let tokenBalance: Decimal | null = null;
             try {
-                const tokenAccountBalance = await connection.getTokenAccountBalance(
-                    tokenAccount,
-                    "confirmed"
-                );
+                const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount);
                 tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
             } catch {
                 // Ignore TokenAccountNotFoundError error
@@ -138,16 +136,22 @@ async function closeTokenAccounts(
                     )
                 );
             } else {
-                logger.warn(
-                    "%s ATA (%s) has positive balance for %s (%s): %s %s",
-                    envVars.TOKEN_SYMBOL,
-                    formatPublicKey(tokenAccount),
-                    isDev ? "dev" : "account",
-                    formatPublicKey(account.publicKey),
-                    tokenBalance
-                        ? formatDecimal(tokenBalance.div(10 ** envVars.TOKEN_DECIMALS))
-                        : "?",
-                    envVars.TOKEN_SYMBOL
+                instructions.push(
+                    createBurnInstruction(
+                        tokenAccount,
+                        mint.publicKey,
+                        account.publicKey,
+                        tokenBalance.toNumber(),
+                        [],
+                        TOKEN_2022_PROGRAM_ID
+                    ),
+                    createCloseAccountInstruction(
+                        tokenAccount,
+                        account.publicKey,
+                        account.publicKey,
+                        [],
+                        TOKEN_2022_PROGRAM_ID
+                    )
                 );
             }
         }
@@ -162,10 +166,7 @@ async function closeTokenAccounts(
                     ASSOCIATED_TOKEN_PROGRAM_ID
                 );
 
-                const lpMintAccountInfo = await connection.getAccountInfo(
-                    lpMintTokenAccount,
-                    "confirmed"
-                );
+                const lpMintAccountInfo = await connection.getAccountInfo(lpMintTokenAccount);
                 if (lpMintAccountInfo) {
                     instructions.push(
                         createCloseAccountInstruction(
@@ -192,7 +193,7 @@ async function closeTokenAccounts(
             //     TOKEN_PROGRAM_ID,
             //     ASSOCIATED_TOKEN_PROGRAM_ID
             // );
-            // const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
+            // const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount);
             // if (wsolAccountInfo) {
             //     instructions.push(
             //         createCloseAccountInstruction(

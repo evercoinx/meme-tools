@@ -109,10 +109,7 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
 
         let tokenBalance = new Decimal(0);
         try {
-            const tokenAccountBalance = await connection.getTokenAccountBalance(
-                tokenAccount,
-                "confirmed"
-            );
+            const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount);
             tokenBalance = new Decimal(tokenAccountBalance.value.amount.toString());
         } catch {
             // Ignore TokenAccountNotFoundError error
@@ -291,30 +288,26 @@ async function burnLpMint(
 ): Promise<Promise<TransactionSignature | undefined>> {
     const connection = connectionPool.next();
 
-    const lpMintAssociatedTokenAccount = getAssociatedTokenAddressSync(
+    const lpMintTokenAccount = getAssociatedTokenAddressSync(
         lpMint,
         dev.publicKey,
         false,
         TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
-    let lpMintBalance = new Decimal(0);
 
+    let lpMintBalance = new Decimal(0);
     try {
-        const lpMintTokenAccountBalance = await connection.getTokenAccountBalance(
-            lpMintAssociatedTokenAccount,
-            "confirmed"
-        );
-        lpMintBalance = new Decimal(lpMintTokenAccountBalance.value.amount);
+        const lpMintAccountBalance = await connection.getTokenAccountBalance(lpMintTokenAccount);
+        lpMintBalance = new Decimal(lpMintAccountBalance.value.amount);
     } catch {
         logger.warn(
             "LP mint ATA (%s) not exists for dev (%s)",
-            formatPublicKey(lpMintAssociatedTokenAccount),
+            formatPublicKey(lpMintTokenAccount),
             formatPublicKey(dev.publicKey)
         );
         return;
     }
-
     if (lpMintBalance.lte(0)) {
         logger.warn("Dev (%s) has 0 LP mint balance", formatPublicKey(dev.publicKey));
         return;
@@ -322,7 +315,7 @@ async function burnLpMint(
 
     const instructions = [
         createBurnInstruction(
-            lpMintAssociatedTokenAccount,
+            lpMintTokenAccount,
             lpMint,
             dev.publicKey,
             lpMintBalance.toNumber(),

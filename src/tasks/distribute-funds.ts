@@ -87,10 +87,10 @@ async function distributeFunds(
     for (const [i, account] of accounts.entries()) {
         let solBalance = ZERO_DECIMAL;
         try {
-            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+            solBalance = new Decimal(await connection.getBalance(account.publicKey));
         } catch {
             connection = connectionPool.next();
-            solBalance = new Decimal(await connection.getBalance(account.publicKey, "confirmed"));
+            solBalance = new Decimal(await connection.getBalance(account.publicKey));
         }
 
         if (solBalance.gte(lamports[i])) {
@@ -120,7 +120,7 @@ async function distributeFunds(
         //     ASSOCIATED_TOKEN_PROGRAM_ID
         // );
 
-        // const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount, "confirmed");
+        // const wsolAccountInfo = await connection.getAccountInfo(wsolTokenAccount);
         // if (wsolAccountInfo) {
         //     logger.warn(
         //         "WSOL ATA (%s) exists for %s (%s)",
