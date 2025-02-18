@@ -24,6 +24,7 @@ interface EnvironmentSchema {
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
     TRADER_SELL_AMOUNT_RANGE_PERCENT: [number, number];
     TRADER_SWAP_DELAY_RANGE_SEC: [number, number];
+    TRADER_SWAP_ATTEMPTS: number;
 }
 
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
@@ -162,6 +163,12 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(2)
                 .max(2)
                 .description("Trader swap delay range (in seconds)"),
+            TRADER_SWAP_ATTEMPTS: Joi.number()
+                .required()
+                .integer()
+                .min(1)
+                .max(100)
+                .description("Trader swap attempts"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 

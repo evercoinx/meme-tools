@@ -37,7 +37,7 @@ import {
     SwapperType,
 } from "../modules";
 
-const DUST_TOKEN_AMOUNT = new Decimal(500).mul(10 ** envVars.TOKEN_DECIMALS);
+const DUST_TOKEN_AMOUNT = new Decimal(100).mul(10 ** envVars.TOKEN_DECIMALS);
 
 (async () => {
     try {
