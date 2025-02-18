@@ -1,0 +1,204 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Close Raydium pool",
+            "program": "${workspaceFolder}/src/tasks/close-raydium-pool.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Collect funds",
+            "program": "${workspaceFolder}/src/tasks/collect-funds.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Create mint",
+            "program": "${workspaceFolder}/src/tasks/create-mint.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Distribute funds",
+            "program": "${workspaceFolder}/src/tasks/distribute-funds.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Get accounts",
+            "program": "${workspaceFolder}/src/tasks/get-accounts.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Get funds",
+            "program": "${workspaceFolder}/src/tasks/get-funds.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Get mint",
+            "program": "${workspaceFolder}/src/tasks/get-mint.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Get Raydium pool",
+            "program": "${workspaceFolder}/src/tasks/get-raydium-pool.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Open Raydium pool",
+            "program": "${workspaceFolder}/src/tasks/open-raydium-pool.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Trade Raydium pool",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        }
+    ]
+}
