@@ -41,8 +41,8 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
         const traderAmounts = new Array(envVars.TRADER_COUNT)
             .fill(0)
             .map(() =>
-                new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
-                    .mul(envVars.TRADER_BUY_AVERAGE)
+                new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
+                    .add(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
                     .add(envVars.TRADER_BALANCE_SOL)
                     .mul(LAMPORTS_PER_SOL)
             );

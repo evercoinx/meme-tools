@@ -22,7 +22,6 @@ interface EnvironmentSchema {
     TRADER_GROUP_SIZE: number;
     TRADER_BALANCE_SOL: number;
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
-    TRADER_BUY_AVERAGE: number;
     TRADER_SELL_AMOUNT_RANGE_PERCENT: [number, number];
     TRADER_SWAP_DELAY_RANGE_SEC: [number, number];
 }
@@ -149,12 +148,6 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(2)
                 .max(2)
                 .description("Trader buy amount range (in SOL)"),
-            TRADER_BUY_AVERAGE: Joi.number()
-                .required()
-                .integer()
-                .min(1)
-                .max(100)
-                .description("Trader buy average"),
             TRADER_SELL_AMOUNT_RANGE_PERCENT: Joi.array()
                 .required()
                 .items(Joi.number().min(1).max(100).custom(convertToPercent))

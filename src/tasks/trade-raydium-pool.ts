@@ -122,6 +122,32 @@ async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise
     return sendSwapSolToMintTransactions.length;
 }
 
+async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
+    const lamportsToBuy: (BN | null)[] = [];
+
+    for (const [i, trader] of traders.entries()) {
+        const solBalance = await getSolBalance(connectionPool, trader);
+        const buyAmount = new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL)).mul(
+            LAMPORTS_PER_SOL
+        );
+        const minSolBalance = new Decimal(envVars.TRADER_BALANCE_SOL).mul(LAMPORTS_PER_SOL);
+
+        if (solBalance.sub(buyAmount).lt(minSolBalance)) {
+            lamportsToBuy[i] = null;
+            logger.warn(
+                "Trader (%s) has insufficient balance on wallet: %s SOL",
+                formatPublicKey(trader.publicKey),
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
+            );
+            continue;
+        }
+
+        lamportsToBuy[i] = new BN(buyAmount.toFixed(0));
+    }
+
+    return lamportsToBuy;
+}
+
 async function dumpPool(
     poolInfo: CpmmPoolInfo,
     traderGroup: Keypair[],
@@ -155,35 +181,6 @@ async function dumpPool(
     });
 
     return sendSwapMintToSolTransactions.length;
-}
-
-async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
-    const lamportsToSwap: (BN | null)[] = [];
-
-    for (const [i, trader] of traders.entries()) {
-        const solBalance = await getSolBalance(connectionPool, trader);
-
-        const buyAmount = new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL));
-        const expectedSolBalance = new Decimal(envVars.TRADER_BALANCE_SOL)
-            .add(buyAmount)
-            .mul(LAMPORTS_PER_SOL);
-
-        const residualSolBalance = solBalance.sub(expectedSolBalance);
-        if (residualSolBalance.lte(0)) {
-            lamportsToSwap[i] = null;
-            logger.warn(
-                "Trader (%s) has insufficient balance on wallet: %s SOL. Expected: %s SOL",
-                formatPublicKey(trader.publicKey),
-                formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-                formatDecimal(expectedSolBalance.div(LAMPORTS_PER_SOL))
-            );
-            continue;
-        }
-
-        lamportsToSwap[i] = new BN(buyAmount.mul(LAMPORTS_PER_SOL).toFixed(0));
-    }
-
-    return lamportsToSwap;
 }
 
 async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN | null)[]> {

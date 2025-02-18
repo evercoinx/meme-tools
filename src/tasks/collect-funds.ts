@@ -160,7 +160,7 @@ async function closeTokenAccounts(
                         formatPublicKey(dev.publicKey),
                         formatPublicKey(lpMintTokenAccount)
                     );
-                } else if (lpMintTokenBalance.eq(0)) {
+                } else if (lpMintTokenBalance.lte(0)) {
                     instructions.push(
                         createCloseAccountInstruction(
                             lpMintTokenAccount,
