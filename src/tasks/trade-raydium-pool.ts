@@ -10,7 +10,12 @@ import {
 } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
-import { generateRandomFloat, generateRandomInteger, shuffle } from "../helpers/random";
+import {
+    generateRandomBoolean,
+    generateRandomFloat,
+    generateRandomInteger,
+    shuffle,
+} from "../helpers/random";
 import {
     connectionPool,
     envVars,
@@ -29,6 +34,8 @@ import {
     swapMintToSol,
     swapSolToMint,
 } from "../modules/raydium";
+
+const SEPARATOR = "=".repeat(80);
 
 (async () => {
     try {
@@ -49,39 +56,23 @@ import {
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const traders = shuffle(importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader));
-
         const poolInfo = await loadRaydiumPoolInfo(
             connectionPool.current(),
             new PublicKey(raydiumPoolId),
             mint
         );
 
-        for (let i = 0; i < traders.length; i += envVars.TRADER_GROUP_SIZE) {
-            const traderGroup = traders.slice(i, i + envVars.TRADER_GROUP_SIZE);
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
-            switch (envVars.POOL_TRADING_MODE) {
-                case "volume": {
-                    const buyTransactionCount = await pumpPool(poolInfo, traderGroup);
-                    if (buyTransactionCount > 0) {
-                        await dumpPool(poolInfo, shuffle(traderGroup), mint);
-                    }
-                    break;
-                }
-                case "pump": {
-                    await pumpPool(poolInfo, traderGroup);
-                    break;
-                }
-                case "dump": {
-                    await dumpPool(poolInfo, traderGroup, mint);
-                    break;
-                }
-                default: {
-                    throw new Error(`Unknown trading mode: ${envVars.POOL_TRADING_MODE}`);
-                }
-            }
-
-            logger.info("-".repeat(80));
+        for (let i = 0; i < envVars.POOL_TRADING_CYCLE_COUNT; i++) {
+            logger.info("%s\n\t\tTrading cycle #%d\n%s", SEPARATOR, i, SEPARATOR);
+            await executeTradeCycle(
+                poolInfo,
+                shuffle(traders),
+                mint,
+                envVars.POOL_TRADING_MODE,
+                envVars.TRADER_GROUP_SIZE
+            );
         }
 
         process.exit(0);
@@ -91,7 +82,43 @@ import {
     }
 })();
 
-async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise<number> {
+async function executeTradeCycle(
+    poolInfo: CpmmPoolInfo,
+    traders: Keypair[],
+    mint: Keypair,
+    tradingMode: "volume" | "pump" | "dump",
+    traderGroupSize: number
+): Promise<void> {
+    for (let i = 0; i < traders.length; i += traderGroupSize) {
+        const traderGroup = shuffle(traders.slice(i, i + traderGroupSize));
+
+        switch (tradingMode) {
+            case "volume": {
+                if (i === 0 || generateRandomBoolean()) {
+                    await pumpPool(poolInfo, traderGroup);
+                } else {
+                    await dumpPool(poolInfo, traderGroup, mint);
+                }
+                break;
+            }
+            case "pump": {
+                await pumpPool(poolInfo, traderGroup);
+                break;
+            }
+            case "dump": {
+                await dumpPool(poolInfo, traderGroup, mint);
+                break;
+            }
+            default: {
+                throw new Error(`Unknown trading mode: ${envVars.POOL_TRADING_MODE}`);
+            }
+        }
+
+        logger.info(SEPARATOR);
+    }
+}
+
+async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise<void> {
     const lamportsToBuy = await findLamportsToBuy(traderGroup);
     const sendSwapSolToMintTransactions = await swapSolToMint(
         connectionPool,
@@ -103,8 +130,8 @@ async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise
         "Low"
     );
     if (sendSwapSolToMintTransactions.length === 0) {
-        logger.warn("No buy transactions found. Skipping");
-        return 0;
+        logger.debug("No buy transactions found. Skipping");
+        return;
     }
 
     await Promise.all(sendSwapSolToMintTransactions);
@@ -118,8 +145,6 @@ async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise
         );
         setTimeout(resolve, delay);
     });
-
-    return sendSwapSolToMintTransactions.length;
 }
 
 async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
@@ -152,7 +177,7 @@ async function dumpPool(
     poolInfo: CpmmPoolInfo,
     traderGroup: Keypair[],
     mint: Keypair
-): Promise<number> {
+): Promise<void> {
     const unitsToSell = await findUnitsToSell(traderGroup, mint);
     const sendSwapMintToSolTransactions = await swapMintToSol(
         connectionPool,
@@ -164,8 +189,8 @@ async function dumpPool(
         "Low"
     );
     if (sendSwapMintToSolTransactions.length === 0) {
-        logger.warn("No sell transactions found. Skipping");
-        return 0;
+        logger.debug("No sell transactions found. Skipping");
+        return;
     }
 
     await Promise.all(sendSwapMintToSolTransactions);
@@ -179,8 +204,6 @@ async function dumpPool(
         );
         setTimeout(resolve, delay);
     });
-
-    return sendSwapMintToSolTransactions.length;
 }
 
 async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN | null)[]> {

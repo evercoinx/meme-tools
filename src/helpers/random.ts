@@ -9,6 +9,10 @@ export function generateRandomInteger(range: [number, number]): number {
     return randomInt(range[0], range[1]);
 }
 
+export function generateRandomBoolean(): boolean {
+    return Boolean(generateRandomInteger([0, 1]));
+}
+
 export function shuffle<T>(array: T[]): T[] {
     return array
         .map((value) => ({ value, sort: randomBytes(4).readUInt32LE(0) }))

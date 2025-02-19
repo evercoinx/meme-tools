@@ -16,6 +16,7 @@ interface EnvironmentSchema {
     POOL_SIZE_PERCENT: number;
     POOL_LIQUIDITY_SOL: number;
     POOL_TRADING_MODE: "volume" | "pump" | "dump";
+    POOL_TRADING_CYCLE_COUNT: number;
     SNIPER_SHARE_POOL_PERCENTS: number[];
     SNIPER_BALANCE_SOL: number;
     TRADER_COUNT: number;
@@ -112,6 +113,13 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .valid("volume", "pump", "dump")
                 .default("volume")
                 .description("Pool trading mode"),
+            POOL_TRADING_CYCLE_COUNT: Joi.number()
+                .optional()
+                .integer()
+                .min(2)
+                .max(100)
+                .default(2)
+                .description("Pool trading cycle count"),
             SNIPER_SHARE_POOL_PERCENTS: Joi.array()
                 .required()
                 .items(Joi.number().min(0.5).max(3).custom(convertToPercent))
@@ -164,10 +172,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(2)
                 .description("Trader swap delay range (in seconds)"),
             TRADER_SWAP_ATTEMPTS: Joi.number()
-                .required()
+                .optional()
                 .integer()
-                .min(1)
+                .min(2)
                 .max(100)
+                .default(2)
                 .description("Trader swap attempts"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
