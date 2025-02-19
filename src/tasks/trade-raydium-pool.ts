@@ -65,13 +65,14 @@ const SEPARATOR = "=".repeat(80);
         const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
         for (let i = 0; i < envVars.POOL_TRADING_CYCLE_COUNT; i++) {
-            logger.info("%s\n\t\tTrading cycle #%d\n%s", SEPARATOR, i, SEPARATOR);
+            logger.info("\n%s\nTrading cycle #%d\n%s", SEPARATOR, i, SEPARATOR);
             await executeTradeCycle(
                 poolInfo,
                 shuffle(traders),
                 mint,
                 envVars.POOL_TRADING_MODE,
-                envVars.TRADER_GROUP_SIZE
+                envVars.TRADER_GROUP_SIZE,
+                i
             );
         }
 
@@ -87,14 +88,15 @@ async function executeTradeCycle(
     traders: Keypair[],
     mint: Keypair,
     tradingMode: "volume" | "pump" | "dump",
-    traderGroupSize: number
+    traderGroupSize: number,
+    currentTradingCycle: number
 ): Promise<void> {
     for (let i = 0; i < traders.length; i += traderGroupSize) {
         const traderGroup = shuffle(traders.slice(i, i + traderGroupSize));
 
         switch (tradingMode) {
             case "volume": {
-                if (i === 0 || generateRandomBoolean()) {
+                if (currentTradingCycle === 0 || generateRandomBoolean()) {
                     await pumpPool(poolInfo, traderGroup);
                 } else {
                     await dumpPool(poolInfo, traderGroup, mint);
@@ -114,7 +116,9 @@ async function executeTradeCycle(
             }
         }
 
-        logger.info(SEPARATOR);
+        if (i !== traders.length - 1) {
+            logger.info(SEPARATOR);
+        }
     }
 }
 

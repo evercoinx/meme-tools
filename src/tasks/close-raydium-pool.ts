@@ -71,7 +71,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             traders,
             traderUnitsToSell,
             SLIPPAGE,
-            "Default",
+            "High",
             { skipPreflight: true }
         );
         await Promise.all(sendTraderSwapMintToSolTransactions);

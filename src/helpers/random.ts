@@ -6,7 +6,7 @@ export function generateRandomFloat(range: [number, number]): number {
 }
 
 export function generateRandomInteger(range: [number, number]): number {
-    return randomInt(range[0], range[1]);
+    return randomInt(range[0], range[1] + 1);
 }
 
 export function generateRandomBoolean(): boolean {

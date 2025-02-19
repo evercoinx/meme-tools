@@ -216,7 +216,7 @@ export async function swapMintToSol(
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintB.address;
 
     for (const [i, account] of accounts.entries()) {
-        if (unitsToSwap[i] === null || account === null) {
+        if (account === null || unitsToSwap[i] === null) {
             continue;
         }
 
