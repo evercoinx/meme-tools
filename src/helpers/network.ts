@@ -46,10 +46,16 @@ const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
 const TRANSACTION_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_COMPUTE_UNIT_LIMIT = 220_000;
 
-class ExpiredTransactionError extends Error {
+type InstructionError = [number, InstructionErrorDetails];
+
+interface InstructionErrorDetails {
+    Custom: number;
+}
+
+class ReplayedTransactionError extends Error {
     constructor(message: string) {
         super(message);
-        this.name = "ExpiredTransactionError";
+        this.name = "ReplayedTransactionError";
     }
 }
 
@@ -224,10 +230,11 @@ export async function sendAndConfirmVersionedTransaction(
 
             return await pollTransactionConfirmation(connection, signature);
         } catch (error: unknown) {
-            if (error instanceof ExpiredTransactionError) {
+            if (error instanceof ReplayedTransactionError) {
                 logger.error(
-                    "Expired transaction (%s) resent",
-                    signature ? formatSignature(signature) : "?"
+                    "Transaction (%s) replayed: %s",
+                    signature ? formatSignature(signature) : "?",
+                    error.message
                 );
                 continue;
             }
@@ -250,8 +257,8 @@ async function pollTransactionConfirmation(
             if (elapsed >= TRANSACTION_POLL_TIMEOUT_MS) {
                 clearInterval(intervalId);
                 reject(
-                    new ExpiredTransactionError(
-                        `Transaction (${formatSignature(signature)}) expired`
+                    new ReplayedTransactionError(
+                        `Transaction (${formatSignature(signature)}) timed out`
                     )
                 );
             }
@@ -260,41 +267,53 @@ async function pollTransactionConfirmation(
             const result = status?.value[0];
             if (result?.err) {
                 clearInterval(intervalId);
-                reject(
-                    new FailedTransactionError(
-                        `Transaction (${formatSignature(signature)}) failed. Reason: ${serializeRpcError(result.err)}`
-                    )
-                );
+
+                const errorDetails = parseRpcError(result.err);
+                if (errorDetails !== null && errorDetails.Custom === 6_000) {
+                    reject(
+                        new ReplayedTransactionError(
+                            `Transaction (${formatSignature(signature)}) failed. Reason: Insufficient pool liquidity or invalid swap`
+                        )
+                    );
+                } else {
+                    reject(
+                        new FailedTransactionError(
+                            `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature)}. Reason: ${formatRpcError(result.err)}`
+                        )
+                    );
+                }
             } else if (result?.confirmationStatus === "confirmed") {
                 clearInterval(intervalId);
+
                 logger.info(
                     "Transaction (%s) confirmed: %s",
                     formatSignature(signature),
                     explorer.generateTransactionUri(signature)
                 );
-
                 resolve(signature);
             }
         }, TRANSACTION_POLL_INTERVAL_MS);
     });
 }
 
-function serializeRpcError(error: TransactionError | null): string {
-    if (error == null) {
+function parseRpcError(error: TransactionError | null): InstructionErrorDetails | null {
+    if (typeof error === "object" && error !== null && "InstructionError" in error) {
+        const [, errorDetails] = error.InstructionError as InstructionError;
+        return errorDetails;
+    }
+
+    return null;
+}
+
+function formatRpcError(error: TransactionError | null): string {
+    if (error === null) {
         return "Unknown error";
     }
 
     if (typeof error === "object") {
         if ("InstructionError" in error) {
-            const [instructionIndex, errorDetails] = error.InstructionError as [
-                number,
-                { Custom?: number },
-            ];
-            return `Error processing Instruction ${instructionIndex}. Details: ${
-                typeof errorDetails === "object" && errorDetails !== null
-                    ? JSON.stringify(errorDetails)
-                    : errorDetails
-            }`;
+            const [instructionIndex, errorDetails] = error.InstructionError as InstructionError;
+            return `Error processing Instruction ${instructionIndex}. Details: ${JSON.stringify(errorDetails)}`;
         }
 
         try {
