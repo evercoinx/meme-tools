@@ -9,7 +9,7 @@ import {
     importSwapperKeypairs,
 } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
-import { formatDecimal } from "../helpers/format";
+import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     connectionPool,
     envVars,
@@ -71,9 +71,9 @@ async function getFunds(
         }
 
         const logParams = [
-            account.publicKey.toBase58(),
+            formatPublicKey(account.publicKey, "long"),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            mintTokenAccount ? mintTokenAccount.toBase58() : UNKNOWN_KEY,
+            mintTokenAccount ? formatPublicKey(mintTokenAccount, "long") : UNKNOWN_KEY,
             mintTokenBalance
                 ? formatDecimal(
                       mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
@@ -100,7 +100,7 @@ async function getFunds(
             logger.info(
                 "Dev funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s\n",
                 ...logParams,
-                lpMintTokenAccount ? lpMintTokenAccount.toBase58() : UNKNOWN_KEY,
+                lpMintTokenAccount ? formatPublicKey(lpMintTokenAccount, "long") : UNKNOWN_KEY,
                 lpMintTokenBalance
                     ? formatDecimal(
                           lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),

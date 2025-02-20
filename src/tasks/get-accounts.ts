@@ -2,6 +2,7 @@ import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
+import { formatPublicKey } from "../helpers/format";
 import { envVars, logger, storage, SwapperType, UNKNOWN_KEY } from "../modules";
 
 (async () => {
@@ -38,19 +39,19 @@ function getAccounts(
 ): void {
     logger.info(
         "Dev keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
-        dev.publicKey.toBase58(),
+        formatPublicKey(dev.publicKey, "long"),
         bs58.encode(dev.secretKey)
     );
 
     logger.info(
         "Distributor keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
-        distributor.publicKey.toBase58(),
+        formatPublicKey(distributor.publicKey, "long"),
         bs58.encode(distributor.secretKey)
     );
 
     logger.info(
         "Mint keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
-        mint ? mint.publicKey.toBase58() : UNKNOWN_KEY,
+        mint ? formatPublicKey(mint.publicKey, "long") : UNKNOWN_KEY,
         mint ? bs58.encode(mint.secretKey) : UNKNOWN_KEY
     );
 
@@ -58,7 +59,7 @@ function getAccounts(
         logger.info(
             "Sniper #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
             i,
-            sniper.publicKey.toBase58(),
+            formatPublicKey(sniper.publicKey, "long"),
             bs58.encode(sniper.secretKey)
         );
     }
@@ -67,7 +68,7 @@ function getAccounts(
         logger.info(
             "Trader #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
             i,
-            trader.publicKey.toBase58(),
+            formatPublicKey(trader.publicKey, "long"),
             bs58.encode(trader.secretKey)
         );
     }

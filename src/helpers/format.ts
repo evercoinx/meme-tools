@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
+import pc from "picocolors";
 
 type NumberLike = number | bigint | Decimal | BN;
 
@@ -17,11 +18,13 @@ export function formatCurrency(value: NumberLike): string {
         value = BigInt(value.toString(10));
     }
 
-    return new Intl.NumberFormat(LOCALE, {
-        style: "currency",
-        currency: "USD",
-        roundingMode: "trunc",
-    }).format(value);
+    return pc.green(
+        new Intl.NumberFormat(LOCALE, {
+            style: "currency",
+            currency: "USD",
+            roundingMode: "trunc",
+        }).format(value)
+    );
 }
 
 export function formatDate(value: Date | number): string {
@@ -29,11 +32,13 @@ export function formatDate(value: Date | number): string {
         value = new Date(value * 1e3);
     }
 
-    return new Intl.DateTimeFormat(LOCALE, {
-        dateStyle: "full",
-        timeStyle: "long",
-        timeZone: "UTC",
-    }).format(value);
+    return pc.yellow(
+        new Intl.DateTimeFormat(LOCALE, {
+            dateStyle: "full",
+            timeStyle: "long",
+            timeZone: "UTC",
+        }).format(value)
+    );
 }
 
 export function formatDecimal(value: NumberLike, decimalPlaces = 9): string {
@@ -43,11 +48,13 @@ export function formatDecimal(value: NumberLike, decimalPlaces = 9): string {
         value = BigInt(value.toString(10));
     }
 
-    return new Intl.NumberFormat(LOCALE, {
-        style: "decimal",
-        maximumFractionDigits: decimalPlaces,
-        roundingMode: "trunc",
-    }).format(value);
+    return pc.green(
+        new Intl.NumberFormat(LOCALE, {
+            style: "decimal",
+            maximumFractionDigits: decimalPlaces,
+            roundingMode: "trunc",
+        }).format(value)
+    );
 }
 
 export function formatPercent(value: NumberLike): string {
@@ -57,17 +64,28 @@ export function formatPercent(value: NumberLike): string {
         value = BigInt(value.toString(10));
     }
 
-    return new Intl.NumberFormat(LOCALE, {
-        style: "percent",
-        minimumFractionDigits: 2,
-    }).format(value);
+    return pc.green(
+        new Intl.NumberFormat(LOCALE, {
+            style: "percent",
+            minimumFractionDigits: 2,
+        }).format(value)
+    );
 }
 
-export function formatPublicKey(publicKey: string | PublicKey, length = 4): string {
+export function formatPublicKey(
+    publicKey: string | PublicKey,
+    format: "short" | "long" = "short"
+): string {
     const publicKeyStr = typeof publicKey === "string" ? publicKey : publicKey.toBase58();
-    return `${publicKeyStr.slice(0, length)}...${publicKeyStr.slice(-length)}`;
+    return pc.magenta(
+        format === "short"
+            ? `${publicKeyStr.slice(0, 4)}...${publicKeyStr.slice(-4)}`
+            : publicKeyStr
+    );
 }
 
-export function formatSignature(signature: string, length = 8): string {
-    return `${signature.slice(0, length)}...${signature.slice(-length)}`;
+export function formatSignature(signature: string, format: "short" | "long" = "short"): string {
+    return pc.yellow(
+        format === "short" ? `${signature.slice(0, 8)}...${signature.slice(-8)}` : signature
+    );
 }

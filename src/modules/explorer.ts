@@ -1,3 +1,5 @@
+import pc from "picocolors";
+
 export class Explorer {
     private readonly baseUri;
     private readonly cluster;
@@ -8,10 +10,10 @@ export class Explorer {
     }
 
     generateTransactionUri(signature: string): string {
-        return `${this.baseUri}/tx/${signature}?cluster=${this.cluster}-alpha`;
+        return pc.blue(`${this.baseUri}/tx/${signature}?cluster=${this.cluster}-alpha`);
     }
 
     generateAddressUri(address: string): string {
-        return `${this.baseUri}/address/${address}?cluster=${this.cluster}-alpha`;
+        return pc.blue(`${this.baseUri}/address/${address}?cluster=${this.cluster}-alpha`);
     }
 }

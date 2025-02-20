@@ -1,7 +1,14 @@
 import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
+import pc from "picocolors";
 import { checkIfStorageExists } from "../helpers/filesystem";
-import { formatCurrency, formatDate, formatDecimal, formatPercent } from "../helpers/format";
+import {
+    formatCurrency,
+    formatDate,
+    formatDecimal,
+    formatPercent,
+    formatPublicKey,
+} from "../helpers/format";
 import {
     connectionPool,
     envVars,
@@ -82,15 +89,16 @@ async function getPool(raydiumPoolId: string): Promise<void> {
     }
 
     logger.info(
-        "Raydium pool (%s)\n\t\tPool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\tPool type: %s\n\t\tPrice: 1 %s ≈ %s %s\n\t\tFee tier: %s\n\t\tOpen time: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s",
+        "Raydium pool (%s)\n\t\tPool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\tPool type: %s\n\t\tPrice: %s %s ≈ %s %s\n\t\tFee tier: %s\n\t\tOpen time: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s",
         raydium.cluster,
-        id,
+        formatPublicKey(id, "long"),
         mintA.symbol,
-        mintA.address,
+        formatPublicKey(mintA.address, "long"),
         mintB.symbol,
-        mintB.address,
-        lpMint.address,
-        type,
+        formatPublicKey(mintB.address, "long"),
+        formatPublicKey(lpMint.address, "long"),
+        pc.yellow(type),
+        formatDecimal(1, 0),
         ...(NATIVE_MINT.toBase58() === mintA.address
             ? [mintA.symbol, formatDecimal(price, mintA.decimals), mintB.symbol]
             : [mintB.symbol, formatDecimal(price, mintB.decimals), mintA.symbol]),

@@ -2,6 +2,7 @@ import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
+import pc from "picocolors";
 import {
     getSolBalance,
     getTokenAccountInfo,
@@ -35,7 +36,7 @@ import {
     swapSolToMint,
 } from "../modules/raydium";
 
-const SEPARATOR = "=".repeat(80);
+const SEPARATOR = pc.gray("=".repeat(80));
 
 (async () => {
     try {
@@ -77,8 +78,9 @@ const SEPARATOR = "=".repeat(80);
         }
 
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.fatal(pc.red(errorMessage));
         process.exit(1);
     }
 })();
@@ -143,8 +145,8 @@ async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise
     await new Promise((resolve) => {
         const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
         logger.info(
-            "%d buy transaction(s) executed. Pausing: %d sec",
-            sendSwapSolToMintTransactions.length,
+            "%s buy transaction(s) executed. Pausing: %s sec",
+            formatDecimal(sendSwapSolToMintTransactions.length, 0),
             formatDecimal(delay / 1_000, 3)
         );
         setTimeout(resolve, delay);
@@ -202,8 +204,8 @@ async function dumpPool(
     await new Promise((resolve) => {
         const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
         logger.info(
-            "%d sell transaction(s) executed. Pausing: %d sec",
-            sendSwapMintToSolTransactions.length,
+            "%s sell transaction(s) executed. Pausing: %s sec",
+            formatDecimal(sendSwapMintToSolTransactions.length, 0),
             formatDecimal(delay / 1_000, 3)
         );
         setTimeout(resolve, delay);

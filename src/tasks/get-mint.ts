@@ -1,9 +1,10 @@
 import { getMint as getMintInfo, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";
+import pc from "picocolors";
 import { importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
-import { formatDecimal } from "../helpers/format";
+import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { CLUSTER, connectionPool, envVars, logger, storage } from "../modules";
 
 (async () => {
@@ -34,13 +35,13 @@ async function getMint(mint: Keypair): Promise<void> {
     const supply = new Decimal(mintInfo.supply.toString(10)).div(10 ** mintInfo.decimals);
 
     logger.info(
-        "Mint (%s)\n\t\tAddress: %s\n\t\tSymbol: %s\n\t\tDecimals: %d\n\t\tSupply: %s\n\t\tMint authority: %s\n\t\tFreeze authority: %s",
+        "Mint (%s)\n\t\tAddress: %s\n\t\tSymbol: %s\n\t\tDecimals: %s\n\t\tSupply: %s\n\t\tMint authority: %s\n\t\tFreeze authority: %s",
         CLUSTER,
-        mintInfo.address,
-        envVars.TOKEN_SYMBOL,
-        mintInfo.decimals,
+        formatPublicKey(mintInfo.address, "long"),
+        pc.yellow(envVars.TOKEN_SYMBOL),
+        formatDecimal(mintInfo.decimals, 0),
         formatDecimal(supply, mintInfo.decimals),
-        mintInfo.mintAuthority ? mintInfo.mintAuthority.toBase58() : "n/a",
-        mintInfo.freezeAuthority ? mintInfo.freezeAuthority.toBase58() : "n/a"
+        mintInfo.mintAuthority ? formatPublicKey(mintInfo.mintAuthority, "long") : pc.red("n/a"),
+        mintInfo.freezeAuthority ? formatPublicKey(mintInfo.freezeAuthority, "long") : pc.red("n/a")
     );
 }
