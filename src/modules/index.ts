@@ -41,7 +41,7 @@ export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
-export const logger = createLogger(envVars.LOG_LEVEL);
+export const logger = createLogger(envVars.LOG_LEVEL, envVars.TOKEN_SYMBOL);
 export const connectionPool = new Pool(
     envVars.RPC_URIS.map(
         (rpcUri) =>

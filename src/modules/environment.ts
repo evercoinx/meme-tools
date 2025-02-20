@@ -2,7 +2,7 @@ import Decimal from "decimal.js";
 import Joi from "joi";
 
 interface EnvironmentSchema {
-    LOG_LEVEL: "debug" | "info" | "warn" | "error" | "fatal";
+    LOG_LEVEL: "silent" | "trace" | "debug" | "info" | "warn" | "error" | "fatal";
     PINATA_JWT: string;
     IPFS_GATEWAY: string;
     RPC_URIS: string[];
@@ -40,8 +40,9 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             LOG_LEVEL: Joi.string()
                 .optional()
                 .trim()
-                .valid("debug", "info", "warn", "error", "fatal")
-                .default("info"),
+                .valid("silent", "trace", "debug", "info", "warn", "error", "fatal")
+                .default("info")
+                .description("Log level"),
             PINATA_JWT: Joi.string()
                 .required()
                 .trim()
