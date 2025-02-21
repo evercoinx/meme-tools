@@ -22,7 +22,7 @@ interface LogEntry {
         try {
             await access(dirPath);
         } catch {
-            throw new Error(`Log ${envVars.LOGGER_NAME} not exists`);
+            throw new Error(`Logs for task '${envVars.LOGGER_NAME}' not found`);
         }
 
         const fileNames = await readdir(dirPath, "utf8");

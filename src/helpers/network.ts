@@ -22,6 +22,7 @@ import {
 import axios, { AxiosResponse } from "axios";
 import bs58 from "bs58";
 import Decimal from "decimal.js";
+import { formatDecimal, formatSignature } from "./format";
 import {
     CLUSTER,
     explorer,
@@ -35,7 +36,6 @@ import {
     HeliusClient,
     PriorityLevel,
 } from "../modules/helius";
-import { formatSignature } from "./format";
 
 export interface TransactionOptions {
     skipPreflight?: boolean;
@@ -52,17 +52,17 @@ interface InstructionErrorDetails {
     Custom: number;
 }
 
-class ReplayedTransactionError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "ReplayedTransactionError";
-    }
-}
-
 class FailedTransactionError extends Error {
     constructor(message: string) {
         super(message);
         this.name = "FailedTransactionError";
+    }
+}
+
+class ResentTransactionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "ResentTransactionError";
     }
 }
 
@@ -230,9 +230,9 @@ export async function sendAndConfirmVersionedTransaction(
 
             return await pollTransactionConfirmation(connection, signature);
         } catch (error: unknown) {
-            if (error instanceof ReplayedTransactionError) {
+            if (error instanceof ResentTransactionError) {
                 logger.error(
-                    "Transaction (%s) replayed: %s",
+                    "Transaction (%s) resent: %s",
                     signature ? formatSignature(signature) : "?",
                     error.message
                 );
@@ -257,8 +257,8 @@ async function pollTransactionConfirmation(
             if (elapsed >= TRANSACTION_POLL_TIMEOUT_MS) {
                 clearInterval(intervalId);
                 reject(
-                    new ReplayedTransactionError(
-                        `Transaction (${formatSignature(signature)}) timed out`
+                    new ResentTransactionError(
+                        `Transaction (${formatSignature(signature)}) timed out after ${formatDecimal(elapsed / 1_000, 3)} sec`
                     )
                 );
             }
@@ -269,10 +269,10 @@ async function pollTransactionConfirmation(
                 clearInterval(intervalId);
 
                 const errorDetails = parseRpcError(result.err);
-                if (errorDetails !== null && errorDetails.Custom === 6_000) {
+                if (errorDetails !== null && errorDetails.Custom === 2_012) {
                     reject(
-                        new ReplayedTransactionError(
-                            `Transaction (${formatSignature(signature)}) failed. Reason: Insufficient pool liquidity or invalid swap`
+                        new ResentTransactionError(
+                            `Transaction (${formatSignature(signature)}) failed. Reason: Address constraint violated (${errorDetails.Custom})`
                         )
                     );
                 } else {

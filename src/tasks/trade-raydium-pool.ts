@@ -10,7 +10,7 @@ import {
     importSwapperKeypairs,
 } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
-import { formatDecimal, formatPublicKey } from "../helpers/format";
+import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     generateRandomBoolean,
     generateRandomFloat,
@@ -66,10 +66,10 @@ import {
 
         for (let i = 0; i < envVars.POOL_TRADING_CYCLE_COUNT; i++) {
             logger.info(
-                "\n%s\nTrading cycle #%d. Mode: %s\n%s",
+                "\n%s\nTrading cycle #%d (%s mode)\n%s",
                 OUTPUT_SEPARATOR,
                 i,
-                envVars.POOL_TRADING_MODE,
+                capitalize(envVars.POOL_TRADING_MODE),
                 OUTPUT_SEPARATOR
             );
             await executeTradeCycle(

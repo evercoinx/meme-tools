@@ -7,7 +7,7 @@ export async function checkIfStorageExists(name: string): Promise<void> {
     try {
         await access(join(STORAGE_DIR, name));
     } catch {
-        throw new Error(`Storage ${name} not exists`);
+        throw new Error(`Storage '${name}' not exists`);
     }
 }
 
