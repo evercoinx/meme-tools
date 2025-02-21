@@ -1,4 +1,5 @@
 import "source-map-support/register";
+import { join, parse } from "node:path";
 import dotenv from "dotenv";
 import { Connection } from "@solana/web3.js";
 import BN from "bn.js";
@@ -20,9 +21,10 @@ export enum SwapperType {
 }
 
 const cwd = process.cwd();
-export const IMAGE_DIR = `${cwd}/input/images`;
-export const METADATA_DIR = `${cwd}/input/metadata`;
-export const STORAGE_DIR = `${cwd}/storage`;
+export const IMAGE_DIR = join(cwd, "input", "images");
+export const METADATA_DIR = join(cwd, "input", "metadata");
+export const LOG_DIR = join(cwd, "logs");
+export const STORAGE_DIR = join(cwd, "storage");
 
 export const STORAGE_MINT_IMAGE_URI = "mint_image_uri";
 export const STORAGE_MINT_METADATA = "mint_metadata";
@@ -41,7 +43,12 @@ export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
-export const logger = createLogger(envVars.LOG_LEVEL, envVars.TOKEN_SYMBOL);
+export const logger = createLogger(
+    envVars.TOKEN_SYMBOL,
+    process.argv.length > 1 ? parse(process.argv[1]).name : "",
+    envVars.LOG_LEVEL,
+    LOG_DIR
+);
 export const connectionPool = new Pool(
     envVars.RPC_URIS.map(
         (rpcUri) =>
@@ -59,7 +66,7 @@ export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_
 
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
 export const explorer = new Explorer(envVars.EXPLORER_URI, CLUSTER);
-export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
+export const storage = createStorage(envVars.TOKEN_SYMBOL, STORAGE_DIR);
 
 function getCluster(rpcUris: string[]): "devnet" | "mainnet-beta" {
     const counters = {
