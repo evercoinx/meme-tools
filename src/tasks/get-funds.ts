@@ -14,11 +14,11 @@ import {
     connectionPool,
     envVars,
     logger,
+    OUTPUT_UNKNOWN_KEY,
     RAYDIUM_LP_MINT_DECIMALS,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
-    UNKNOWN_KEY,
 } from "../modules";
 
 (async () => {
@@ -73,7 +73,7 @@ async function getFunds(
         const logParams = [
             formatPublicKey(account.publicKey, "long"),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            mintTokenAccount ? formatPublicKey(mintTokenAccount, "long") : UNKNOWN_KEY,
+            mintTokenAccount ? formatPublicKey(mintTokenAccount, "long") : OUTPUT_UNKNOWN_KEY,
             mintTokenBalance
                 ? formatDecimal(
                       mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
@@ -100,7 +100,9 @@ async function getFunds(
             logger.info(
                 "Dev funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n\t\t%s - %s LP-%s\n",
                 ...logParams,
-                lpMintTokenAccount ? formatPublicKey(lpMintTokenAccount, "long") : UNKNOWN_KEY,
+                lpMintTokenAccount
+                    ? formatPublicKey(lpMintTokenAccount, "long")
+                    : OUTPUT_UNKNOWN_KEY,
                 lpMintTokenBalance
                     ? formatDecimal(
                           lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),

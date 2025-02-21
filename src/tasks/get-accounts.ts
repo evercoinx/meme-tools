@@ -3,7 +3,7 @@ import bs58 from "bs58";
 import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
-import { envVars, logger, storage, SwapperType, UNKNOWN_KEY } from "../modules";
+import { envVars, logger, OUTPUT_UNKNOWN_KEY, storage, SwapperType } from "../modules";
 
 (async () => {
     try {
@@ -51,8 +51,8 @@ function getAccounts(
 
     logger.info(
         "Mint keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
-        mint ? formatPublicKey(mint.publicKey, "long") : UNKNOWN_KEY,
-        mint ? bs58.encode(mint.secretKey) : UNKNOWN_KEY
+        mint ? formatPublicKey(mint.publicKey, "long") : OUTPUT_UNKNOWN_KEY,
+        mint ? bs58.encode(mint.secretKey) : OUTPUT_UNKNOWN_KEY
     );
 
     for (const [i, sniper] of snipers.entries()) {

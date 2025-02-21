@@ -35,10 +35,10 @@ import {
     envVars,
     heliusClientPool,
     logger,
-    SLIPPAGE,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
+    SWAP_SLIPPAGE,
     SwapperType,
 } from "../modules";
 import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from "../modules/raydium";
@@ -77,7 +77,7 @@ import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from ".
             poolInfo,
             snipersToBuy,
             lamportsToBuy,
-            SLIPPAGE,
+            SWAP_SLIPPAGE,
             "VeryHigh",
             { skipPreflight: true }
         );

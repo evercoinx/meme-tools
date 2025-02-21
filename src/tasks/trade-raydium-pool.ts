@@ -22,10 +22,11 @@ import {
     envVars,
     heliusClientPool,
     logger,
-    SLIPPAGE,
+    OUTPUT_SEPARATOR,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
+    SWAP_SLIPPAGE,
     SwapperType,
     ZERO_DECIMAL,
 } from "../modules";
@@ -35,8 +36,6 @@ import {
     swapMintToSol,
     swapSolToMint,
 } from "../modules/raydium";
-
-const SEPARATOR = pc.gray("=".repeat(80));
 
 (async () => {
     try {
@@ -68,10 +67,10 @@ const SEPARATOR = pc.gray("=".repeat(80));
         for (let i = 0; i < envVars.POOL_TRADING_CYCLE_COUNT; i++) {
             logger.info(
                 "\n%s\nTrading cycle #%d. Mode: %s\n%s",
-                SEPARATOR,
+                OUTPUT_SEPARATOR,
                 i,
                 envVars.POOL_TRADING_MODE,
-                SEPARATOR
+                OUTPUT_SEPARATOR
             );
             await executeTradeCycle(
                 poolInfo,
@@ -125,7 +124,7 @@ async function executeTradeCycle(
         }
 
         if (i !== traders.length - 1) {
-            logger.info(SEPARATOR);
+            logger.info(OUTPUT_SEPARATOR);
         }
     }
 }
@@ -138,7 +137,7 @@ async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise
         poolInfo,
         traderGroup,
         lamportsToBuy,
-        SLIPPAGE,
+        SWAP_SLIPPAGE,
         "Low"
     );
     if (sendSwapSolToMintTransactions.length === 0) {
@@ -197,7 +196,7 @@ async function dumpPool(
         poolInfo,
         traderGroup,
         unitsToSell,
-        SLIPPAGE,
+        SWAP_SLIPPAGE,
         "Low"
     );
     if (sendSwapMintToSolTransactions.length === 0) {
