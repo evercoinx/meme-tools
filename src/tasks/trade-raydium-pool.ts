@@ -66,7 +66,13 @@ const SEPARATOR = pc.gray("=".repeat(80));
         const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
         for (let i = 0; i < envVars.POOL_TRADING_CYCLE_COUNT; i++) {
-            logger.info("\n%s\nTrading cycle #%d\n%s", SEPARATOR, i, SEPARATOR);
+            logger.info(
+                "\n%s\nTrading cycle #%d. Mode: %s\n%s",
+                SEPARATOR,
+                i,
+                envVars.POOL_TRADING_MODE,
+                SEPARATOR
+            );
             await executeTradeCycle(
                 poolInfo,
                 shuffle(traders),

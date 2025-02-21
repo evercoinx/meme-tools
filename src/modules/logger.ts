@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import pino, { Logger, TransportTargetOptions } from "pino";
+import pino, { Logger, stdTimeFunctions, TransportTargetOptions } from "pino";
 
 export function createLogger(scope: string, name: string, level: string, logPath: string): Logger {
     const dirName = join(logPath, scope.toLocaleLowerCase(), name);
@@ -11,12 +11,14 @@ export function createLogger(scope: string, name: string, level: string, logPath
             options: {
                 destination: 1, // stdout
                 colorize: true,
-                timestampKey: "time",
+                translateTime: name.startsWith("replay")
+                    ? "SYS:dd/mm/yy HH:MM:ss.l"
+                    : "SYS:HH:MM:ss.l",
             },
         },
     ];
 
-    if (name && !name.startsWith("get")) {
+    if (name && !/^(get|replay)/.test(name)) {
         targets.push({
             target: "pino/file",
             options: {
@@ -28,10 +30,9 @@ export function createLogger(scope: string, name: string, level: string, logPath
     }
 
     return pino({
+        timestamp: stdTimeFunctions.epochTime,
         level,
         base: undefined,
-        transport: {
-            targets,
-        },
+        transport: { targets },
     });
 }

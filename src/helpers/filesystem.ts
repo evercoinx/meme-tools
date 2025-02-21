@@ -3,11 +3,11 @@ import { join } from "node:path";
 import { format, resolveConfig } from "prettier";
 import { STORAGE_DIR } from "../modules";
 
-export async function checkIfStorageExists(cacheId: string): Promise<void> {
+export async function checkIfStorageExists(name: string): Promise<void> {
     try {
-        await access(join(STORAGE_DIR, cacheId));
+        await access(join(STORAGE_DIR, name));
     } catch {
-        throw new Error(`Storage ${cacheId} not exists`);
+        throw new Error(`Storage ${name} not exists`);
     }
 }
 
