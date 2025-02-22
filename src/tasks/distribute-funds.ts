@@ -37,6 +37,7 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
                 .mul(sharePoolPercent)
                 .add(envVars.SNIPER_BALANCE_SOL)
                 .mul(LAMPORTS_PER_SOL)
+                .trunc()
         );
         const traderAmounts = new Array(envVars.TRADER_COUNT)
             .fill(0)
@@ -46,6 +47,7 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
                     .add(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
                     .add(envVars.TRADER_BALANCE_SOL)
                     .mul(LAMPORTS_PER_SOL)
+                    .trunc()
             );
 
         const sendDistrubuteSniperFundsTransaction = await distributeFunds(
@@ -79,6 +81,9 @@ async function distributeFunds(
 ): Promise<Promise<TransactionSignature | undefined>> {
     const instructions: TransactionInstruction[] = [];
     let fundedAccountCount = 0;
+    const minTraderTransferLamports = new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
+        .mul(LAMPORTS_PER_SOL)
+        .trunc();
 
     let connection = connectionPool.current();
     let heliusClient = heliusClientPool.current();
@@ -87,7 +92,17 @@ async function distributeFunds(
         const solBalance = await getSolBalance(connectionPool, account);
         if (solBalance.gte(lamports[i])) {
             logger.warn(
-                "%s (%s) has sufficient balance on wallet: %s SOL",
+                "%s (%s) has sufficient balance on wallet: %s SOL. Expected transfer: %s SOL",
+                capitalize(swapperType),
+                formatPublicKey(account.publicKey),
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
+                formatDecimal(lamports[i].div(LAMPORTS_PER_SOL))
+            );
+            continue;
+        }
+        if (swapperType === SwapperType.Sniper && solBalance.gt(0)) {
+            logger.warn(
+                "%s (%s) has non zero balance on wallet: %s SOL",
                 capitalize(swapperType),
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
@@ -96,11 +111,22 @@ async function distributeFunds(
         }
 
         const residualLamports = lamports[i].sub(solBalance);
+        if (swapperType === SwapperType.Trader && residualLamports.lt(minTraderTransferLamports)) {
+            logger.warn(
+                "%s (%s) ineligible for min transfer: %s SOL. Expected transfer: %s SOL",
+                capitalize(swapperType),
+                formatPublicKey(account.publicKey),
+                formatDecimal(minTraderTransferLamports.div(LAMPORTS_PER_SOL)),
+                formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))
+            );
+            continue;
+        }
+
         instructions.push(
             SystemProgram.transfer({
                 fromPubkey: distributor.publicKey,
                 toPubkey: account.publicKey,
-                lamports: residualLamports.trunc().toNumber(),
+                lamports: residualLamports.toNumber(),
             })
         );
         fundedAccountCount++;
