@@ -226,6 +226,7 @@ async function createPool(
     const instructions = [...wrapSolInstructions, ...createPoolInstructions];
     const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
+        envVars.RPC_CLUSTER,
         heliusClient,
         "Default",
         instructions,
@@ -318,6 +319,7 @@ async function burnLpMint(
 
     const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
+        envVars.RPC_CLUSTER,
         heliusClient,
         "Default",
         instructions,

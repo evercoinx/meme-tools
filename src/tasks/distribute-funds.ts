@@ -115,6 +115,7 @@ async function distributeFunds(
 
     const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
+        envVars.RPC_CLUSTER,
         heliusClient,
         "Low",
         instructions,

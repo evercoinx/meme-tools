@@ -15,7 +15,7 @@ interface LogEntry {
 (async () => {
     try {
         if (!envVars.LOGGER_NAME) {
-            throw new Error("Logger name undefined");
+            throw new Error("Logger name not defined");
         }
 
         const dirPath = join(LOG_DIR, envVars.TOKEN_SYMBOL.toLowerCase(), envVars.LOGGER_NAME);

@@ -5,7 +5,7 @@ import pc from "picocolors";
 import { importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
-import { CLUSTER, connectionPool, envVars, logger, storage } from "../modules";
+import { connectionPool, envVars, logger, storage } from "../modules";
 
 (async () => {
     try {
@@ -36,7 +36,7 @@ async function getMint(mint: Keypair): Promise<void> {
 
     logger.info(
         "Mint (%s)\n\t\tAddress: %s\n\t\tSymbol: %s\n\t\tDecimals: %s\n\t\tSupply: %s\n\t\tMint authority: %s\n\t\tFreeze authority: %s",
-        CLUSTER,
+        envVars.RPC_CLUSTER,
         formatPublicKey(mintInfo.address, "long"),
         pc.yellow(envVars.TOKEN_SYMBOL),
         formatDecimal(mintInfo.decimals, 0),

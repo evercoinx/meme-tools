@@ -40,7 +40,6 @@ export const OUTPUT_SEPARATOR = pc.gray("=".repeat(80));
 export const OUTPUT_UNKNOWN_KEY = pc.gray("?".repeat(44));
 
 export const envVars = extractEnvironmentVariables();
-export const CLUSTER = getCluster(envVars.RPC_URIS);
 export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
@@ -52,7 +51,7 @@ export const logger = createLogger(
     LOG_DIR
 );
 export const connectionPool = new Pool(
-    envVars.RPC_URIS.map(
+    Array.from(envVars.RPC_URIS).map(
         (rpcUri) =>
             new Connection(rpcUri, {
                 commitment: "confirmed",
@@ -62,36 +61,10 @@ export const connectionPool = new Pool(
     )
 );
 export const heliusClientPool = new Pool(
-    envVars.RPC_URIS.map((rpcUri) => createHeliusClient(rpcUri, 10_000))
+    Array.from(envVars.RPC_URIS).map((rpcUri) => createHeliusClient(rpcUri, 10_000))
 );
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY);
 
 export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
-export const explorer = new Explorer(envVars.EXPLORER_URI, CLUSTER);
+export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
 export const storage = createStorage(envVars.TOKEN_SYMBOL, STORAGE_DIR);
-
-function getCluster(rpcUris: string[]): "devnet" | "mainnet-beta" {
-    const counters = {
-        devnet: 0,
-        mainnet: 0,
-    };
-
-    for (const rpcUri of rpcUris) {
-        if (/mainnet/i.test(rpcUri)) {
-            counters.mainnet++;
-        } else if (/devnet/i.test(rpcUri)) {
-            counters.devnet++;
-        } else {
-            throw new Error(`Unknown cluster for RPC URI: ${rpcUri}`);
-        }
-    }
-
-    if (counters.mainnet === rpcUris.length) {
-        return "mainnet-beta";
-    }
-    if (counters.devnet === rpcUris.length) {
-        return "devnet";
-    }
-
-    throw new Error("Mixed clusters detected");
-}

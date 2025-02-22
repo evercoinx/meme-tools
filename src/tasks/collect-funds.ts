@@ -179,6 +179,7 @@ async function closeTokenAccounts(
                 computeBudgetInstructions.push(
                     ...(await getComputeBudgetInstructions(
                         connection,
+                        envVars.RPC_CLUSTER,
                         heliusClient,
                         "Low",
                         instructions,
@@ -240,6 +241,7 @@ async function collectFunds(
             computeBudgetInstructions.push(
                 ...(await getComputeBudgetInstructions(
                     connection,
+                    envVars.RPC_CLUSTER,
                     heliusClient,
                     "Low",
                     instructions,

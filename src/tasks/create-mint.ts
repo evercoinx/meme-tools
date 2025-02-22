@@ -263,6 +263,7 @@ async function createMint(
 
     const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
+        envVars.RPC_CLUSTER,
         heliusClient,
         "Default",
         instructions,

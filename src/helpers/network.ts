@@ -23,13 +23,7 @@ import axios, { AxiosResponse } from "axios";
 import bs58 from "bs58";
 import Decimal from "decimal.js";
 import { formatDecimal, formatSignature } from "./format";
-import {
-    CLUSTER,
-    explorer,
-    logger,
-    TRANSACTION_CONFIRMATION_TIMEOUT_MS,
-    ZERO_DECIMAL,
-} from "../modules";
+import { explorer, logger, TRANSACTION_CONFIRMATION_TIMEOUT_MS, ZERO_DECIMAL } from "../modules";
 import {
     GetPriorityFeeEstimateRequest,
     GetPriorityFeeEstimateResponse,
@@ -68,6 +62,7 @@ class ResentTransactionError extends Error {
 
 export async function getComputeBudgetInstructions(
     connection: Connection,
+    cluster: string,
     heliusClient: HeliusClient,
     priorityLevel: PriorityLevel,
     instructions: TransactionInstruction[],
@@ -83,6 +78,7 @@ export async function getComputeBudgetInstructions(
     );
 
     const priorityFeeEstimate = await getPriorityFeeEstimate(
+        cluster,
         heliusClient,
         priorityLevel,
         transaction
@@ -160,11 +156,12 @@ async function createTransaction(
 }
 
 async function getPriorityFeeEstimate(
+    cluster: string,
     heliusClient: HeliusClient,
     priorityLevel: PriorityLevel,
     transaction: VersionedTransaction
 ): Promise<number> {
-    if (CLUSTER === "devnet") {
+    if (cluster === "devnet") {
         return ["Min", "Low"].includes(priorityLevel) ? 0 : 10_000;
     }
 

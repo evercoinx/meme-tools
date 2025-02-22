@@ -27,7 +27,7 @@ import {
     sendAndConfirmVersionedTransaction,
     TransactionOptions,
 } from "../helpers/network";
-import { CLUSTER, envVars, logger } from "../modules";
+import { envVars, logger } from "../modules";
 import { HeliusClient, PriorityLevel } from "./helius";
 import { Pool } from "./pool";
 
@@ -46,7 +46,7 @@ export async function loadRaydium(connection: Connection, owner?: Keypair): Prom
 
     return Raydium.load({
         connection,
-        cluster: CLUSTER === "mainnet-beta" ? "mainnet" : CLUSTER,
+        cluster: envVars.RPC_CLUSTER === "mainnet-beta" ? "mainnet" : envVars.RPC_CLUSTER,
         owner,
         disableFeatureCheck: true,
         disableLoadToken: true,
@@ -179,6 +179,7 @@ export async function swapSolToMint(
             computeBudgetInstructions.push(
                 ...(await getComputeBudgetInstructions(
                     connection,
+                    envVars.RPC_CLUSTER,
                     heliusClient,
                     priorityLevel,
                     instructions,
@@ -270,6 +271,7 @@ export async function swapMintToSol(
             computeBudgetInstructions.push(
                 ...(await getComputeBudgetInstructions(
                     connection,
+                    envVars.RPC_CLUSTER,
                     heliusClient,
                     priorityLevel,
                     instructions,

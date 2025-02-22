@@ -8,7 +8,8 @@ interface EnvironmentSchema {
     LOGGER_NAME: string;
     PINATA_JWT: string;
     IPFS_GATEWAY: string;
-    RPC_URIS: string[];
+    RPC_URIS: Set<string>;
+    RPC_CLUSTER: "devnet" | "mainnet-beta";
     EXPLORER_URI: string;
     DEV_KEYPAIR_PATH: string;
     DISTRIBUTOR_KEYPAIR_PATH: string;
@@ -34,8 +35,10 @@ interface EnvironmentSchema {
 const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
 const ARRAY_SEPARATOR = ",";
 
-const convertToPercent = (value: string) => new Decimal(value).div(100).toDP(4).toNumber();
-const convertToMilliseconds = (value: string) => new Decimal(value).mul(1_000).round().toNumber();
+const convertToFractionalPercent = (percent: string) =>
+    new Decimal(percent).div(100).toDP(4).toNumber();
+const convertToMilliseconds = (seconds: string) =>
+    new Decimal(seconds).mul(1_000).round().toNumber();
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()
@@ -60,10 +63,40 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             RPC_URIS: Joi.array()
                 .required()
                 .items(Joi.string().required().trim().uri())
-                .unique()
                 .min(1)
                 .max(3)
+                .unique()
+                .cast("set")
                 .description("Solana RPC URIs"),
+            RPC_CLUSTER: Joi.string().default(
+                Joi.ref("RPC_URIS", {
+                    adjust: (rpcUris: Set<string>) => {
+                        const counters = {
+                            devnet: 0,
+                            mainnet: 0,
+                        };
+
+                        for (const rpcUri of rpcUris.values()) {
+                            if (/mainnet/i.test(rpcUri)) {
+                                counters.mainnet++;
+                            } else if (/devnet/i.test(rpcUri)) {
+                                counters.devnet++;
+                            } else {
+                                throw new Error(`Unknown cluster for RPC URI: ${rpcUri}`);
+                            }
+                        }
+
+                        if (counters.mainnet === rpcUris.size) {
+                            return "mainnet-beta";
+                        }
+                        if (counters.devnet === rpcUris.size) {
+                            return "devnet";
+                        }
+
+                        throw new Error("Mixed clusters detected");
+                    },
+                })
+            ),
             EXPLORER_URI: Joi.string()
                 .optional()
                 .trim()
@@ -109,7 +142,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .min(10)
                 .max(100)
-                .custom(convertToPercent)
+                .custom(convertToFractionalPercent)
                 .description("Pool size (in percent)"),
             POOL_LIQUIDITY_SOL: Joi.number()
                 .required()
@@ -131,7 +164,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Pool trading cycle count"),
             SNIPER_SHARE_POOL_PERCENTS: Joi.array()
                 .required()
-                .items(Joi.number().min(0.5).max(3).custom(convertToPercent))
+                .items(Joi.number().min(0.5).max(3).custom(convertToFractionalPercent))
                 .unique()
                 .min(1)
                 .max(100)
@@ -168,7 +201,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Trader buy amount range (in SOL)"),
             TRADER_SELL_AMOUNT_RANGE_PERCENT: Joi.array()
                 .required()
-                .items(Joi.number().min(1).max(100).custom(convertToPercent))
+                .items(Joi.number().min(1).max(100).custom(convertToFractionalPercent))
                 .unique()
                 .min(2)
                 .max(2)
