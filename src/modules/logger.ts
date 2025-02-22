@@ -8,6 +8,7 @@ export function createLogger(scope: string, name: string, level: string, logPath
     const targets: TransportTargetOptions[] = [
         {
             target: "pino-pretty",
+            level,
             options: {
                 destination: 1, // stdout
                 colorize: true,
@@ -21,6 +22,7 @@ export function createLogger(scope: string, name: string, level: string, logPath
     if (name && !/^(get|replay)/.test(name)) {
         targets.push({
             target: "pino/file",
+            level: "info",
             options: {
                 destination: join(dirName, fileName),
                 mkdir: true,

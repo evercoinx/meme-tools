@@ -26,6 +26,7 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
+    STORAGE_RAYDIUM_POOL_TRADING_CYCLE,
     SWAP_SLIPPAGE,
     SwapperType,
     ZERO_DECIMAL,
@@ -62,9 +63,16 @@ import {
             mint
         );
 
+        let raydiumPoolTradingCycle = storage.get<number | undefined>(
+            STORAGE_RAYDIUM_POOL_TRADING_CYCLE
+        );
+        raydiumPoolTradingCycle = raydiumPoolTradingCycle ? raydiumPoolTradingCycle + 1 : 0;
+
         const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
-        for (let i = 0; i < envVars.POOL_TRADING_CYCLE_COUNT; i++) {
+        const raydiumPoolTradingCycleCount =
+            raydiumPoolTradingCycle + envVars.POOL_TRADING_CYCLE_COUNT;
+        for (let i = raydiumPoolTradingCycle; i < raydiumPoolTradingCycleCount; i++) {
             logger.info(
                 "\n%s\nTrading cycle #%d (%s mode)\n%s",
                 OUTPUT_SEPARATOR,
@@ -72,6 +80,11 @@ import {
                 capitalize(envVars.POOL_TRADING_MODE),
                 OUTPUT_SEPARATOR
             );
+
+            storage.set(STORAGE_RAYDIUM_POOL_TRADING_CYCLE, i);
+            storage.save();
+            logger.debug("Raydium pool trading cycle saved to storage");
+
             await executeTradeCycle(
                 poolInfo,
                 shuffle(traders),
@@ -96,14 +109,14 @@ async function executeTradeCycle(
     mint: Keypair,
     tradingMode: "volume" | "pump" | "dump",
     traderGroupSize: number,
-    currentTradingCycle: number
+    raydiumPoolTradingCycle: number
 ): Promise<void> {
     for (let i = 0; i < traders.length; i += traderGroupSize) {
         const traderGroup = shuffle(traders.slice(i, i + traderGroupSize));
 
         switch (tradingMode) {
             case "volume": {
-                if (currentTradingCycle === 0 || generateRandomBoolean()) {
+                if (raydiumPoolTradingCycle === 0 || generateRandomBoolean()) {
                     await pumpPool(poolInfo, traderGroup);
                 } else {
                     await dumpPool(poolInfo, traderGroup, mint);
