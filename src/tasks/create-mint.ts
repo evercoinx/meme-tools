@@ -23,7 +23,7 @@ import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana
 import chalk from "chalk";
 import { PriorityLevel } from "helius-sdk";
 import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/filesystem";
+import { checkIfImageExists, checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -35,7 +35,6 @@ import {
     heliusClientPool,
     IMAGE_DIR,
     logger,
-    METADATA_DIR,
     pinataClient,
     storage,
     STORAGE_MINT_IMAGE_URI,
@@ -49,15 +48,27 @@ interface OffchainTokenMetadata {
     description: string;
     image: string;
     uri: string;
-    external_url: string;
-    social_links: Record<string, string>;
-    tags: string[];
+    external_url?: string;
+    social_links?: Record<string, string>;
+    tags?: string[];
 }
 
-const generatePinataUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${ipfsHash}`;
+const generateMetadata = (
+    tokenSymbol: string
+): Pick<OffchainTokenMetadata, "name" | "symbol" | "description"> => {
+    const normalizedTokenSymbol = tokenSymbol.toUpperCase();
+    return {
+        name: `Official ${normalizedTokenSymbol} Meme`,
+        symbol: normalizedTokenSymbol,
+        description: `Official ${normalizedTokenSymbol} Meme on Solana`,
+    };
+};
+
+const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}/ipfs/${ipfsHash}`;
 
 (async () => {
     try {
+        await checkIfImageExists(envVars.TOKEN_SYMBOL, "webp");
         await checkIfStorageExists(storage.cacheId);
 
         const mint = generateOrImportMintKeypair();
@@ -113,13 +124,13 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
         return metadata;
     }
 
-    const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
-    const metadataContents = await readFile(join(METADATA_DIR, metadataFilename), "utf8");
     metadata = {
-        ...JSON.parse(metadataContents),
+        ...generateMetadata(envVars.TOKEN_SYMBOL),
         image: imageUri,
-    } as OffchainTokenMetadata;
+        uri: "",
+    };
 
+    const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
     let metadataUri = "";
     const pinnedFiles = await pinataClient.listFiles().name(metadataFilename);
 
@@ -137,10 +148,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
         logger.info("Mint metadata file uploaded to IPFS: %s", metadataUri);
     }
 
-    metadata = {
-        ...metadata,
-        uri: metadataUri,
-    };
+    metadata.uri = metadataUri;
 
     storage.set(STORAGE_MINT_METADATA, metadata);
     storage.save();

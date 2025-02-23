@@ -19,10 +19,9 @@ export enum SwapperType {
 }
 
 const cwd = process.cwd();
-export const IMAGE_DIR = join(cwd, "input", "images");
-export const METADATA_DIR = join(cwd, "input", "metadata");
+export const IMAGE_DIR = join(cwd, "images");
 export const LOG_DIR = join(cwd, "logs");
-export const STORAGE_DIR = join(cwd, "storage");
+export const STORAGE_DIR = join(cwd, "storages");
 
 export const STORAGE_MINT_IMAGE_URI = "mint_image_uri";
 export const STORAGE_MINT_METADATA = "mint_metadata";

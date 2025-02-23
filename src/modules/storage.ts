@@ -1,8 +1,8 @@
 import { create, FlatCache, FlatCacheEvents } from "flat-cache";
 import { formatStorage } from "../helpers/filesystem";
 
-export function createStorage(scope: string, storagePath: string): FlatCache {
-    const cacheId = `${scope.toLowerCase()}.json`;
+export function createStorage(tokenSymbol: string, storagePath: string): FlatCache {
+    const cacheId = `${tokenSymbol.toLowerCase()}.json`;
 
     const storage = create({
         cacheId,
