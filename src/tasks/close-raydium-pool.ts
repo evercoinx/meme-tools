@@ -79,22 +79,22 @@ import { loadRaydium, loadRaydiumPoolInfo, swapMintToSol } from "../modules/rayd
 
         const devUnitsToSell = await findUnitsToSell([dev], mint, SwapperType.Dev);
 
-        const sendSniperSwapMintToSolTransactions = await swapMintToSol(
-            connectionPool,
-            heliusClientPool,
-            poolInfo,
-            snipers,
-            sniperUnitsToSell,
-            SLIPPAGE_PERCENT,
-            PriorityLevel.VERY_HIGH,
-            { skipPreflight: true }
-        );
         const sendDevSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
             poolInfo,
             [dev],
             devUnitsToSell,
+            SLIPPAGE_PERCENT,
+            PriorityLevel.VERY_HIGH,
+            { skipPreflight: true }
+        );
+        const sendSniperSwapMintToSolTransactions = await swapMintToSol(
+            connectionPool,
+            heliusClientPool,
+            poolInfo,
+            snipers,
+            sniperUnitsToSell,
             SLIPPAGE_PERCENT,
             PriorityLevel.VERY_HIGH,
             { skipPreflight: true }
@@ -111,8 +111,8 @@ import { loadRaydium, loadRaydiumPoolInfo, swapMintToSol } from "../modules/rayd
         );
 
         await Promise.all([
-            ...sendSniperSwapMintToSolTransactions,
             ...sendDevSwapMintToSolTransactions,
+            ...sendSniperSwapMintToSolTransactions,
             ...sendTraderSwapMintToSolTransactions,
         ]);
         process.exit(0);

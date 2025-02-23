@@ -13,7 +13,6 @@ import {
     TransactionInstruction,
     TransactionSignature,
 } from "@solana/web3.js";
-import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";
 import {
     getSolBalance,
@@ -34,13 +33,13 @@ import {
     heliusClientPool,
     logger,
     MIN_REMAINING_BALANCE_LAMPORTS,
+    MINT_DUST_AMOUNT,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
     UNITS_PER_MINT,
+    ZERO_DECIMAL,
 } from "../modules";
-
-const MINT_DUST_AMOUNT = new Decimal(100).mul(UNITS_PER_MINT);
 
 (async () => {
     try {
@@ -124,7 +123,7 @@ async function closeTokenAccounts(
                     formatPublicKey(mintTokenAccount)
                 );
             } else {
-                if (mintTokenBalance.gt(0) && mintTokenBalance.lte(MINT_DUST_AMOUNT)) {
+                if (mintTokenBalance.gt(ZERO_DECIMAL) && mintTokenBalance.lte(MINT_DUST_AMOUNT)) {
                     instructions.push(
                         createBurnInstruction(
                             mintTokenAccount,
