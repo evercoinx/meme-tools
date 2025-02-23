@@ -37,9 +37,10 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
+    UNITS_PER_MINT,
 } from "../modules";
 
-const DUST_TOKEN_AMOUNT = new Decimal(100).mul(10 ** envVars.TOKEN_DECIMALS);
+const MINT_DUST_AMOUNT = new Decimal(100).mul(UNITS_PER_MINT);
 
 (async () => {
     try {
@@ -123,7 +124,7 @@ async function closeTokenAccounts(
                     formatPublicKey(mintTokenAccount)
                 );
             } else {
-                if (mintTokenBalance.gt(0) && mintTokenBalance.lt(DUST_TOKEN_AMOUNT)) {
+                if (mintTokenBalance.gt(0) && mintTokenBalance.lte(MINT_DUST_AMOUNT)) {
                     instructions.push(
                         createBurnInstruction(
                             mintTokenAccount,
@@ -139,10 +140,7 @@ async function closeTokenAccounts(
                         formatPublicKey(account.publicKey),
                         envVars.TOKEN_SYMBOL,
                         formatPublicKey(mintTokenAccount),
-                        formatDecimal(
-                            mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
-                            envVars.TOKEN_DECIMALS
-                        ),
+                        formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
                         envVars.TOKEN_SYMBOL
                     );
                 }
@@ -246,7 +244,7 @@ async function collectFunds(
             SystemProgram.transfer({
                 fromPubkey: account.publicKey,
                 toPubkey: distributor.publicKey,
-                lamports: residualLamports.trunc().toNumber(),
+                lamports: residualLamports.toNumber(),
             }),
         ];
 

@@ -29,7 +29,7 @@ import {
     sendAndConfirmVersionedTransaction,
     TransactionOptions,
 } from "../helpers/network";
-import { envVars, logger } from "../modules";
+import { envVars, logger, UNITS_PER_MINT } from "../modules";
 import { HeliusClient } from "./helius";
 import { Pool } from "./pool";
 
@@ -176,7 +176,7 @@ export async function swapSolToMint(
             LAMPORTS_PER_SOL
         );
         const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
-            10 ** envVars.TOKEN_DECIMALS
+            UNITS_PER_MINT
         );
 
         const raydium = await loadRaydium(connection, account);
@@ -256,7 +256,8 @@ export async function swapMintToSol(
                     "Account (%s) has too low amount for swap: %s %s",
                     account.publicKey.toBase58(),
                     formatDecimal(
-                        new Decimal(unitsToSwap[i].toString(10)).div(10 ** envVars.TOKEN_DECIMALS)
+                        new Decimal(unitsToSwap[i].toString(10)).div(UNITS_PER_MINT),
+                        envVars.TOKEN_DECIMALS
                     ),
                     envVars.TOKEN_SYMBOL
                 );
@@ -267,7 +268,7 @@ export async function swapMintToSol(
         }
 
         const sourceAmount = new Decimal(swapResult.sourceAmountSwapped.toString(10)).div(
-            10 ** envVars.TOKEN_DECIMALS
+            UNITS_PER_MINT
         );
         const destinationAmount = new Decimal(swapResult.destinationAmountSwapped.toString(10)).div(
             LAMPORTS_PER_SOL

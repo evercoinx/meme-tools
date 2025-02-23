@@ -40,6 +40,7 @@ import {
     storage,
     STORAGE_MINT_IMAGE_URI,
     STORAGE_MINT_METADATA,
+    UNITS_PER_MINT,
 } from "../modules";
 
 interface OffchainTokenMetadata {
@@ -248,7 +249,7 @@ async function createMint(
             mint.publicKey,
             tokenAccount,
             dev.publicKey,
-            envVars.TOKEN_SUPPLY * 10 ** envVars.TOKEN_DECIMALS,
+            envVars.TOKEN_SUPPLY * UNITS_PER_MINT,
             [],
             TOKEN_2022_PROGRAM_ID
         ),

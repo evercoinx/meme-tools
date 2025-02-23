@@ -31,6 +31,7 @@ import {
     STORAGE_RAYDIUM_POOL_TRADING_CYCLE,
     SWAP_SLIPPAGE,
     SwapperType,
+    UNITS_PER_MINT,
     ZERO_DECIMAL,
 } from "../modules";
 import {
@@ -258,10 +259,7 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
                 "Trader (%s) has insufficient balance on ATA (%s): %s %s",
                 formatPublicKey(trader.publicKey),
                 formatPublicKey(mintTokenAccount),
-                formatDecimal(
-                    mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
-                    envVars.TOKEN_DECIMALS
-                ),
+                formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
                 envVars.TOKEN_SYMBOL
             );
             continue;

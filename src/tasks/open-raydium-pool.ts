@@ -42,6 +42,7 @@ import {
     STORAGE_RAYDIUM_POOL_ID,
     SWAP_SLIPPAGE,
     SwapperType,
+    UNITS_PER_MINT,
 } from "../modules";
 import {
     CpmmPoolInfo,
@@ -122,7 +123,7 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
                 "Sniper (%s) has sufficient balance on ATA (%s): %s %s",
                 formatPublicKey(sniper.publicKey),
                 formatPublicKey(mintTokenAccount),
-                formatDecimal(mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
                 envVars.TOKEN_SYMBOL
             );
             continue;
@@ -197,7 +198,7 @@ async function createPool(
     );
     const mintBAmount = new BN(
         new Decimal(envVars.TOKEN_SUPPLY)
-            .mul(10 ** envVars.TOKEN_DECIMALS)
+            .mul(UNITS_PER_MINT)
             .mul(envVars.POOL_SIZE_PERCENT)
             .toFixed(0)
     );

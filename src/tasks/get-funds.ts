@@ -21,6 +21,7 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
+    UNITS_PER_MINT,
 } from "../modules";
 
 (async () => {
@@ -77,10 +78,7 @@ async function getFunds(
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
             mintTokenAccount ? formatPublicKey(mintTokenAccount, "long") : OUTPUT_UNKNOWN_KEY,
             mintTokenBalance
-                ? formatDecimal(
-                      mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
-                      envVars.TOKEN_DECIMALS
-                  )
+                ? formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS)
                 : pc.green("?"),
             envVars.TOKEN_SYMBOL,
         ];

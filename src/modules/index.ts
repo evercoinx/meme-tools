@@ -35,11 +35,12 @@ export const RAYDIUM_LP_MINT_DECIMALS = 9;
 export const SWAP_SLIPPAGE = 1;
 export const OUTPUT_SEPARATOR = pc.gray("=".repeat(80));
 export const OUTPUT_UNKNOWN_KEY = pc.gray("?".repeat(44));
-
-export const envVars = extractEnvironmentVariables();
 export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
+
+export const envVars = extractEnvironmentVariables();
+export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
 
 export const logger = createLogger(
     envVars.TOKEN_SYMBOL,
