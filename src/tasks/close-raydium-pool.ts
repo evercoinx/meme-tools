@@ -1,25 +1,37 @@
 import "../init";
-import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Percent, TxVersion } from "@raydium-io/raydium-sdk-v2";
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import BN from "bn.js";
 import { PriorityLevel } from "helius-sdk";
-import { getTokenAccountInfo, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
+import {
+    getTokenAccountInfo,
+    importLocalKeypair,
+    importMintKeypair,
+    importSwapperKeypairs,
+} from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
+import {
+    getComputeBudgetInstructions,
+    sendAndConfirmVersionedTransaction,
+} from "../helpers/network";
 import {
     connectionPool,
     envVars,
     heliusClientPool,
     logger,
+    RAYDIUM_LP_MINT_DECIMALS,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
     SLIPPAGE_PERCENT,
     SwapperType,
     UNITS_PER_MINT,
+    ZERO_BN,
     ZERO_DECIMAL,
 } from "../modules";
-import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
+import { loadRaydium, loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
 
 (async () => {
     try {
@@ -46,6 +58,8 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             mint
         );
 
+        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
+
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,
             SwapperType.Sniper
@@ -54,6 +68,16 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
 
         const sniperUnitsToSell = await findUnitsToSell(snipers, mint, SwapperType.Sniper);
         const traderUnitsToSell = await findUnitsToSell(traders, mint, SwapperType.Trader);
+
+        const sendRemoveRaydiumLiquidityPoolTransaction = await removeRaydiumPoolLiquidity(
+            new PublicKey(raydiumPoolId),
+            dev,
+            mint,
+            new PublicKey(raydiumLpMint)
+        );
+        await Promise.all([sendRemoveRaydiumLiquidityPoolTransaction]);
+
+        const devUnitsToSell = await findUnitsToSell([dev], mint, SwapperType.Dev);
 
         const sendSniperSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
@@ -65,8 +89,16 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             PriorityLevel.VERY_HIGH,
             { skipPreflight: true }
         );
-        await Promise.all(sendSniperSwapMintToSolTransactions);
-
+        const sendDevSwapMintToSolTransactions = await swapMintToSol(
+            connectionPool,
+            heliusClientPool,
+            poolInfo,
+            [dev],
+            devUnitsToSell,
+            SLIPPAGE_PERCENT,
+            PriorityLevel.VERY_HIGH,
+            { skipPreflight: true }
+        );
         const sendTraderSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
@@ -77,7 +109,12 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             PriorityLevel.HIGH,
             { skipPreflight: true }
         );
-        await Promise.all(sendTraderSwapMintToSolTransactions);
+
+        await Promise.all([
+            ...sendSniperSwapMintToSolTransactions,
+            ...sendDevSwapMintToSolTransactions,
+            ...sendTraderSwapMintToSolTransactions,
+        ]);
         process.exit(0);
     } catch (err) {
         logger.fatal(err);
@@ -128,4 +165,73 @@ async function findUnitsToSell(
     }
 
     return unitsToSell;
+}
+
+async function removeRaydiumPoolLiquidity(
+    raydiumPoolId: PublicKey,
+    dev: Keypair,
+    mint: Keypair,
+    raydiumLpMint: PublicKey
+): Promise<Promise<TransactionSignature | undefined>> {
+    const connection = connectionPool.current();
+    const heliusClient = heliusClientPool.current();
+
+    const raydium = await loadRaydium(connection, dev);
+    const { poolInfo, poolKeys } = await loadRaydiumPoolInfo(connection, raydiumPoolId, mint);
+
+    const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
+        connectionPool,
+        dev,
+        raydiumLpMint,
+        TOKEN_PROGRAM_ID
+    );
+
+    if (!lpMintTokenBalance) {
+        logger.warn(
+            "Dev (%s) has uninitialized %s ATA (%s)",
+            formatPublicKey(dev.publicKey),
+            envVars.TOKEN_SYMBOL,
+            formatPublicKey(lpMintTokenAccount)
+        );
+        return Promise.resolve(undefined);
+    }
+    if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
+        logger.warn(
+            "Dev (%s) has insufficient balance on ATA (%s): %s %s",
+            formatPublicKey(dev.publicKey),
+            formatPublicKey(lpMintTokenAccount),
+            formatDecimal(
+                lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
+                envVars.TOKEN_DECIMALS
+            ),
+            envVars.TOKEN_SYMBOL
+        );
+        return Promise.resolve(undefined);
+    }
+
+    const {
+        transaction: { instructions },
+    } = await raydium.cpmm.withdrawLiquidity<TxVersion.LEGACY>({
+        poolInfo,
+        poolKeys,
+        lpAmount: new BN(lpMintTokenBalance.toFixed(0)),
+        slippage: new Percent(ZERO_BN),
+    });
+
+    const computeBudgetInstructions = await getComputeBudgetInstructions(
+        connection,
+        envVars.RPC_CLUSTER,
+        heliusClient,
+        PriorityLevel.HIGH,
+        instructions,
+        [dev]
+    );
+
+    return sendAndConfirmVersionedTransaction(
+        connection,
+        [...computeBudgetInstructions, ...instructions],
+        [dev],
+        `to remove liquidity from pool id ${raydiumPoolId}`,
+        { skipPreflight: true }
+    );
 }

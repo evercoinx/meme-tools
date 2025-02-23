@@ -13,6 +13,7 @@ import { Pool } from "./pool";
 import { createStorage } from "./storage";
 
 export enum SwapperType {
+    Dev = "dev",
     Sniper = "sniper",
     Trader = "trader",
 }
