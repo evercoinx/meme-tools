@@ -197,7 +197,7 @@ async function removeRaydiumPoolLiquidity(
     }
     if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
         logger.warn(
-            "Dev (%s) has insufficient balance on ATA (%s): %s %s",
+            "Dev (%s) has insufficient balance on ATA (%s): %s LP-%s",
             formatPublicKey(dev.publicKey),
             formatPublicKey(lpMintTokenAccount),
             formatDecimal(

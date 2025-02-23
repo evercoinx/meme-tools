@@ -64,7 +64,7 @@
         "dotenv": "^16.4.7",
         "fastestsmallesttextencoderdecoder": "^1.0.22",
         "flat-cache": "^6.1.5",
-        "got": "^14.4.6",
+        "got": "^11.8.6",
         "helius-sdk": "^1.4.2",
         "pinata-web3": "^0.5.4",
         "pino": "^9.6.0",

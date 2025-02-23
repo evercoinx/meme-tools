@@ -71,9 +71,10 @@ async function burnRaydiumPoolLiquidity(
     }
     if (lpMintBalance.lte(0)) {
         logger.warn(
-            "Dev (%s) has insufficient balance on ATA (%s): 0 LPMint",
+            "Dev (%s) has insufficient balance on ATA (%s): 0 LP-%s",
             formatPublicKey(dev.publicKey),
-            formatPublicKey(lpMintTokenAccount)
+            formatPublicKey(lpMintTokenAccount),
+            envVars.TOKEN_SYMBOL
         );
         return;
     }
