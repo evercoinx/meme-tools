@@ -9,12 +9,7 @@ import {
     getCpmmPdaAmmConfigId,
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
-import {
-    createBurnInstruction,
-    NATIVE_MINT,
-    TOKEN_2022_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, TransactionSignature } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
@@ -91,13 +86,8 @@ import {
             { skipPreflight: true },
             RAYDIUM_POOL_ERRORS
         );
-        await Promise.all([sendCreatePoolTransaction, ...sendSwapSolToMintTransactions]);
 
-        const sendBurnLpMintTransaction = await burnLpMint(
-            new PublicKey(poolInfo.poolInfo.lpMint.address),
-            dev
-        );
-        await Promise.all([sendBurnLpMintTransaction]);
+        await Promise.all([sendCreatePoolTransaction, ...sendSwapSolToMintTransactions]);
         process.exit(0);
     } catch (err) {
         logger.fatal(err);
@@ -282,63 +272,4 @@ async function createPool(
             tradeFee: new BN(feeConfig.tradeFeeRate),
         },
     ];
-}
-
-async function burnLpMint(
-    lpMint: PublicKey,
-    dev: Keypair
-): Promise<Promise<TransactionSignature | undefined>> {
-    const connection = connectionPool.current();
-    const heliusClient = heliusClientPool.current();
-
-    const [lpMintTokenAccount, lpMintBalance] = await getTokenAccountInfo(
-        connectionPool,
-        dev,
-        lpMint,
-        TOKEN_PROGRAM_ID
-    );
-    if (!lpMintBalance) {
-        logger.warn(
-            "Dev (%s) has uninitialized %s ATA (%s)",
-            formatPublicKey(dev.publicKey),
-            envVars.TOKEN_SYMBOL,
-            formatPublicKey(lpMintTokenAccount)
-        );
-        return;
-    }
-    if (lpMintBalance.lte(0)) {
-        logger.warn(
-            "Dev (%s) has insufficient balance on ATA (%s): 0 LPMint",
-            formatPublicKey(dev.publicKey),
-            formatPublicKey(lpMintTokenAccount)
-        );
-        return;
-    }
-
-    const instructions = [
-        createBurnInstruction(
-            lpMintTokenAccount,
-            lpMint,
-            dev.publicKey,
-            lpMintBalance.toNumber(),
-            [],
-            TOKEN_PROGRAM_ID
-        ),
-    ];
-
-    const computeBudgetInstructions = await getComputeBudgetInstructions(
-        connection,
-        envVars.RPC_CLUSTER,
-        heliusClient,
-        PriorityLevel.DEFAULT,
-        instructions,
-        [dev]
-    );
-
-    return sendAndConfirmVersionedTransaction(
-        connection,
-        [...computeBudgetInstructions, ...instructions],
-        [dev],
-        `to burn LP mint (${formatPublicKey(lpMint)}) for dev (${formatPublicKey(dev.publicKey)})`
-    );
 }

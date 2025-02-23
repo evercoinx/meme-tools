@@ -24,6 +24,26 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "Burn Raydium pool liquidity",
+            "program": "${workspaceFolder}/src/tasks/burn-raydium-pool-liquidity.ts",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**/*.js"],
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**",
+                "**/node_modules/@raydium-io/**",
+                "**/node_modules/@solana/**",
+                "**/node_modules/pinata-web3/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "Close Raydium pool",
             "program": "${workspaceFolder}/src/tasks/close-raydium-pool.ts",
             "cwd": "${workspaceFolder}",
