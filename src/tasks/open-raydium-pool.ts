@@ -43,7 +43,13 @@ import {
     SWAP_SLIPPAGE,
     SwapperType,
 } from "../modules";
-import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from "../modules/raydium";
+import {
+    CpmmPoolInfo,
+    loadRaydium,
+    loadRaydiumPoolInfo,
+    RAYDIUM_POOL_ERRORS,
+    swapSolToMint,
+} from "../modules/raydium";
 
 (async () => {
     try {
@@ -81,7 +87,8 @@ import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from ".
             lamportsToBuy,
             SWAP_SLIPPAGE,
             PriorityLevel.VERY_HIGH,
-            { skipPreflight: true }
+            { skipPreflight: true },
+            RAYDIUM_POOL_ERRORS
         );
         await Promise.all([sendCreatePoolTransaction]);
         await Promise.all(sendSwapSolToMintTransactions);
@@ -232,7 +239,7 @@ async function createPool(
         heliusClient,
         PriorityLevel.DEFAULT,
         instructions,
-        dev
+        [dev]
     );
 
     const sendTransaction = sendAndConfirmVersionedTransaction(
@@ -325,7 +332,7 @@ async function burnLpMint(
         heliusClient,
         PriorityLevel.DEFAULT,
         instructions,
-        dev
+        [dev]
     );
 
     return sendAndConfirmVersionedTransaction(

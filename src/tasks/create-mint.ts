@@ -269,7 +269,7 @@ async function createMint(
         heliusClient,
         PriorityLevel.DEFAULT,
         instructions,
-        dev
+        [dev, mint]
     );
 
     return sendAndConfirmVersionedTransaction(

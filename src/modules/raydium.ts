@@ -24,6 +24,7 @@ import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
+    ContractErrors,
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
     TransactionOptions,
@@ -39,6 +40,19 @@ export interface CpmmPoolInfo {
     quoteReserve: BN;
     tradeFee: BN;
 }
+
+export const RAYDIUM_POOL_ERRORS: ContractErrors = {
+    2012: {
+        instruction: "SwapBaseInput",
+        code: "ContraintAddress",
+        message: "Address constraint violated",
+    },
+    6000: {
+        instruction: "SwapBaseInput",
+        code: "NotApproved",
+        message: "Not approved",
+    },
+};
 
 export async function loadRaydium(connection: Connection, owner?: Keypair): Promise<Raydium> {
     if (connection.rpcEndpoint === clusterApiUrl("mainnet-beta")) {
@@ -119,7 +133,8 @@ export async function swapSolToMint(
     lamportsToSwap: (BN | null)[],
     slippage: number,
     priorityLevel: PriorityLevel,
-    transactionOptions?: TransactionOptions
+    transactionOptions?: TransactionOptions,
+    resentErrors?: ContractErrors
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
     const computeBudgetInstructions: TransactionInstruction[] = [];
@@ -184,7 +199,7 @@ export async function swapSolToMint(
                     heliusClient,
                     priorityLevel,
                     instructions,
-                    account
+                    [account]
                 ))
             );
         }
@@ -195,7 +210,8 @@ export async function swapSolToMint(
                 [...computeBudgetInstructions, ...instructions],
                 [account],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for account (${formatPublicKey(account.publicKey)})`,
-                transactionOptions
+                transactionOptions,
+                resentErrors
             )
         );
     }
@@ -211,7 +227,8 @@ export async function swapMintToSol(
     unitsToSwap: (BN | null)[],
     slippage: number,
     priorityLevel: PriorityLevel,
-    transactionOptions?: TransactionOptions
+    transactionOptions?: TransactionOptions,
+    resentErrors?: ContractErrors
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     const computeBudgetInstructions: TransactionInstruction[] = [];
@@ -276,7 +293,7 @@ export async function swapMintToSol(
                     heliusClient,
                     priorityLevel,
                     instructions,
-                    account
+                    [account]
                 ))
             );
         }
@@ -287,7 +304,8 @@ export async function swapMintToSol(
                 [...computeBudgetInstructions, ...instructions],
                 [account],
                 `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for account (${formatPublicKey(account.publicKey)})`,
-                transactionOptions
+                transactionOptions,
+                resentErrors
             )
         );
     }

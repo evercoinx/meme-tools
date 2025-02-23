@@ -147,7 +147,7 @@ async function distributeFunds(
         heliusClient,
         PriorityLevel.LOW,
         instructions,
-        distributor
+        [distributor]
     );
 
     return sendAndConfirmVersionedTransaction(

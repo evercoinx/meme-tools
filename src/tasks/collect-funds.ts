@@ -196,7 +196,7 @@ async function closeTokenAccounts(
                         heliusClient,
                         PriorityLevel.LOW,
                         instructions,
-                        dev
+                        [dev]
                     ))
                 );
             }
@@ -258,7 +258,7 @@ async function collectFunds(
                     heliusClient,
                     PriorityLevel.LOW,
                     instructions,
-                    account
+                    [account]
                 ))
             );
         }

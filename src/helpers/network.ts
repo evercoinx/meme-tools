@@ -35,6 +35,15 @@ const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
 const TRANSACTION_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_COMPUTE_UNIT_LIMIT = 220_000;
 
+export type ContractErrors = Record<
+    number,
+    {
+        instruction: string;
+        code: string;
+        message: string;
+    }
+>;
+
 type InstructionError = [number, InstructionErrorDetails];
 
 interface InstructionErrorDetails {
@@ -61,18 +70,19 @@ export async function getComputeBudgetInstructions(
     heliusClient: HeliusClient,
     priorityLevel: PriorityLevel,
     instructions: TransactionInstruction[],
-    payer: Keypair
+    signers: Keypair[]
 ): Promise<TransactionInstruction[]> {
     const setComputeUnitLimitInstruction = ComputeBudgetProgram.setComputeUnitLimit({
         units: DEFAULT_COMPUTE_UNIT_LIMIT,
     });
+
+    const payer = signers[0];
     const transaction = await createTransaction(
         connection,
         [setComputeUnitLimitInstruction, ...instructions],
         payer
     );
-
-    const priorityFeeEstimate = await getPriorityFeeEstimate(
+    const priorityFee = await getPriorityFeeEstimate(
         cluster,
         heliusClient,
         transaction,
@@ -82,7 +92,7 @@ export async function getComputeBudgetInstructions(
     return [
         setComputeUnitLimitInstruction,
         ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: priorityFeeEstimate,
+            microLamports: priorityFee,
         }),
     ];
 }
@@ -177,7 +187,8 @@ export async function sendAndConfirmVersionedTransaction(
     instructions: TransactionInstruction[],
     signers: Keypair[],
     logMessage: string,
-    transactionOptions?: TransactionOptions
+    transactionOptions?: TransactionOptions,
+    resentErrors?: ContractErrors
 ): Promise<TransactionSignature | undefined> {
     let signature: TransactionSignature | undefined;
 
@@ -195,7 +206,7 @@ export async function sendAndConfirmVersionedTransaction(
             });
             logger.info("Transaction (%s) sent %s", formatSignature(signature), logMessage);
 
-            return await pollTransactionConfirmation(connection, signature);
+            return await pollTransactionConfirmation(connection, signature, resentErrors);
         } catch (error: unknown) {
             if (error instanceof ResentTransactionError) {
                 logger.error(
@@ -213,7 +224,8 @@ export async function sendAndConfirmVersionedTransaction(
 
 async function pollTransactionConfirmation(
     connection: Connection,
-    signature: TransactionSignature
+    signature: TransactionSignature,
+    resentErrors?: ContractErrors
 ): Promise<TransactionSignature> {
     let elapsed = 0;
 
@@ -235,20 +247,22 @@ async function pollTransactionConfirmation(
             if (result?.err) {
                 clearInterval(intervalId);
 
-                const errorDetails = parseRpcError(result.err);
-                if (errorDetails !== null && errorDetails.Custom === 2_012) {
-                    reject(
-                        new ResentTransactionError(
-                            `Transaction (${formatSignature(signature)}) failed. Reason: Address constraint violated (${errorDetails.Custom})`
-                        )
-                    );
-                } else {
-                    reject(
-                        new FailedTransactionError(
-                            `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature)}. Reason: ${formatRpcError(result.err)}`
-                        )
-                    );
+                if (resentErrors) {
+                    const errorDetails = parseRpcError(result.err);
+                    if (errorDetails && resentErrors[errorDetails.Custom]) {
+                        return reject(
+                            new ResentTransactionError(
+                                `Transaction (${formatSignature(signature)}) failed. Reason: ${resentErrors[errorDetails.Custom].message}`
+                            )
+                        );
+                    }
                 }
+
+                return reject(
+                    new FailedTransactionError(
+                        `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature)}. Reason: ${formatRpcError(result.err)}`
+                    )
+                );
             } else if (result?.confirmationStatus === "confirmed") {
                 clearInterval(intervalId);
 
@@ -257,7 +271,7 @@ async function pollTransactionConfirmation(
                     formatSignature(signature),
                     explorer.generateTransactionUri(signature)
                 );
-                resolve(signature);
+                return resolve(signature);
             }
         }, TRANSACTION_POLL_INTERVAL_MS);
     });
