@@ -1,15 +1,14 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
-        "lib": ["es2023"],
-        "target": "es2022",
-        "allowJs": true,
-        "outDir": "dist",
-        "sourceMap": true,
-        "rootDir": "src",
+        "module": "CommonJS",
+        "lib": ["ES2023"],
+        "target": "ES2023",
+        "esModuleInterop": true,
+        "outDir": "./dist",
+        "rootDir": "./src",
         "strict": true,
-        "noImplicitAny": true,
-        "esModuleInterop": true
+        "allowJs": true,
+        "sourceMap": true
     },
     "include": ["src/**/*.ts"]
 }

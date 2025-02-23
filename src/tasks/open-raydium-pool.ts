@@ -1,3 +1,4 @@
+import "../init";
 import {
     ApiV3PoolInfoStandardItemCpmm,
     ApiV3Token,
@@ -17,6 +18,7 @@ import {
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, TransactionSignature } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
+import { PriorityLevel } from "helius-sdk";
 import {
     importSwapperKeypairs,
     importLocalKeypair,
@@ -78,7 +80,7 @@ import { CpmmPoolInfo, loadRaydium, loadRaydiumPoolInfo, swapSolToMint } from ".
             snipersToBuy,
             lamportsToBuy,
             SWAP_SLIPPAGE,
-            "VeryHigh",
+            PriorityLevel.VERY_HIGH,
             { skipPreflight: true }
         );
         await Promise.all([sendCreatePoolTransaction]);
@@ -228,7 +230,7 @@ async function createPool(
         connection,
         envVars.RPC_CLUSTER,
         heliusClient,
-        "Default",
+        PriorityLevel.DEFAULT,
         instructions,
         dev
     );
@@ -321,7 +323,7 @@ async function burnLpMint(
         connection,
         envVars.RPC_CLUSTER,
         heliusClient,
-        "Default",
+        PriorityLevel.DEFAULT,
         instructions,
         dev
     );

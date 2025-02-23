@@ -1,6 +1,8 @@
+import "../init";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
+import { PriorityLevel } from "helius-sdk";
 import { getTokenAccountInfo, importMintKeypair, importSwapperKeypairs } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
@@ -59,7 +61,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             snipers,
             sniperUnitsToSell,
             SWAP_SLIPPAGE,
-            "VeryHigh",
+            PriorityLevel.VERY_HIGH,
             { skipPreflight: true }
         );
         await Promise.all(sendSniperSwapMintToSolTransactions);
@@ -71,7 +73,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             traders,
             traderUnitsToSell,
             SWAP_SLIPPAGE,
-            "High",
+            PriorityLevel.HIGH,
             { skipPreflight: true }
         );
         await Promise.all(sendTraderSwapMintToSolTransactions);
@@ -115,7 +117,10 @@ async function findUnitsToSell(
                 capitalize(swapperType),
                 formatPublicKey(account.publicKey),
                 formatPublicKey(mintTokenAccount),
-                formatDecimal(mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                formatDecimal(
+                    mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
+                    envVars.TOKEN_DECIMALS
+                ),
                 envVars.TOKEN_SYMBOL
             );
             continue;

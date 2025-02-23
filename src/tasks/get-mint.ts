@@ -1,3 +1,4 @@
+import "../init";
 import { getMint as getMintInfo, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";

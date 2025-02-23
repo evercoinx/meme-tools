@@ -19,17 +19,12 @@ import {
     TransactionSignature,
     VersionedTransaction,
 } from "@solana/web3.js";
-import axios, { AxiosResponse } from "axios";
 import bs58 from "bs58";
 import Decimal from "decimal.js";
-import { formatDecimal, formatSignature } from "./format";
+import { PriorityLevel, UiTransactionEncoding } from "helius-sdk";
 import { explorer, logger, TRANSACTION_CONFIRMATION_TIMEOUT_MS, ZERO_DECIMAL } from "../modules";
-import {
-    GetPriorityFeeEstimateRequest,
-    GetPriorityFeeEstimateResponse,
-    HeliusClient,
-    PriorityLevel,
-} from "../modules/helius";
+import { HeliusClient } from "../modules/helius";
+import { formatDecimal, formatSignature } from "./format";
 
 export interface TransactionOptions {
     skipPreflight?: boolean;
@@ -80,8 +75,8 @@ export async function getComputeBudgetInstructions(
     const priorityFeeEstimate = await getPriorityFeeEstimate(
         cluster,
         heliusClient,
-        priorityLevel,
-        transaction
+        transaction,
+        priorityLevel
     );
 
     return [
@@ -158,48 +153,23 @@ async function createTransaction(
 async function getPriorityFeeEstimate(
     cluster: string,
     heliusClient: HeliusClient,
-    priorityLevel: PriorityLevel,
-    transaction: VersionedTransaction
+    transaction: VersionedTransaction,
+    priorityLevel: PriorityLevel
 ): Promise<number> {
     if (cluster === "devnet") {
-        return ["Min", "Low"].includes(priorityLevel) ? 0 : 10_000;
+        return [PriorityLevel.MIN, PriorityLevel.LOW].includes(priorityLevel) ? 0 : 10_000;
     }
 
-    let response: AxiosResponse<GetPriorityFeeEstimateResponse> | undefined;
     const serializedTransaction = transaction.serialize();
-    const options = priorityLevel === "Default" ? { recommended: true } : { priorityLevel };
+    const options =
+        priorityLevel === PriorityLevel.DEFAULT ? { recommended: true } : { priorityLevel };
 
-    try {
-        response = await heliusClient.post<
-            GetPriorityFeeEstimateResponse,
-            AxiosResponse<GetPriorityFeeEstimateResponse>,
-            GetPriorityFeeEstimateRequest
-        >("/", {
-            jsonrpc: "2.0",
-            id: Buffer.from(serializedTransaction).toString("hex"),
-            method: "getPriorityFeeEstimate",
-            params: [
-                {
-                    transaction: bs58.encode(serializedTransaction),
-                    options,
-                },
-            ],
-        });
-    } catch (err) {
-        if (axios.isAxiosError<GetPriorityFeeEstimateResponse>(err) && err.response?.data.error) {
-            const {
-                response: { data },
-            } = err;
+    const response = await heliusClient.getPriorityFeeEstimate({
+        transaction: bs58.encode(serializedTransaction),
+        options: { ...options, transactionEncoding: UiTransactionEncoding.Base58 },
+    });
 
-            throw new Error(
-                `Failed to call getPriorityFeeEstimate. Code: ${data.error?.code ?? "?"}. Message: ${data.error?.message ?? "?"}`
-            );
-        }
-
-        throw new Error(`Failed to call getPriorityFeeEstimate: ${err}`);
-    }
-
-    return response.data.result?.priorityFeeEstimate ?? 0;
+    return response.priorityFeeEstimate ?? 0;
 }
 
 export async function sendAndConfirmVersionedTransaction(

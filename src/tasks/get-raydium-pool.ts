@@ -1,3 +1,4 @@
+import "../init";
 import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
 import pc from "picocolors";

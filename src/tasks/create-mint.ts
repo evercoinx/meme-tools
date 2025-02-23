@@ -1,3 +1,4 @@
+import "../init";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@solana/spl-token";
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana/web3.js";
+import { PriorityLevel } from "helius-sdk";
 import pc from "picocolors";
 import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
@@ -265,7 +267,7 @@ async function createMint(
         connection,
         envVars.RPC_CLUSTER,
         heliusClient,
-        "Default",
+        PriorityLevel.DEFAULT,
         instructions,
         dev
     );

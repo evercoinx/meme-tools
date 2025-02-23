@@ -1,3 +1,4 @@
+import "../init";
 import {
     createBurnInstruction,
     createCloseAccountInstruction,
@@ -13,6 +14,7 @@ import {
     TransactionSignature,
 } from "@solana/web3.js";
 import Decimal from "decimal.js";
+import { PriorityLevel } from "helius-sdk";
 import {
     getSolBalance,
     getTokenAccountInfo,
@@ -132,6 +134,17 @@ async function closeTokenAccounts(
                             TOKEN_2022_PROGRAM_ID
                         )
                     );
+                    logger.warn(
+                        "Account (%s) has dust tokens on %s ATA (%s): %s %s",
+                        formatPublicKey(account.publicKey),
+                        envVars.TOKEN_SYMBOL,
+                        formatPublicKey(mintTokenAccount),
+                        formatDecimal(
+                            mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
+                            envVars.TOKEN_DECIMALS
+                        ),
+                        envVars.TOKEN_SYMBOL
+                    );
                 }
 
                 instructions.push(
@@ -181,7 +194,7 @@ async function closeTokenAccounts(
                         connection,
                         envVars.RPC_CLUSTER,
                         heliusClient,
-                        "Low",
+                        PriorityLevel.LOW,
                         instructions,
                         dev
                     ))
@@ -243,7 +256,7 @@ async function collectFunds(
                     connection,
                     envVars.RPC_CLUSTER,
                     heliusClient,
-                    "Low",
+                    PriorityLevel.LOW,
                     instructions,
                     account
                 ))

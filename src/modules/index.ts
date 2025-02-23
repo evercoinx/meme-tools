@@ -1,6 +1,4 @@
-import "source-map-support/register";
 import { join, parse } from "node:path";
-import dotenv from "dotenv";
 import { Connection } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
@@ -13,8 +11,6 @@ import { createHeliusClient } from "./helius";
 import { createPinataClient } from "./pinata";
 import { Pool } from "./pool";
 import { createStorage } from "./storage";
-
-dotenv.config();
 
 export enum SwapperType {
     Sniper = "sniper",
@@ -62,7 +58,7 @@ export const connectionPool = new Pool(
     )
 );
 export const heliusClientPool = new Pool(
-    Array.from(envVars.RPC_URIS).map((rpcUri) => createHeliusClient(rpcUri, 10_000))
+    Array.from(envVars.RPC_URIS).map((rpcUri) => createHeliusClient(rpcUri, envVars.RPC_CLUSTER))
 );
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY);
 

@@ -1,7 +1,9 @@
+import "../init";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
+import { PriorityLevel } from "helius-sdk";
 import pc from "picocolors";
 import {
     getSolBalance,
@@ -151,7 +153,7 @@ async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise
         traderGroup,
         lamportsToBuy,
         SWAP_SLIPPAGE,
-        "Low"
+        PriorityLevel.LOW
     );
     if (sendSwapSolToMintTransactions.length === 0) {
         logger.debug("No buy transactions found. Skipping");
@@ -210,7 +212,7 @@ async function dumpPool(
         traderGroup,
         unitsToSell,
         SWAP_SLIPPAGE,
-        "Low"
+        PriorityLevel.LOW
     );
     if (sendSwapMintToSolTransactions.length === 0) {
         logger.debug("No sell transactions found. Skipping");
@@ -256,7 +258,10 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
                 "Trader (%s) has insufficient balance on ATA (%s): %s %s",
                 formatPublicKey(trader.publicKey),
                 formatPublicKey(mintTokenAccount),
-                formatDecimal(mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS)),
+                formatDecimal(
+                    mintTokenBalance.div(10 ** envVars.TOKEN_DECIMALS),
+                    envVars.TOKEN_DECIMALS
+                ),
                 envVars.TOKEN_SYMBOL
             );
             continue;

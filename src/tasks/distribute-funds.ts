@@ -1,3 +1,4 @@
+import "../init";
 import {
     Keypair,
     LAMPORTS_PER_SOL,
@@ -6,6 +7,7 @@ import {
     TransactionSignature,
 } from "@solana/web3.js";
 import Decimal from "decimal.js";
+import { PriorityLevel } from "helius-sdk";
 import {
     generateOrImportSwapperKeypairs,
     getSolBalance,
@@ -143,7 +145,7 @@ async function distributeFunds(
         connection,
         envVars.RPC_CLUSTER,
         heliusClient,
-        "Low",
+        PriorityLevel.LOW,
         instructions,
         distributor
     );

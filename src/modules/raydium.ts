@@ -21,6 +21,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
+import { PriorityLevel } from "helius-sdk";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -28,7 +29,7 @@ import {
     TransactionOptions,
 } from "../helpers/network";
 import { envVars, logger } from "../modules";
-import { HeliusClient, PriorityLevel } from "./helius";
+import { HeliusClient } from "./helius";
 import { Pool } from "./pool";
 
 export interface CpmmPoolInfo {
