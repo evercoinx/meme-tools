@@ -91,8 +91,7 @@ import {
             { skipPreflight: true },
             RAYDIUM_POOL_ERRORS
         );
-        await Promise.all([sendCreatePoolTransaction]);
-        await Promise.all(sendSwapSolToMintTransactions);
+        await Promise.all([sendCreatePoolTransaction, ...sendSwapSolToMintTransactions]);
 
         const sendBurnLpMintTransaction = await burnLpMint(
             new PublicKey(poolInfo.poolInfo.lpMint.address),
