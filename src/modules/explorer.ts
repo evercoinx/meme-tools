@@ -1,4 +1,4 @@
-import pc from "picocolors";
+import chalk from "chalk";
 
 export class Explorer {
     private readonly baseUri;
@@ -10,10 +10,10 @@ export class Explorer {
     }
 
     generateTransactionUri(signature: string): string {
-        return pc.blue(`${this.baseUri}/tx/${signature}?cluster=${this.cluster}-alpha`);
+        return chalk.blue(`${this.baseUri}/tx/${signature}?cluster=${this.cluster}-alpha`);
     }
 
     generateAddressUri(address: string): string {
-        return pc.blue(`${this.baseUri}/address/${address}?cluster=${this.cluster}-alpha`);
+        return chalk.blue(`${this.baseUri}/address/${address}?cluster=${this.cluster}-alpha`);
     }
 }

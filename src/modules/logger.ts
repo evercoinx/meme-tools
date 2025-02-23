@@ -1,6 +1,13 @@
 import { join } from "node:path";
 import pino, { Logger, stdTimeFunctions, TransportTargetOptions } from "pino";
 
+export interface LogEntry {
+    level: number;
+    time: number;
+    name: string;
+    msg: string;
+}
+
 export function createLogger(scope: string, name: string, level: string, logPath: string): Logger {
     const dirName = join(logPath, scope.toLocaleLowerCase(), name);
     const fileName = `${new Date().toISOString().slice(0, 19)}.log`;

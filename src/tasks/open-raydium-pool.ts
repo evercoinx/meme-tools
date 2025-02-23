@@ -89,8 +89,8 @@ import {
 
         await Promise.all([sendCreatePoolTransaction, ...sendSwapSolToMintTransactions]);
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        logger.fatal(error);
         process.exit(1);
     }
 })();

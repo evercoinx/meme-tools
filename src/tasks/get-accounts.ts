@@ -25,8 +25,8 @@ import { envVars, logger, OUTPUT_UNKNOWN_KEY, storage, SwapperType } from "../mo
 
         getAccounts(dev, distributor, snipers, traders, mint);
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        logger.fatal(error);
         process.exit(1);
     }
 })();

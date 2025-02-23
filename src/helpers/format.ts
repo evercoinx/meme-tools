@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
+import chalk from "chalk";
 import Decimal from "decimal.js";
-import pc from "picocolors";
 
 type NumberLike = number | bigint | Decimal | BN;
 
@@ -18,7 +18,7 @@ export function formatCurrency(value: NumberLike): string {
         value = BigInt(value.toString(10));
     }
 
-    return pc.green(
+    return chalk.green(
         new Intl.NumberFormat(LOCALE, {
             style: "currency",
             currency: "USD",
@@ -32,7 +32,7 @@ export function formatDate(value: Date | number): string {
         value = new Date(value * 1e3);
     }
 
-    return pc.yellow(
+    return chalk.yellow(
         new Intl.DateTimeFormat(LOCALE, {
             dateStyle: "full",
             timeStyle: "long",
@@ -48,7 +48,7 @@ export function formatDecimal(value: NumberLike, decimalPlaces = 9): string {
         value = BigInt(value.toString(10));
     }
 
-    return pc.green(
+    return chalk.green(
         new Intl.NumberFormat(LOCALE, {
             style: "decimal",
             maximumFractionDigits: decimalPlaces,
@@ -64,7 +64,7 @@ export function formatPercent(value: NumberLike): string {
         value = BigInt(value.toString(10));
     }
 
-    return pc.green(
+    return chalk.green(
         new Intl.NumberFormat(LOCALE, {
             style: "percent",
             minimumFractionDigits: 2,
@@ -77,7 +77,7 @@ export function formatPublicKey(
     format: "short" | "long" = "short"
 ): string {
     const publicKeyStr = typeof publicKey === "string" ? publicKey : publicKey.toBase58();
-    return pc.magenta(
+    return chalk.magenta(
         format === "short"
             ? `${publicKeyStr.slice(0, 4)}...${publicKeyStr.slice(-4)}`
             : publicKeyStr
@@ -85,7 +85,7 @@ export function formatPublicKey(
 }
 
 export function formatSignature(signature: string, format: "short" | "long" = "short"): string {
-    return pc.yellow(
+    return chalk.yellow(
         format === "short" ? `${signature.slice(0, 8)}...${signature.slice(-8)}` : signature
     );
 }

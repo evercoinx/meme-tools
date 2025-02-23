@@ -41,8 +41,8 @@ import {
 
         await Promise.all([sendBurnRaydiumPoolLiquidityTransaction]);
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        logger.fatal(error);
         process.exit(1);
     }
 })();

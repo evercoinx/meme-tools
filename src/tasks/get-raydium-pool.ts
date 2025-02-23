@@ -1,7 +1,7 @@
 import "../init";
 import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
-import pc from "picocolors";
+import chalk from "chalk";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import {
     formatCurrency,
@@ -31,8 +31,8 @@ import { loadRaydium } from "../modules/raydium";
 
         await getPool(raydiumPoolId);
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        logger.fatal(error);
         process.exit(1);
     }
 })();
@@ -98,7 +98,7 @@ async function getPool(raydiumPoolId: string): Promise<void> {
         mintB.symbol,
         formatPublicKey(mintB.address, "long"),
         formatPublicKey(lpMint.address, "long"),
-        pc.yellow(type),
+        chalk.yellow(type),
         formatDecimal(1, 0),
         ...(NATIVE_MINT.toBase58() === mintA.address
             ? [mintA.symbol, formatDecimal(price, mintA.decimals), mintB.symbol]

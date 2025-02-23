@@ -4,7 +4,6 @@ import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";
-import pc from "picocolors";
 import {
     getSolBalance,
     getTokenAccountInfo,
@@ -100,8 +99,7 @@ import {
 
         process.exit(0);
     } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.fatal(pc.red(errorMessage));
+        logger.fatal(error);
         process.exit(1);
     }
 })();

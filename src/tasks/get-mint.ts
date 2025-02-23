@@ -1,8 +1,8 @@
 import "../init";
 import { getMint as getMintInfo, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
+import chalk from "chalk";
 import Decimal from "decimal.js";
-import pc from "picocolors";
 import { importMintKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
@@ -19,8 +19,8 @@ import { connectionPool, envVars, logger, storage } from "../modules";
 
         await getMint(mint);
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        logger.fatal(error);
         process.exit(1);
     }
 })();
@@ -39,10 +39,12 @@ async function getMint(mint: Keypair): Promise<void> {
         "Mint (%s)\n\t\tAddress: %s\n\t\tSymbol: %s\n\t\tDecimals: %s\n\t\tSupply: %s\n\t\tMint authority: %s\n\t\tFreeze authority: %s",
         envVars.RPC_CLUSTER,
         formatPublicKey(mintInfo.address, "long"),
-        pc.yellow(envVars.TOKEN_SYMBOL),
+        chalk.yellow(envVars.TOKEN_SYMBOL),
         formatDecimal(mintInfo.decimals, 0),
         formatDecimal(supply, mintInfo.decimals),
-        mintInfo.mintAuthority ? formatPublicKey(mintInfo.mintAuthority, "long") : pc.red("n/a"),
-        mintInfo.freezeAuthority ? formatPublicKey(mintInfo.freezeAuthority, "long") : pc.red("n/a")
+        mintInfo.mintAuthority ? formatPublicKey(mintInfo.mintAuthority, "long") : chalk.red("n/a"),
+        mintInfo.freezeAuthority
+            ? formatPublicKey(mintInfo.freezeAuthority, "long")
+            : chalk.red("n/a")
     );
 }

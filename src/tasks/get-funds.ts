@@ -1,8 +1,8 @@
 import "../init";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import chalk from "chalk";
 import Decimal from "decimal.js";
-import pc from "picocolors";
 import {
     getSolBalance,
     getTokenAccountInfo,
@@ -42,8 +42,8 @@ import {
 
         await getFunds(dev, distributor, snipers, traders, mint);
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        logger.fatal(error);
         process.exit(1);
     }
 })();
@@ -79,7 +79,7 @@ async function getFunds(
             mintTokenAccount ? formatPublicKey(mintTokenAccount, "long") : OUTPUT_UNKNOWN_KEY,
             mintTokenBalance
                 ? formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS)
-                : pc.green("?"),
+                : chalk.green("?"),
             envVars.TOKEN_SYMBOL,
         ];
 
@@ -108,7 +108,7 @@ async function getFunds(
                           lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
                           RAYDIUM_LP_MINT_DECIMALS
                       )
-                    : pc.green("?"),
+                    : chalk.green("?"),
                 envVars.TOKEN_SYMBOL
             );
         } else {

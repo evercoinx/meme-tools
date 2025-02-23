@@ -20,8 +20,8 @@ import {
 } from "@solana/spl-token";
 import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
 import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana/web3.js";
+import chalk from "chalk";
 import { PriorityLevel } from "helius-sdk";
-import pc from "picocolors";
 import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
 import { checkIfStorageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
@@ -69,8 +69,8 @@ const generatePinataUri = (ipfsHash: string) => `${envVars.IPFS_GATEWAY}/ipfs/${
         const sendCreateMintTransaction = await createMint(metadata, dev, mint);
         await Promise.all([sendCreateMintTransaction]);
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        logger.fatal(error);
         process.exit(1);
     }
 })();
@@ -87,7 +87,7 @@ async function uploadImage(): Promise<string> {
 
     if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === imageFileName) {
         imageUri = generatePinataUri(pinnedFiles[0].ipfs_pin_hash);
-        logger.warn("Mint image file already uploaded to IPFS: %s", pc.blue(imageUri));
+        logger.warn("Mint image file already uploaded to IPFS: %s", chalk.blue(imageUri));
     } else {
         logger.debug("Uploading mint image file to IPFS");
         const imageBlob = new Blob([await readFile(join(IMAGE_DIR, imageFileName))]);
@@ -96,7 +96,7 @@ async function uploadImage(): Promise<string> {
         const upload = await pinataClient.upload.file(imageFile);
 
         imageUri = generatePinataUri(upload.IpfsHash);
-        logger.info("Mint image file uploaded to IPFS: %s", pc.blue(imageUri));
+        logger.info("Mint image file uploaded to IPFS: %s", chalk.blue(imageUri));
     }
 
     storage.set(STORAGE_MINT_IMAGE_URI, imageUri);
@@ -125,7 +125,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
 
     if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === metadataFilename) {
         metadataUri = generatePinataUri(pinnedFiles[0].ipfs_pin_hash);
-        logger.warn("Mint metadata file already uploaded to IPFS: %s", pc.blue(metadataUri));
+        logger.warn("Mint metadata file already uploaded to IPFS: %s", chalk.blue(metadataUri));
     } else {
         logger.debug("Uploading mint metadata file to IPFS");
         const metadataFile = new File([JSON.stringify(metadata)], metadataFilename, {

@@ -5,13 +5,7 @@ import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { envVars, LOG_DIR, logger } from "../modules";
 import { LOG_LEVEL } from "../modules/environment";
-
-interface LogEntry {
-    level: number;
-    time: number;
-    name: string;
-    msg: string;
-}
+import { LogEntry } from "../modules/logger";
 
 (async () => {
     try {
@@ -26,28 +20,33 @@ interface LogEntry {
             throw new Error(`Logs for task '${envVars.LOGGER_NAME}' not found`);
         }
 
-        const fileNames = await readdir(dirPath, "utf8");
-        const logLevelLabels = logger.levels.labels;
-
-        for (const fileName of fileNames) {
-            const filePath = join(dirPath, fileName);
-            const fileStream = createReadStream(filePath);
-            const lines = createInterface({ input: fileStream });
-
-            for await (const line of lines) {
-                const { level, time, msg }: LogEntry = JSON.parse(line);
-
-                const methodName = logLevelLabels[level] as LOG_LEVEL;
-                if (typeof logger[methodName] !== "function") {
-                    throw new Error(`Logger method not callable: ${methodName}`);
-                }
-                logger[methodName]({ time }, msg);
-            }
-        }
-
+        await replayLogs(dirPath);
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        logger.fatal(error);
         process.exit(1);
     }
 })();
+
+async function replayLogs(dirPath: string): Promise<void> {
+    const fileNames = await readdir(dirPath, "utf8");
+    const logLevelLabels = logger.levels.labels;
+
+    for (const fileName of fileNames) {
+        const filePath = join(dirPath, fileName);
+        const fileStream = createReadStream(filePath);
+        const lines = createInterface({ input: fileStream });
+
+        for await (const line of lines) {
+            const { level, time, msg }: LogEntry = JSON.parse(line);
+
+            const methodName = logLevelLabels[level] as LOG_LEVEL;
+            if (typeof logger[methodName] !== "function") {
+                throw new Error(`Logger method not callable: ${methodName}`);
+            }
+            logger[methodName]({ time }, msg);
+        }
+    }
+
+    process.exit(0);
+}

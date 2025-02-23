@@ -69,8 +69,8 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
             sendDistrubuteTraderFundsTransaction,
         ]);
         process.exit(0);
-    } catch (err) {
-        logger.fatal(err);
+    } catch (error: unknown) {
+        logger.fatal(error);
         process.exit(1);
     }
 })();
