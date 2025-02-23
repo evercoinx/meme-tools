@@ -14,7 +14,7 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
-    SWAP_SLIPPAGE,
+    SLIPPAGE_PERCENT,
     SwapperType,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
@@ -61,7 +61,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             poolInfo,
             snipers,
             sniperUnitsToSell,
-            SWAP_SLIPPAGE,
+            SLIPPAGE_PERCENT,
             PriorityLevel.VERY_HIGH,
             { skipPreflight: true }
         );
@@ -73,7 +73,7 @@ import { loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
             poolInfo,
             traders,
             traderUnitsToSell,
-            SWAP_SLIPPAGE,
+            SLIPPAGE_PERCENT,
             PriorityLevel.HIGH,
             { skipPreflight: true }
         );

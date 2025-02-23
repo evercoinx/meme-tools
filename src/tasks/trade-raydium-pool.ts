@@ -29,7 +29,7 @@ import {
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
     STORAGE_RAYDIUM_POOL_TRADING_CYCLE,
-    SWAP_SLIPPAGE,
+    SLIPPAGE_PERCENT,
     SwapperType,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
@@ -153,7 +153,7 @@ async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise
         poolInfo,
         traderGroup,
         lamportsToBuy,
-        SWAP_SLIPPAGE,
+        SLIPPAGE_PERCENT,
         PriorityLevel.LOW
     );
     if (sendSwapSolToMintTransactions.length === 0) {
@@ -212,7 +212,7 @@ async function dumpPool(
         poolInfo,
         traderGroup,
         unitsToSell,
-        SWAP_SLIPPAGE,
+        SLIPPAGE_PERCENT,
         PriorityLevel.LOW
     );
     if (sendSwapMintToSolTransactions.length === 0) {

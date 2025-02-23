@@ -40,7 +40,7 @@ import {
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
-    SWAP_SLIPPAGE,
+    SLIPPAGE_PERCENT,
     SwapperType,
     UNITS_PER_MINT,
 } from "../modules";
@@ -86,7 +86,7 @@ import {
             poolInfo,
             snipersToBuy,
             lamportsToBuy,
-            SWAP_SLIPPAGE,
+            SLIPPAGE_PERCENT,
             PriorityLevel.VERY_HIGH,
             { skipPreflight: true },
             RAYDIUM_POOL_ERRORS

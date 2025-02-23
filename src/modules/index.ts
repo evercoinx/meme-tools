@@ -32,7 +32,7 @@ export const STORAGE_RAYDIUM_POOL_TRADING_CYCLE = "raydium_pool_trading_cycle";
 
 export const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
 export const RAYDIUM_LP_MINT_DECIMALS = 9;
-export const SWAP_SLIPPAGE = 1;
+export const SLIPPAGE_PERCENT = 1;
 export const OUTPUT_SEPARATOR = pc.gray("=".repeat(80));
 export const OUTPUT_UNKNOWN_KEY = pc.gray("?".repeat(44));
 export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
