@@ -10,4 +10,7 @@ process.on("warning", (warning) => {
     console.warn(warning);
 });
 
-dotenv.config();
+dotenv.config({
+    path: process.env.NODE_ENV === "development" ? ".env" : ".env.production",
+    encoding: "utf8",
+});

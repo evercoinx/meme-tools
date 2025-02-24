@@ -1,9 +1,12 @@
 import Decimal from "decimal.js";
 import Joi from "joi";
 
+export type NODE_ENV = "development" | "production";
+
 export type LOG_LEVEL = "silent" | "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
 interface EnvironmentSchema {
+    NODE_ENV: NODE_ENV;
     LOG_LEVEL: LOG_LEVEL;
     LOGGER_NAME: string;
     PINATA_JWT: string;
@@ -45,6 +48,11 @@ const convertToMilliseconds = (seconds: string) =>
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()
         .keys({
+            NODE_ENV: Joi.string()
+                .required()
+                .trim()
+                .valid("development", "production")
+                .description("Node environment"),
             LOG_LEVEL: Joi.string()
                 .optional()
                 .trim()
