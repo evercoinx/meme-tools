@@ -103,6 +103,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .optional()
                 .trim()
                 .uri()
+                .allow("https://solana.fm", "https://explorer.solana.com")
                 .default("https://solana.fm")
                 .description("Solana explorer URI"),
             DEV_KEYPAIR_PATH: Joi.string()
