@@ -15,6 +15,8 @@ interface EnvironmentSchema {
     DISTRIBUTOR_KEYPAIR_PATH: string;
     KEYPAIR_SECRET: string;
     TOKEN_SYMBOL: string;
+    TOKEN_NAME: string;
+    TOKEN_DESCRIPTION: string;
     TOKEN_DECIMALS: number;
     TOKEN_SUPPLY: number;
     POOL_SIZE_PERCENT: number;
@@ -122,8 +124,16 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .trim()
                 .uppercase()
+                .alphanum()
                 .max(20)
                 .description("Token symbol"),
+            TOKEN_NAME: Joi.string().optional().trim().allow("").max(40).description("Token name"),
+            TOKEN_DESCRIPTION: Joi.string()
+                .optional()
+                .trim()
+                .allow("")
+                .max(200)
+                .description("Token description"),
             TOKEN_DECIMALS: Joi.number()
                 .optional()
                 .integer()

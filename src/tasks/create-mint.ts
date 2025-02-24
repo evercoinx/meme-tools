@@ -23,7 +23,7 @@ import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana
 import chalk from "chalk";
 import { PriorityLevel } from "helius-sdk";
 import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
-import { checkIfImageExists, checkIfStorageExists } from "../helpers/filesystem";
+import { checkIfImageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -42,25 +42,31 @@ import {
     UNITS_PER_MINT,
 } from "../modules";
 
-interface OffchainTokenMetadata {
+interface FullTokenMetadata {
     name: string;
     symbol: string;
     description: string;
     image: string;
-    uri: string;
+    decimals: number;
+    uri?: string;
     external_url?: string;
     social_links?: Record<string, string>;
     tags?: string[];
+    attributes?: Record<string, { trait_type: string; value: string }>[];
 }
 
-const generateMetadata = (
-    tokenSymbol: string
-): Pick<OffchainTokenMetadata, "name" | "symbol" | "description"> => {
-    const normalizedTokenSymbol = tokenSymbol.toUpperCase();
+const generateOffchainTokenMetadata = (
+    symbol: string,
+    name: string,
+    description: string,
+    decimals: number
+): Pick<FullTokenMetadata, "name" | "symbol" | "description" | "decimals"> => {
+    const normalizedSymbol = symbol.toUpperCase();
     return {
-        name: `Official ${normalizedTokenSymbol} Meme`,
-        symbol: normalizedTokenSymbol,
-        description: `Official ${normalizedTokenSymbol} Meme on Solana`,
+        symbol: normalizedSymbol,
+        name: name || `Official ${normalizedSymbol} Meme`,
+        description: description || `Official ${normalizedSymbol} Meme on Solana`,
+        decimals,
     };
 };
 
@@ -69,7 +75,6 @@ const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}
 (async () => {
     try {
         await checkIfImageExists(envVars.TOKEN_SYMBOL, "webp");
-        await checkIfStorageExists(storage.cacheId);
 
         const mint = generateOrImportMintKeypair();
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
@@ -117,17 +122,21 @@ async function uploadImage(): Promise<string> {
     return imageUri;
 }
 
-async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> {
-    let metadata = storage.get<OffchainTokenMetadata | undefined>(STORAGE_MINT_METADATA);
+async function uploadMetadata(imageUri: string): Promise<FullTokenMetadata> {
+    let metadata = storage.get<FullTokenMetadata | undefined>(STORAGE_MINT_METADATA);
     if (metadata) {
         logger.debug("Mint metadata file loaded from storage");
         return metadata;
     }
 
     metadata = {
-        ...generateMetadata(envVars.TOKEN_SYMBOL),
+        ...generateOffchainTokenMetadata(
+            envVars.TOKEN_SYMBOL,
+            envVars.TOKEN_NAME,
+            envVars.TOKEN_DESCRIPTION,
+            envVars.TOKEN_DECIMALS
+        ),
         image: imageUri,
-        uri: "",
     };
 
     const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
@@ -158,7 +167,7 @@ async function uploadMetadata(imageUri: string): Promise<OffchainTokenMetadata> 
 }
 
 async function createMint(
-    offchainMetadata: OffchainTokenMetadata,
+    fullTokenMetadata: FullTokenMetadata,
     dev: Keypair,
     mint: Keypair
 ): Promise<Promise<TransactionSignature | undefined>> {
@@ -184,9 +193,10 @@ async function createMint(
     const metadata: TokenMetadata = {
         mint: mint.publicKey,
         updateAuthority: PublicKey.default,
-        name: offchainMetadata.name,
-        symbol: offchainMetadata.symbol,
-        uri: offchainMetadata.uri,
+        name: fullTokenMetadata.name,
+        symbol: fullTokenMetadata.symbol,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        uri: fullTokenMetadata.uri!,
         additionalMetadata: [],
     };
     // Size of Mint account with MetadataPointer extension

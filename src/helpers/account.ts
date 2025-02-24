@@ -99,7 +99,8 @@ export function importSwapperKeypairs(swapperCount: number, swapperType: Swapper
     for (let i = 0; i < swapperCount; i++) {
         const encryptedSecretKey = storage.get<string>(storageKeys[i]);
         if (!encryptedSecretKey) {
-            throw new Error(`${capitalize(swapperType)} secret key not loaded from storage`);
+            logger.warn("%s %d secret key not loaded from storage", capitalize(swapperType), i);
+            continue;
         }
 
         const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));

@@ -1,3 +1,4 @@
+import { PublicKey } from "@solana/web3.js";
 import chalk from "chalk";
 
 export class Explorer {
@@ -13,7 +14,10 @@ export class Explorer {
         return chalk.blue(`${this.baseUri}/tx/${signature}?cluster=${this.cluster}-alpha`);
     }
 
-    generateAddressUri(address: string): string {
-        return chalk.blue(`${this.baseUri}/address/${address}?cluster=${this.cluster}-alpha`);
+    generateAddressUri(address: string | PublicKey): string {
+        const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
+        return chalk.blue(
+            `${this.baseUri}/address/${normalizedAddress}?cluster=${this.cluster}-alpha`
+        );
     }
 }

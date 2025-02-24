@@ -64,6 +64,7 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
             traders,
             SwapperType.Trader
         );
+
         await Promise.all([
             sendDistrubuteSniperFundsTransaction,
             sendDistrubuteTraderFundsTransaction,
