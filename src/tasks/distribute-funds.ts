@@ -1,4 +1,3 @@
-import "../init";
 import {
     Keypair,
     LAMPORTS_PER_SOL,

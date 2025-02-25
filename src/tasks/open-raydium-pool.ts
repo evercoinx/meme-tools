@@ -1,4 +1,3 @@
-import "../init";
 import {
     ApiV3PoolInfoStandardItemCpmm,
     ApiV3Token,

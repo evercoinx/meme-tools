@@ -1,4 +1,3 @@
-import "../init";
 import {
     createBurnInstruction,
     createCloseAccountInstruction,

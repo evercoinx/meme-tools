@@ -1,4 +1,3 @@
-import "../init";
 import { createReadStream } from "node:fs";
 import { access, readdir } from "node:fs/promises";
 import { join } from "node:path";

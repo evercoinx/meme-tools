@@ -1,4 +1,3 @@
-import "../init";
 import { createBurnInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import { PriorityLevel } from "helius-sdk";
