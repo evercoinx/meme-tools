@@ -39,6 +39,7 @@ import {
     swapMintToSol,
     swapSolToMint,
 } from "../modules/raydium";
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
 
 (async () => {
     try {
@@ -85,6 +86,7 @@ import {
             logger.debug("Raydium pool trading cycle saved to storage");
 
             await executeTradeCycle(
+                raydium,
                 raydiumCpmmPool,
                 shuffle(traders),
                 mint,
@@ -102,6 +104,7 @@ import {
 })();
 
 async function executeTradeCycle(
+    raydium: Raydium,
     raydiumCpmmPool: RaydiumCpmmPool,
     traders: Keypair[],
     mint: Keypair,
@@ -115,18 +118,18 @@ async function executeTradeCycle(
         switch (tradingMode) {
             case "volume": {
                 if (raydiumPoolTradingCycle === 0 || generateRandomBoolean()) {
-                    await pumpPool(raydiumCpmmPool, traderGroup);
+                    await pumpPool(raydium, raydiumCpmmPool, traderGroup);
                 } else {
-                    await dumpPool(raydiumCpmmPool, traderGroup, mint);
+                    await dumpPool(raydium, raydiumCpmmPool, traderGroup, mint);
                 }
                 break;
             }
             case "pump": {
-                await pumpPool(raydiumCpmmPool, traderGroup);
+                await pumpPool(raydium, raydiumCpmmPool, traderGroup);
                 break;
             }
             case "dump": {
-                await dumpPool(raydiumCpmmPool, traderGroup, mint);
+                await dumpPool(raydium, raydiumCpmmPool, traderGroup, mint);
                 break;
             }
             default: {
@@ -140,11 +143,16 @@ async function executeTradeCycle(
     }
 }
 
-async function pumpPool(raydiumCpmmPool: RaydiumCpmmPool, traderGroup: Keypair[]): Promise<void> {
+async function pumpPool(
+    raydium: Raydium,
+    raydiumCpmmPool: RaydiumCpmmPool,
+    traderGroup: Keypair[]
+): Promise<void> {
     const lamportsToBuy = await findLamportsToBuy(traderGroup);
     const sendSwapSolToMintTransactions = await swapSolToMint(
         connectionPool,
         heliusClientPool,
+        raydium,
         raydiumCpmmPool,
         traderGroup,
         lamportsToBuy,
@@ -196,6 +204,7 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
 }
 
 async function dumpPool(
+    raydium: Raydium,
     raydiumCpmmPool: RaydiumCpmmPool,
     traderGroup: Keypair[],
     mint: Keypair
@@ -204,6 +213,7 @@ async function dumpPool(
     const sendSwapMintToSolTransactions = await swapMintToSol(
         connectionPool,
         heliusClientPool,
+        raydium,
         raydiumCpmmPool,
         traderGroup,
         unitsToSell,

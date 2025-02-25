@@ -11,6 +11,7 @@
         "format:fix": "prettier --write .",
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
+        "test": "yarn start:clean && yarn add-raydium-pool-liquidity && yarn trade-raydium-pool-volume && yarn finish",
         "clean": "rm -rf dist/* logs/* storages/* && yarn delete-mint",
         "start": "yarn distribute-funds && yarn create-mint && yarn open-raydium-pool && yarn burn-raydium-pool-liquidity:view",
         "start:clean": "yarn clean && yarn start",

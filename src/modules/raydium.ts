@@ -115,6 +115,7 @@ export async function loadRaydiumCpmmPool(
 export async function swapSolToMint(
     connectionPool: Pool<Connection>,
     heliusClientPool: Pool<HeliusClient>,
+    raydium: Raydium,
     { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: RaydiumCpmmPool,
     accounts: (Keypair | null)[],
     lamportsToSwap: (BN | null)[],
@@ -166,10 +167,9 @@ export async function swapSolToMint(
             UNITS_PER_MINT
         );
 
-        const raydium = await createRaydium(connection, account);
         const {
             transaction: { instructions },
-        } = await raydium.cpmm.swap<TxVersion.LEGACY>({
+        } = await raydium.setOwner(account).cpmm.swap<TxVersion.LEGACY>({
             poolInfo,
             poolKeys,
             inputAmount: lamportsToSwap[i],
@@ -209,6 +209,7 @@ export async function swapSolToMint(
 export async function swapMintToSol(
     connectionPool: Pool<Connection>,
     heliusClientPool: Pool<HeliusClient>,
+    raydium: Raydium,
     { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: RaydiumCpmmPool,
     accounts: (Keypair | null)[],
     unitsToSwap: (BN | null)[],
@@ -261,16 +262,16 @@ export async function swapMintToSol(
             LAMPORTS_PER_SOL
         );
 
-        const raydium = await createRaydium(connection, account);
         const {
             transaction: { instructions },
-        } = await raydium.cpmm.swap<TxVersion.LEGACY>({
+        } = await raydium.setOwner(account).cpmm.swap<TxVersion.LEGACY>({
             poolInfo,
             poolKeys,
             inputAmount: unitsToSwap[i],
             swapResult,
             slippage,
             baseIn,
+            payer: account.publicKey,
         });
 
         if (computeBudgetInstructions.length === 0) {

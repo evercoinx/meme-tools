@@ -82,6 +82,7 @@ import {
         const sendDevSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
+            raydium,
             raydiumCpmmPool,
             [dev],
             devUnitsToSell,
@@ -92,6 +93,7 @@ import {
         const sendSniperSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
+            raydium,
             raydiumCpmmPool,
             snipers,
             sniperUnitsToSell,
@@ -102,6 +104,7 @@ import {
         const sendTraderSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
+            raydium,
             raydiumCpmmPool,
             traders,
             traderUnitsToSell,

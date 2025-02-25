@@ -6,6 +6,7 @@ import {
     CREATE_CPMM_POOL_PROGRAM,
     DEVNET_PROGRAM_ID,
     getCpmmPdaAmmConfigId,
+    Raydium,
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -73,11 +74,14 @@ import {
                 )
         );
 
-        const [sendCreatePoolTransaction, poolInfo] = await createPool(dev, mint);
+        const raydium = await createRaydium(connectionPool.current(), dev);
+
+        const [sendCreatePoolTransaction, raydiumCpmmPool] = await createPool(raydium, dev, mint);
         const sendSwapSolToMintTransactions = await swapSolToMint(
             connectionPool,
             heliusClientPool,
-            poolInfo,
+            raydium,
+            raydiumCpmmPool,
             snipersToBuy,
             lamportsToBuy,
             SLIPPAGE_PERCENT,
@@ -124,12 +128,12 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
 }
 
 async function createPool(
+    raydium: Raydium,
     dev: Keypair,
     mint: Keypair
 ): Promise<[Promise<TransactionSignature | undefined>, RaydiumCpmmPool]> {
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
-    const raydium = await createRaydium(connection, dev);
 
     const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
     if (raydiumPoolId) {
@@ -141,8 +145,8 @@ async function createPool(
         }
         logger.debug("Raydium LP mint %s loaded from storage", raydimLpMint);
 
-        const poolInfo = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
-        return [Promise.resolve(undefined), poolInfo];
+        const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
+        return [Promise.resolve(undefined), raydiumCpmmPool];
     }
 
     const feeConfigs = await raydium.api.getCpmmConfigs();
