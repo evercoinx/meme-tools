@@ -3,13 +3,13 @@ import { Keypair } from "@solana/web3.js";
 import chalk from "chalk";
 import Decimal from "decimal.js";
 import { importMintKeypair } from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/filesystem";
+import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import { connectionPool, envVars, explorer, logger, storage } from "../modules";
 
 (async () => {
     try {
-        await checkIfStorageExists(storage.cacheId);
+        await checkIfStorageFileExists(storage.cacheId);
 
         const mint = importMintKeypair();
         if (!mint) {

@@ -9,7 +9,7 @@ import {
     importMintKeypair,
     importSwapperKeypairs,
 } from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/filesystem";
+import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     generateRandomBoolean,
@@ -41,7 +41,7 @@ import {
 
 (async () => {
     try {
-        await checkIfStorageExists(storage.cacheId);
+        await checkIfStorageFileExists(storage.cacheId);
 
         const mint = importMintKeypair();
         if (!mint) {

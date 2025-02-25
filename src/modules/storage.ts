@@ -1,17 +1,18 @@
 import { create, FlatCache, FlatCacheEvents } from "flat-cache";
-import { formatStorage } from "../helpers/filesystem";
+import { formatStorageFile } from "../helpers/filesystem";
 
 export function createStorage(tokenSymbol: string, storagePath: string): FlatCache {
-    const cacheId = `${tokenSymbol.toLowerCase()}.json`;
+    const fileName = `${tokenSymbol.toLowerCase()}.json`;
 
     const storage = create({
-        cacheId,
+        cacheId: fileName,
         cacheDir: storagePath,
         deserialize: JSON.parse,
         serialize: JSON.stringify,
     });
 
-    storage.on(FlatCacheEvents.SAVE, async () => formatStorage(cacheId));
+    storage.on(FlatCacheEvents.SAVE, async () => formatStorageFile(fileName));
+    storage.on(FlatCacheEvents.DELETE, async () => formatStorageFile(fileName));
 
     return storage;
 }

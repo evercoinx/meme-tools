@@ -20,7 +20,7 @@ import {
     importMintKeypair,
     importSwapperKeypairs,
 } from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/filesystem";
+import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -42,7 +42,7 @@ import {
 
 (async () => {
     try {
-        await checkIfStorageExists(storage.cacheId);
+        await checkIfStorageFileExists(storage.cacheId);
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
         const distributor = await importLocalKeypair(

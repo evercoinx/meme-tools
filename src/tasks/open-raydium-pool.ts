@@ -19,7 +19,7 @@ import {
     importMintKeypair,
     getTokenAccountInfo,
 } from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/filesystem";
+import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -48,7 +48,7 @@ import {
 
 (async () => {
     try {
-        await checkIfStorageExists(storage.cacheId);
+        await checkIfStorageFileExists(storage.cacheId);
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
 

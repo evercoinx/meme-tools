@@ -1,11 +1,23 @@
 import pkg from "../../package.json";
-import { envVars, logger, pinataClient } from "../modules";
+import { checkIfStorageFileExists } from "../helpers/filesystem";
+import {
+    envVars,
+    logger,
+    pinataClient,
+    storage,
+    STORAGE_MINT_IMAGE_URI,
+    STORAGE_MINT_METADATA,
+    STORAGE_MINT_SECRET_KEY,
+} from "../modules";
 
 (async () => {
     try {
         const groupId = await getGroup(`${pkg.name}-${envVars.NODE_ENV}`);
+        if (groupId) {
+            await unpinIpfsFiles(groupId);
+        }
 
-        await deleteFiles(groupId);
+        await deleteMintStorage();
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(error);
@@ -13,16 +25,17 @@ import { envVars, logger, pinataClient } from "../modules";
     }
 })();
 
-async function getGroup(groupName: string): Promise<string> {
+async function getGroup(groupName: string): Promise<string | undefined> {
     const groups = await pinataClient.groups.list().name(groupName);
     if (groups.length === 0) {
-        throw new Error(`Group not found: ${groupName}`);
+        logger.warn(`Group not found: ${groupName}`);
+        return;
     }
 
     return groups[0].id;
 }
 
-async function deleteFiles(groupId: string): Promise<void> {
+async function unpinIpfsFiles(groupId: string): Promise<void> {
     const filesToUnpin = [];
 
     const imageFileName = `${envVars.TOKEN_SYMBOL.toLowerCase()}.webp`;
@@ -43,7 +56,7 @@ async function deleteFiles(groupId: string): Promise<void> {
 
     if (filesToUnpin.length > 0) {
         await pinataClient.unpin(filesToUnpin);
-        logger.info("Mint files deleted: %d", filesToUnpin.length);
+        logger.info("%d mint files deleted", filesToUnpin.length);
     }
 }
 
@@ -53,4 +66,16 @@ async function findFileToUnpin(groupId: string, fileName: string): Promise<strin
     return pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === fileName
         ? pinnedFiles[0].ipfs_pin_hash
         : undefined;
+}
+
+async function deleteMintStorage(): Promise<void> {
+    try {
+        await checkIfStorageFileExists(storage.cacheId);
+
+        storage.delete(STORAGE_MINT_IMAGE_URI);
+        storage.delete(STORAGE_MINT_METADATA);
+        storage.delete(STORAGE_MINT_SECRET_KEY);
+    } catch (error: unknown) {
+        logger.warn(error instanceof Error ? error.message : String(error));
+    }
 }

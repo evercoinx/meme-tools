@@ -1,7 +1,7 @@
 import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
 import chalk from "chalk";
-import { checkIfStorageExists } from "../helpers/filesystem";
+import { checkIfStorageFileExists } from "../helpers/filesystem";
 import {
     formatCurrency,
     formatDate,
@@ -21,7 +21,7 @@ import { loadRaydium } from "../modules/raydium";
 
 (async () => {
     try {
-        await checkIfStorageExists(storage.cacheId);
+        await checkIfStorageFileExists(storage.cacheId);
 
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {

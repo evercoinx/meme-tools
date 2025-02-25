@@ -23,7 +23,7 @@ import chalk from "chalk";
 import { PriorityLevel } from "helius-sdk";
 import pkg from "../../package.json";
 import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
-import { checkIfImageExists } from "../helpers/filesystem";
+import { checkIfImageFileExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -76,7 +76,7 @@ const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}
 
 (async () => {
     try {
-        await checkIfImageExists(envVars.TOKEN_SYMBOL, "webp");
+        await checkIfImageFileExists(envVars.TOKEN_SYMBOL, "webp");
 
         const mint = generateOrImportMintKeypair();
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
@@ -102,7 +102,7 @@ async function getOrCreateGroup(groupName: string): Promise<string> {
         groupId = groups[0].id;
     } else {
         ({ id: groupId } = await pinataClient.groups.create({ name: groupName }));
-        logger.warn("Pinata group created: %s", groupId);
+        logger.info("Pinata group created: %s", groupName);
     }
 
     return groupId;

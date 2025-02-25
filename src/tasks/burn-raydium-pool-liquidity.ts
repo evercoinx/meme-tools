@@ -2,7 +2,7 @@ import { createBurnInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import { PriorityLevel } from "helius-sdk";
 import { getTokenAccountInfo, importLocalKeypair, importMintKeypair } from "../helpers/account";
-import { checkIfStorageExists } from "../helpers/filesystem";
+import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -19,7 +19,7 @@ import {
 
 (async () => {
     try {
-        await checkIfStorageExists(storage.cacheId);
+        await checkIfStorageFileExists(storage.cacheId);
 
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
 
