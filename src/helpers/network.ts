@@ -33,6 +33,7 @@ export interface TransactionOptions {
 
 const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
 const TRANSACTION_POLL_INTERVAL_MS = 1_000;
+const TRANSACTION_RESEND_ATTEMPTS = 5;
 const DEFAULT_COMPUTE_UNIT_LIMIT = 220_000;
 
 export type ContractErrors = Record<
@@ -188,7 +189,7 @@ export async function sendAndConfirmVersionedTransaction(
     signers: Keypair[],
     logMessage: string,
     transactionOptions?: TransactionOptions,
-    resentErrors?: ContractErrors
+    resendErrors?: ContractErrors
 ): Promise<TransactionSignature | undefined> {
     let signature: TransactionSignature | undefined;
 
@@ -196,6 +197,7 @@ export async function sendAndConfirmVersionedTransaction(
     transaction.sign(signers);
 
     const startTime = Date.now();
+    let resendAttempts = 0;
 
     do {
         try {
@@ -206,14 +208,19 @@ export async function sendAndConfirmVersionedTransaction(
             });
             logger.info("Transaction (%s) sent %s", formatSignature(signature), logMessage);
 
-            return await pollTransactionConfirmation(connection, signature, resentErrors);
+            return await pollTransactionConfirmation(connection, signature, resendErrors);
         } catch (error: unknown) {
-            if (error instanceof ResentTransactionError) {
+            if (
+                error instanceof ResentTransactionError &&
+                resendAttempts < TRANSACTION_RESEND_ATTEMPTS
+            ) {
                 logger.error(
                     "Transaction (%s) resent: %s",
                     signature ? formatSignature(signature) : "?",
                     error.message
                 );
+
+                resendAttempts++;
                 continue;
             }
 
@@ -225,7 +232,7 @@ export async function sendAndConfirmVersionedTransaction(
 async function pollTransactionConfirmation(
     connection: Connection,
     signature: TransactionSignature,
-    resentErrors?: ContractErrors
+    resendErrors?: ContractErrors
 ): Promise<TransactionSignature> {
     let elapsed = 0;
 
@@ -247,12 +254,12 @@ async function pollTransactionConfirmation(
             if (result?.err) {
                 clearInterval(intervalId);
 
-                if (resentErrors) {
+                if (resendErrors) {
                     const errorDetails = parseRpcError(result.err);
-                    if (errorDetails && resentErrors[errorDetails.Custom]) {
+                    if (errorDetails && resendErrors[errorDetails.Custom]) {
                         return reject(
                             new ResentTransactionError(
-                                `Transaction (${formatSignature(signature)}) failed. Reason: ${resentErrors[errorDetails.Custom].message}`
+                                `Transaction (${formatSignature(signature)}) failed. Reason: ${resendErrors[errorDetails.Custom].message}`
                             )
                         );
                     }
@@ -300,7 +307,7 @@ function formatRpcError(error: TransactionError | null): string {
         try {
             return JSON.stringify(error);
         } catch {
-            // Ignore JSON error
+            // Ignore Type error
         }
     }
 
