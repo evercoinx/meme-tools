@@ -1,5 +1,5 @@
-import { ApiV3PoolInfoStandardItemCpmm } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
 import chalk from "chalk";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import {
@@ -17,7 +17,7 @@ import {
     storage,
     STORAGE_RAYDIUM_POOL_ID,
 } from "../modules";
-import { loadRaydium } from "../modules/raydium";
+import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
 
 (async () => {
     try {
@@ -28,7 +28,7 @@ import { loadRaydium } from "../modules/raydium";
             throw new Error("Raydium pool not loaded from storage");
         }
 
-        await getPool(raydiumPoolId);
+        await getPool(new PublicKey(raydiumPoolId));
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(error);
@@ -36,20 +36,9 @@ import { loadRaydium } from "../modules/raydium";
     }
 })();
 
-async function getPool(raydiumPoolId: string): Promise<void> {
-    const raydium = await loadRaydium(connectionPool.next());
-    let poolInfo: ApiV3PoolInfoStandardItemCpmm;
-
-    if (raydium.cluster === "devnet") {
-        const data = await raydium.cpmm.getPoolInfoFromRpc(raydiumPoolId);
-        poolInfo = data.poolInfo;
-    } else {
-        const data = await raydium.api.fetchPoolById({ ids: raydiumPoolId });
-        poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
-    }
-    if (!poolInfo) {
-        throw new Error(`CPMM pool not found: ${raydiumPoolId}`);
-    }
+async function getPool(raydiumPoolId: PublicKey): Promise<void> {
+    const raydium = await createRaydium(connectionPool.current());
+    const { poolInfo } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
 
     const {
         id,

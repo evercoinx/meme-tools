@@ -33,7 +33,7 @@ import { envVars, logger, UNITS_PER_MINT } from "../modules";
 import { HeliusClient } from "./helius";
 import { Pool } from "./pool";
 
-export interface CpmmPoolInfo {
+export interface RaydiumCpmmPool {
     poolInfo: ApiV3PoolInfoStandardItemCpmm;
     poolKeys?: CpmmKeys;
     baseReserve: BN;
@@ -54,7 +54,7 @@ export const RAYDIUM_POOL_ERRORS: ContractErrors = {
     },
 };
 
-export async function loadRaydium(connection: Connection, owner?: Keypair): Promise<Raydium> {
+export async function createRaydium(connection: Connection, owner?: Keypair): Promise<Raydium> {
     if (connection.rpcEndpoint === clusterApiUrl("mainnet-beta")) {
         throw new Error(`Public mainnet RPC not allowed: ${connection.rpcEndpoint}`);
     }
@@ -71,12 +71,10 @@ export async function loadRaydium(connection: Connection, owner?: Keypair): Prom
     });
 }
 
-export async function loadRaydiumPoolInfo(
-    connection: Connection,
-    poolId: PublicKey,
-    mint: Keypair
-): Promise<CpmmPoolInfo> {
-    const raydium = await loadRaydium(connection);
+export async function loadRaydiumCpmmPool(
+    raydium: Raydium,
+    poolId: PublicKey
+): Promise<RaydiumCpmmPool> {
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
     let poolKeys: CpmmKeys | undefined;
     let rpcData: CpmmRpcData;
@@ -99,21 +97,10 @@ export async function loadRaydiumPoolInfo(
     }
 
     if (programId !== poolInfo.programId) {
-        throw new Error(`Not Raydium CPMM pool. Program id: ${poolInfo.programId}`);
+        throw new Error(`Invalid program id for Raydium CPMM pool: ${poolInfo.programId}`);
     }
-
-    const poolMints = [NATIVE_MINT.toBase58(), mint.publicKey.toBase58()];
-    if (
-        !poolMints.includes(poolInfo.mintA.address) ||
-        !poolMints.includes(poolInfo.mintB.address)
-    ) {
-        throw new Error(
-            `Invalid mints in Raydium pool: ${poolInfo.mintA.address}/${poolInfo.mintB.address}`
-        );
-    }
-
     if (!rpcData.configInfo) {
-        throw new Error("Missing Raydium config info");
+        throw new Error("Missing config for Raydium CPMM pool");
     }
 
     return {
@@ -128,7 +115,7 @@ export async function loadRaydiumPoolInfo(
 export async function swapSolToMint(
     connectionPool: Pool<Connection>,
     heliusClientPool: Pool<HeliusClient>,
-    { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
+    { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: RaydiumCpmmPool,
     accounts: (Keypair | null)[],
     lamportsToSwap: (BN | null)[],
     slippage: number,
@@ -179,7 +166,7 @@ export async function swapSolToMint(
             UNITS_PER_MINT
         );
 
-        const raydium = await loadRaydium(connection, account);
+        const raydium = await createRaydium(connection, account);
         const {
             transaction: { instructions },
         } = await raydium.cpmm.swap<TxVersion.LEGACY>({
@@ -222,7 +209,7 @@ export async function swapSolToMint(
 export async function swapMintToSol(
     connectionPool: Pool<Connection>,
     heliusClientPool: Pool<HeliusClient>,
-    { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: CpmmPoolInfo,
+    { poolInfo, poolKeys, baseReserve, quoteReserve, tradeFee }: RaydiumCpmmPool,
     accounts: (Keypair | null)[],
     unitsToSwap: (BN | null)[],
     slippage: number,
@@ -274,7 +261,7 @@ export async function swapMintToSol(
             LAMPORTS_PER_SOL
         );
 
-        const raydium = await loadRaydium(connection, account);
+        const raydium = await createRaydium(connection, account);
         const {
             transaction: { instructions },
         } = await raydium.cpmm.swap<TxVersion.LEGACY>({

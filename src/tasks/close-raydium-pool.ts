@@ -1,4 +1,4 @@
-import { Percent, TxVersion } from "@raydium-io/raydium-sdk-v2";
+import { Percent, Raydium, TxVersion } from "@raydium-io/raydium-sdk-v2";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import BN from "bn.js";
@@ -30,7 +30,12 @@ import {
     ZERO_BN,
     ZERO_DECIMAL,
 } from "../modules";
-import { loadRaydium, loadRaydiumPoolInfo, swapMintToSol } from "../modules/raydium";
+import {
+    createRaydium,
+    loadRaydiumCpmmPool,
+    RaydiumCpmmPool,
+    swapMintToSol,
+} from "../modules/raydium";
 
 (async () => {
     try {
@@ -51,13 +56,9 @@ import { loadRaydium, loadRaydiumPoolInfo, swapMintToSol } from "../modules/rayd
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const poolInfo = await loadRaydiumPoolInfo(
-            connectionPool.current(),
-            new PublicKey(raydiumPoolId),
-            mint
-        );
-
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
+        const raydium = await createRaydium(connectionPool.current(), dev);
+        const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_SHARE_POOL_PERCENTS.length,
@@ -69,9 +70,9 @@ import { loadRaydium, loadRaydiumPoolInfo, swapMintToSol } from "../modules/rayd
         const traderUnitsToSell = await findUnitsToSell(traders, mint, SwapperType.Trader);
 
         const sendRemoveRaydiumLiquidityPoolTransaction = await removeRaydiumPoolLiquidity(
-            new PublicKey(raydiumPoolId),
+            raydium,
+            raydiumCpmmPool,
             dev,
-            mint,
             new PublicKey(raydiumLpMint)
         );
         await Promise.all([sendRemoveRaydiumLiquidityPoolTransaction]);
@@ -81,7 +82,7 @@ import { loadRaydium, loadRaydiumPoolInfo, swapMintToSol } from "../modules/rayd
         const sendDevSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
-            poolInfo,
+            raydiumCpmmPool,
             [dev],
             devUnitsToSell,
             SLIPPAGE_PERCENT,
@@ -91,7 +92,7 @@ import { loadRaydium, loadRaydiumPoolInfo, swapMintToSol } from "../modules/rayd
         const sendSniperSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
-            poolInfo,
+            raydiumCpmmPool,
             snipers,
             sniperUnitsToSell,
             SLIPPAGE_PERCENT,
@@ -101,7 +102,7 @@ import { loadRaydium, loadRaydiumPoolInfo, swapMintToSol } from "../modules/rayd
         const sendTraderSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
-            poolInfo,
+            raydiumCpmmPool,
             traders,
             traderUnitsToSell,
             SLIPPAGE_PERCENT,
@@ -167,16 +168,13 @@ async function findUnitsToSell(
 }
 
 async function removeRaydiumPoolLiquidity(
-    raydiumPoolId: PublicKey,
+    raydium: Raydium,
+    { poolInfo, poolKeys }: RaydiumCpmmPool,
     dev: Keypair,
-    mint: Keypair,
     raydiumLpMint: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>> {
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
-
-    const raydium = await loadRaydium(connection, dev);
-    const { poolInfo, poolKeys } = await loadRaydiumPoolInfo(connection, raydiumPoolId, mint);
 
     const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
         connectionPool,
@@ -230,7 +228,7 @@ async function removeRaydiumPoolLiquidity(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [dev],
-        `to remove liquidity from pool id ${raydiumPoolId}`,
+        `to remove liquidity from pool id ${poolInfo.id}`,
         { skipPreflight: true }
     );
 }

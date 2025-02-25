@@ -21,7 +21,7 @@ import {
     UNITS_PER_MINT,
     ZERO_BN,
 } from "../modules";
-import { loadRaydium, loadRaydiumPoolInfo } from "../modules/raydium";
+import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
 
 (async () => {
     try {
@@ -61,8 +61,8 @@ async function addRaydiumPoolLiquidity(
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
 
-    const raydium = await loadRaydium(connection, dev);
-    const { poolInfo, poolKeys } = await loadRaydiumPoolInfo(connection, raydiumPoolId, mint);
+    const raydium = await createRaydium(connection, dev);
+    const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
 
     const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
         connectionPool,

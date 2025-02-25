@@ -33,8 +33,9 @@ import {
     ZERO_DECIMAL,
 } from "../modules";
 import {
-    CpmmPoolInfo,
-    loadRaydiumPoolInfo,
+    createRaydium,
+    loadRaydiumCpmmPool,
+    RaydiumCpmmPool,
     swapMintToSol,
     swapSolToMint,
 } from "../modules/raydium";
@@ -58,11 +59,8 @@ import {
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const poolInfo = await loadRaydiumPoolInfo(
-            connectionPool.current(),
-            new PublicKey(raydiumPoolId),
-            mint
-        );
+        const raydium = await createRaydium(connectionPool.current());
+        const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
 
         let raydiumPoolTradingCycle = storage.get<number | undefined>(
             STORAGE_RAYDIUM_POOL_TRADING_CYCLE
@@ -87,7 +85,7 @@ import {
             logger.debug("Raydium pool trading cycle saved to storage");
 
             await executeTradeCycle(
-                poolInfo,
+                raydiumCpmmPool,
                 shuffle(traders),
                 mint,
                 envVars.POOL_TRADING_MODE,
@@ -104,7 +102,7 @@ import {
 })();
 
 async function executeTradeCycle(
-    poolInfo: CpmmPoolInfo,
+    raydiumCpmmPool: RaydiumCpmmPool,
     traders: Keypair[],
     mint: Keypair,
     tradingMode: "volume" | "pump" | "dump",
@@ -117,18 +115,18 @@ async function executeTradeCycle(
         switch (tradingMode) {
             case "volume": {
                 if (raydiumPoolTradingCycle === 0 || generateRandomBoolean()) {
-                    await pumpPool(poolInfo, traderGroup);
+                    await pumpPool(raydiumCpmmPool, traderGroup);
                 } else {
-                    await dumpPool(poolInfo, traderGroup, mint);
+                    await dumpPool(raydiumCpmmPool, traderGroup, mint);
                 }
                 break;
             }
             case "pump": {
-                await pumpPool(poolInfo, traderGroup);
+                await pumpPool(raydiumCpmmPool, traderGroup);
                 break;
             }
             case "dump": {
-                await dumpPool(poolInfo, traderGroup, mint);
+                await dumpPool(raydiumCpmmPool, traderGroup, mint);
                 break;
             }
             default: {
@@ -142,12 +140,12 @@ async function executeTradeCycle(
     }
 }
 
-async function pumpPool(poolInfo: CpmmPoolInfo, traderGroup: Keypair[]): Promise<void> {
+async function pumpPool(raydiumCpmmPool: RaydiumCpmmPool, traderGroup: Keypair[]): Promise<void> {
     const lamportsToBuy = await findLamportsToBuy(traderGroup);
     const sendSwapSolToMintTransactions = await swapSolToMint(
         connectionPool,
         heliusClientPool,
-        poolInfo,
+        raydiumCpmmPool,
         traderGroup,
         lamportsToBuy,
         SLIPPAGE_PERCENT,
@@ -198,7 +196,7 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
 }
 
 async function dumpPool(
-    poolInfo: CpmmPoolInfo,
+    raydiumCpmmPool: RaydiumCpmmPool,
     traderGroup: Keypair[],
     mint: Keypair
 ): Promise<void> {
@@ -206,7 +204,7 @@ async function dumpPool(
     const sendSwapMintToSolTransactions = await swapMintToSol(
         connectionPool,
         heliusClientPool,
-        poolInfo,
+        raydiumCpmmPool,
         traderGroup,
         unitsToSell,
         SLIPPAGE_PERCENT,

@@ -39,9 +39,9 @@ import {
     UNITS_PER_MINT,
 } from "../modules";
 import {
-    CpmmPoolInfo,
-    loadRaydium,
-    loadRaydiumPoolInfo,
+    createRaydium,
+    loadRaydiumCpmmPool,
+    RaydiumCpmmPool,
     RAYDIUM_POOL_ERRORS,
     swapSolToMint,
 } from "../modules/raydium";
@@ -126,9 +126,10 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
 async function createPool(
     dev: Keypair,
     mint: Keypair
-): Promise<[Promise<TransactionSignature | undefined>, CpmmPoolInfo]> {
+): Promise<[Promise<TransactionSignature | undefined>, RaydiumCpmmPool]> {
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
+    const raydium = await createRaydium(connection, dev);
 
     const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
     if (raydiumPoolId) {
@@ -140,11 +141,9 @@ async function createPool(
         }
         logger.debug("Raydium LP mint %s loaded from storage", raydimLpMint);
 
-        const poolInfo = await loadRaydiumPoolInfo(connection, new PublicKey(raydiumPoolId), mint);
+        const poolInfo = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
         return [Promise.resolve(undefined), poolInfo];
     }
-
-    const raydium = await loadRaydium(connection, dev);
 
     const feeConfigs = await raydium.api.getCpmmConfigs();
     if (feeConfigs.length === 0) {
