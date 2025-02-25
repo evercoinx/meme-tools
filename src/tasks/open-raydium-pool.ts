@@ -16,7 +16,7 @@ import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";
 import {
     importSwapperKeypairs,
-    importLocalKeypair,
+    importKeypairFromFile,
     importMintKeypair,
     getTokenAccountInfo,
 } from "../helpers/account";
@@ -51,11 +51,11 @@ import {
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
+        const dev = await importKeypairFromFile(envVars.DEV_KEYPAIR_PATH, "dev");
 
         const mint = importMintKeypair();
         if (!mint) {
-            throw new Error("Mint not imported");
+            throw new Error("Mint not loaded from storage");
         }
 
         const snipers = importSwapperKeypairs(

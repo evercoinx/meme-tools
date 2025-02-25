@@ -13,7 +13,7 @@ import { connectionPool, envVars, explorer, logger, storage } from "../modules";
 
         const mint = importMintKeypair();
         if (!mint) {
-            throw new Error("Mint not imported");
+            throw new Error("Mint not loaded from storage");
         }
 
         await getMint(mint);

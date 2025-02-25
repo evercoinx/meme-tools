@@ -1,6 +1,10 @@
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
-import { importSwapperKeypairs, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import {
+    importSwapperKeypairs,
+    importKeypairFromFile,
+    importMintKeypair,
+} from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import { envVars, logger, OUTPUT_UNKNOWN_KEY, storage, SwapperType } from "../modules";
@@ -9,8 +13,8 @@ import { envVars, logger, OUTPUT_UNKNOWN_KEY, storage, SwapperType } from "../mo
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
-        const distributor = await importLocalKeypair(
+        const dev = await importKeypairFromFile(envVars.DEV_KEYPAIR_PATH, "dev");
+        const distributor = await importKeypairFromFile(
             envVars.DISTRIBUTOR_KEYPAIR_PATH,
             "distributor"
         );

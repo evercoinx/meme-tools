@@ -5,7 +5,7 @@ import BN from "bn.js";
 import { PriorityLevel } from "helius-sdk";
 import {
     getTokenAccountInfo,
-    importLocalKeypair,
+    importKeypairFromFile,
     importMintKeypair,
     importSwapperKeypairs,
 } from "../helpers/account";
@@ -43,7 +43,7 @@ import {
 
         const mint = importMintKeypair();
         if (!mint) {
-            throw new Error("Mint not imported");
+            throw new Error("Mint not loaded from storage");
         }
 
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
@@ -56,7 +56,7 @@ import {
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
+        const dev = await importKeypairFromFile(envVars.DEV_KEYPAIR_PATH, "dev");
         const raydium = await createRaydium(connectionPool.current(), dev);
         const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
 

@@ -10,7 +10,7 @@ import { PriorityLevel } from "helius-sdk";
 import {
     generateOrImportSwapperKeypairs,
     getSolBalance,
-    importLocalKeypair,
+    importKeypairFromFile,
 } from "../helpers/account";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
 import {
@@ -22,7 +22,7 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
 
 (async () => {
     try {
-        const distributor = await importLocalKeypair(
+        const distributor = await importKeypairFromFile(
             envVars.DISTRIBUTOR_KEYPAIR_PATH,
             "distributor"
         );

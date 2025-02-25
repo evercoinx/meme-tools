@@ -12,7 +12,7 @@ export function createStorage(tokenSymbol: string, storagePath: string): FlatCac
     });
 
     storage.on(FlatCacheEvents.SAVE, async () => formatStorageFile(fileName));
-    storage.on(FlatCacheEvents.DELETE, async () => formatStorageFile(fileName));
+    storage.on(FlatCacheEvents.CLEAR, async () => formatStorageFile(fileName));
 
     return storage;
 }

@@ -22,7 +22,7 @@ import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana
 import chalk from "chalk";
 import { PriorityLevel } from "helius-sdk";
 import pkg from "../../package.json";
-import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
+import { generateOrImportMintKeypair, importKeypairFromFile } from "../helpers/account";
 import { checkIfImageFileExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import {
@@ -79,7 +79,7 @@ const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}
         await checkIfImageFileExists(envVars.TOKEN_SYMBOL, "webp");
 
         const mint = generateOrImportMintKeypair();
-        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
+        const dev = await importKeypairFromFile(envVars.DEV_KEYPAIR_PATH, "dev");
 
         const groupId = await getOrCreateGroup(`${pkg.name}-${envVars.NODE_ENV}`);
         const imageUri = await uploadImage(groupId);

@@ -1,14 +1,6 @@
 import pkg from "../../package.json";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
-import {
-    envVars,
-    logger,
-    pinataClient,
-    storage,
-    STORAGE_MINT_IMAGE_URI,
-    STORAGE_MINT_METADATA,
-    STORAGE_MINT_SECRET_KEY,
-} from "../modules";
+import { envVars, logger, pinataClient, storage } from "../modules";
 
 (async () => {
     try {
@@ -17,7 +9,7 @@ import {
             await unpinIpfsFiles(groupId);
         }
 
-        await deleteMintStorage();
+        await clearStorageFile();
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(error);
@@ -56,7 +48,7 @@ async function unpinIpfsFiles(groupId: string): Promise<void> {
 
     if (filesToUnpin.length > 0) {
         await pinataClient.unpin(filesToUnpin);
-        logger.info("%d mint files deleted", filesToUnpin.length);
+        logger.info("%d mint files deleted from IPFS", filesToUnpin.length);
     }
 }
 
@@ -68,13 +60,12 @@ async function findFileToUnpin(groupId: string, fileName: string): Promise<strin
         : undefined;
 }
 
-async function deleteMintStorage(): Promise<void> {
+async function clearStorageFile(): Promise<void> {
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        storage.delete(STORAGE_MINT_IMAGE_URI);
-        storage.delete(STORAGE_MINT_METADATA);
-        storage.delete(STORAGE_MINT_SECRET_KEY);
+        storage.clear();
+        logger.debug("Storage cleared");
     } catch (error: unknown) {
         logger.warn(error instanceof Error ? error.message : String(error));
     }

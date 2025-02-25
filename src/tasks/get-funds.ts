@@ -5,7 +5,7 @@ import Decimal from "decimal.js";
 import {
     getSolBalance,
     getTokenAccountInfo,
-    importLocalKeypair,
+    importKeypairFromFile,
     importMintKeypair,
     importSwapperKeypairs,
 } from "../helpers/account";
@@ -27,8 +27,8 @@ import {
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
-        const distributor = await importLocalKeypair(
+        const dev = await importKeypairFromFile(envVars.DEV_KEYPAIR_PATH, "dev");
+        const distributor = await importKeypairFromFile(
             envVars.DISTRIBUTOR_KEYPAIR_PATH,
             "distributor"
         );

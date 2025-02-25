@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { basename } from "node:path";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -6,10 +7,15 @@ import { capitalize, formatPublicKey } from "./format";
 import { encryption, logger, storage, STORAGE_MINT_SECRET_KEY, SwapperType } from "../modules";
 import { Pool } from "../modules/pool";
 
-export async function importLocalKeypair(path: string, id: string): Promise<Keypair> {
-    const secretKey: number[] = JSON.parse(await fs.readFile(path, "utf8"));
+export async function importKeypairFromFile(filePath: string, label: string): Promise<Keypair> {
+    const secretKey: number[] = JSON.parse(await fs.readFile(filePath, "utf8"));
     const account = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-    logger.debug("%s (%s) key pair imported", capitalize(id), formatPublicKey(account.publicKey));
+    logger.debug(
+        "%s (%s) key pair loaded from file: %s",
+        capitalize(label),
+        formatPublicKey(account.publicKey),
+        basename(filePath)
+    );
     return account;
 }
 
@@ -20,7 +26,7 @@ export function generateOrImportMintKeypair(): Keypair {
     if (encryptedSecretKey) {
         const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
         mint = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-        logger.debug("Mint (%s) key pair imported", formatPublicKey(mint.publicKey));
+        logger.debug("Mint (%s) key pair loaded from storage", formatPublicKey(mint.publicKey));
     } else {
         mint = Keypair.generate();
         logger.info("Mint (%s) key pair generated", formatPublicKey(mint.publicKey));
@@ -42,7 +48,7 @@ export function importMintKeypair(): Keypair | undefined {
 
     const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
     const mint = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-    logger.debug("Mint (%s) key pair imported", formatPublicKey(mint.publicKey));
+    logger.debug("Mint (%s) key pair loaded from storage", formatPublicKey(mint.publicKey));
 
     return mint;
 }
@@ -62,7 +68,7 @@ export function generateOrImportSwapperKeypairs(
             const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
             swapper = Keypair.fromSecretKey(Uint8Array.from(secretKey));
             logger.debug(
-                "%s (%s) key pair imported",
+                "%s (%s) key pair loaded from stroage",
                 capitalize(swapperType),
                 formatPublicKey(swapper.publicKey)
             );
@@ -106,7 +112,7 @@ export function importSwapperKeypairs(swapperCount: number, swapperType: Swapper
         const secretKey: number[] = JSON.parse(encryption.decrypt(encryptedSecretKey));
         const swapper = Keypair.fromSecretKey(Uint8Array.from(secretKey));
         logger.debug(
-            "%s (%s) key pair imported",
+            "%s (%s) key pair loaded from storage",
             capitalize(swapperType),
             formatPublicKey(swapper.publicKey)
         );

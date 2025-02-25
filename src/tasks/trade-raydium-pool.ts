@@ -47,7 +47,7 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 
         const mint = importMintKeypair();
         if (!mint) {
-            throw new Error("Mint not imported");
+            throw new Error("Mint not loaded from storage");
         }
 
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);

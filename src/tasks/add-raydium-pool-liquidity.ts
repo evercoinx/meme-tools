@@ -3,7 +3,7 @@ import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { PriorityLevel } from "helius-sdk";
-import { getTokenAccountInfo, importLocalKeypair, importMintKeypair } from "../helpers/account";
+import { getTokenAccountInfo, importKeypairFromFile, importMintKeypair } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
@@ -27,11 +27,11 @@ import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
+        const dev = await importKeypairFromFile(envVars.DEV_KEYPAIR_PATH, "dev");
 
         const mint = importMintKeypair();
         if (!mint) {
-            throw new Error("Mint not imported");
+            throw new Error("Mint not loaded from storage");
         }
 
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
