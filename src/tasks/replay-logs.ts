@@ -16,7 +16,7 @@ import { LogEntry } from "../modules/logger";
         try {
             await access(dirPath);
         } catch {
-            throw new Error(`Logs for task '${envVars.LOGGER_NAME}' not found`);
+            throw new Error(`Task logs not found: ${envVars.LOGGER_NAME}`);
         }
 
         await replayLogs(dirPath);

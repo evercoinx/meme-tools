@@ -81,7 +81,7 @@ const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}
         const mint = generateOrImportMintKeypair();
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
 
-        const groupId = await getOrCreateGroup(pkg.name);
+        const groupId = await getOrCreateGroup(`${pkg.name}-${envVars.NODE_ENV}`);
         const imageUri = await uploadImage(groupId);
         const metadata = await uploadMetadata(groupId, imageUri);
 
