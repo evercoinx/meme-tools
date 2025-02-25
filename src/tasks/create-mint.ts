@@ -22,6 +22,7 @@ import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-to
 import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana/web3.js";
 import chalk from "chalk";
 import { PriorityLevel } from "helius-sdk";
+import pkg from "../../package.json";
 import { generateOrImportMintKeypair, importLocalKeypair } from "../helpers/account";
 import { checkIfImageExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
@@ -46,8 +47,8 @@ interface FullTokenMetadata {
     name: string;
     symbol: string;
     description: string;
-    image: string;
     decimals: number;
+    image: string;
     uri?: string;
     external_url?: string;
     social_links?: Record<string, string>;
@@ -59,14 +60,16 @@ const generateOffchainTokenMetadata = (
     symbol: string,
     name: string,
     description: string,
-    decimals: number
-): Pick<FullTokenMetadata, "name" | "symbol" | "description" | "decimals"> => {
+    decimals: number,
+    imageUri: string
+): Pick<FullTokenMetadata, "name" | "symbol" | "description" | "decimals" | "image"> => {
     const normalizedSymbol = symbol.toUpperCase();
     return {
         symbol: normalizedSymbol,
         name: name || `Official ${normalizedSymbol} Meme`,
         description: description || `Official ${normalizedSymbol} Meme on Solana`,
         decimals,
+        image: imageUri,
     };
 };
 
@@ -79,8 +82,9 @@ const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}
         const mint = generateOrImportMintKeypair();
         const dev = await importLocalKeypair(envVars.DEV_KEYPAIR_PATH, "dev");
 
-        const imageUri = await uploadImage();
-        const metadata = await uploadMetadata(imageUri);
+        const groupId = await getOrCreateGroup(pkg.name);
+        const imageUri = await uploadImage(groupId);
+        const metadata = await uploadMetadata(groupId, imageUri);
 
         const sendCreateMintTransaction = await createMint(metadata, dev, mint);
         await Promise.all([sendCreateMintTransaction]);
@@ -91,7 +95,21 @@ const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}
     }
 })();
 
-async function uploadImage(): Promise<string> {
+async function getOrCreateGroup(groupName: string): Promise<string> {
+    const groups = await pinataClient.groups.list().name(groupName);
+    let groupId: string;
+
+    if (groups.length > 0) {
+        groupId = groups[0].id;
+    } else {
+        ({ id: groupId } = await pinataClient.groups.create({ name: groupName }));
+        logger.warn("Pinata group created: %s", groupId);
+    }
+
+    return groupId;
+}
+
+async function uploadImage(groupId: string): Promise<string> {
     let imageUri = storage.get<string | undefined>(STORAGE_MINT_IMAGE_URI);
     if (imageUri) {
         logger.debug("Mint image URI loaded from storage");
@@ -99,7 +117,7 @@ async function uploadImage(): Promise<string> {
     }
 
     const imageFileName = `${envVars.TOKEN_SYMBOL.toLowerCase()}.webp`;
-    const pinnedFiles = await pinataClient.listFiles().name(imageFileName);
+    const pinnedFiles = await pinataClient.listFiles().group(groupId).name(imageFileName);
 
     if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === imageFileName) {
         imageUri = generatePinataUri(pinnedFiles[0].ipfs_pin_hash);
@@ -109,7 +127,7 @@ async function uploadImage(): Promise<string> {
         const imageBlob = new Blob([await readFile(join(IMAGE_DIR, imageFileName))]);
 
         const imageFile = new File([imageBlob], imageFileName, { type: "image/webp" });
-        const upload = await pinataClient.upload.file(imageFile);
+        const upload = await pinataClient.upload.file(imageFile).group(groupId);
 
         imageUri = generatePinataUri(upload.IpfsHash);
         logger.info("Mint image file uploaded to IPFS: %s", chalk.blue(imageUri));
@@ -122,26 +140,24 @@ async function uploadImage(): Promise<string> {
     return imageUri;
 }
 
-async function uploadMetadata(imageUri: string): Promise<FullTokenMetadata> {
+async function uploadMetadata(groupId: string, imageUri: string): Promise<FullTokenMetadata> {
     let metadata = storage.get<FullTokenMetadata | undefined>(STORAGE_MINT_METADATA);
     if (metadata) {
         logger.debug("Mint metadata file loaded from storage");
         return metadata;
     }
 
-    metadata = {
-        ...generateOffchainTokenMetadata(
-            envVars.TOKEN_SYMBOL,
-            envVars.TOKEN_NAME,
-            envVars.TOKEN_DESCRIPTION,
-            envVars.TOKEN_DECIMALS
-        ),
-        image: imageUri,
-    };
+    metadata = generateOffchainTokenMetadata(
+        envVars.TOKEN_SYMBOL,
+        envVars.TOKEN_NAME,
+        envVars.TOKEN_DESCRIPTION,
+        envVars.TOKEN_DECIMALS,
+        imageUri
+    );
 
     const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
+    const pinnedFiles = await pinataClient.listFiles().group(groupId).name(metadataFilename);
     let metadataUri = "";
-    const pinnedFiles = await pinataClient.listFiles().name(metadataFilename);
 
     if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === metadataFilename) {
         metadataUri = generatePinataUri(pinnedFiles[0].ipfs_pin_hash);
@@ -151,7 +167,7 @@ async function uploadMetadata(imageUri: string): Promise<FullTokenMetadata> {
         const metadataFile = new File([JSON.stringify(metadata)], metadataFilename, {
             type: "text/plain",
         });
-        const upload = await pinataClient.upload.file(metadataFile);
+        const upload = await pinataClient.upload.file(metadataFile).group(groupId);
 
         metadataUri = generatePinataUri(upload.IpfsHash);
         logger.info("Mint metadata file uploaded to IPFS: %s", metadataUri);
@@ -180,7 +196,7 @@ async function createMint(
             TOKEN_2022_PROGRAM_ID
         );
     } catch {
-        // Ignore AccountNotFoundError error
+        // Ignore NotFound error
     }
     if (mintInfo) {
         logger.warn("Mint (%s) already created", mint.publicKey.toBase58());
