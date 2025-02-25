@@ -26,7 +26,7 @@ export function createLogger(scope: string, name: string, level: string, logPath
         },
     ];
 
-    if (name && !/^(get|replay)/.test(name)) {
+    if (name && !/^(cleanup|get|replay)/i.test(name)) {
         targets.push({
             target: "pino/file",
             level: "info",

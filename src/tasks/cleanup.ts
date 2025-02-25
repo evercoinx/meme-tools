@@ -1,15 +1,23 @@
+import { rm } from "fs/promises";
 import pkg from "../../package.json";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
-import { envVars, logger, pinataClient, storage } from "../modules";
+import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
 
 (async () => {
     try {
+        if (envVars.NODE_ENV === "production") {
+            logger.warn("Cleanup for production forbidden");
+            process.exit(0);
+        }
+
+        await removeLogFiles();
+        await clearStorageFile();
+
         const groupId = await getGroup(`${pkg.name}-${envVars.NODE_ENV}`);
         if (groupId) {
             await unpinIpfsFiles(groupId);
         }
 
-        await clearStorageFile();
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(error);
@@ -60,12 +68,20 @@ async function findFileToUnpin(groupId: string, fileName: string): Promise<strin
         : undefined;
 }
 
+async function removeLogFiles(): Promise<void> {
+    await rm(LOG_DIR, {
+        recursive: true,
+        force: true,
+    });
+    logger.info("Log files removed");
+}
+
 async function clearStorageFile(): Promise<void> {
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
         storage.clear();
-        logger.debug("Storage cleared");
+        logger.info("Storage cleared");
     } catch (error: unknown) {
         logger.warn(error instanceof Error ? error.message : String(error));
     }

@@ -18,11 +18,6 @@ export enum SwapperType {
     Trader = "trader",
 }
 
-const cwd = process.cwd();
-export const IMAGE_DIR = join(cwd, "images");
-export const LOG_DIR = join(cwd, "logs");
-export const STORAGE_DIR = join(cwd, "storages");
-
 export const STORAGE_MINT_IMAGE_URI = "mint_image_uri";
 export const STORAGE_MINT_METADATA = "mint_metadata";
 export const STORAGE_MINT_SECRET_KEY = "mint_secret_key";
@@ -42,6 +37,11 @@ export const ZERO_DECIMAL = new Decimal(0);
 export const envVars = extractEnvironmentVariables();
 export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
 export const MINT_DUST_AMOUNT = new Decimal(100).mul(UNITS_PER_MINT);
+
+const cwd = process.cwd();
+export const IMAGE_DIR = join(cwd, "images", envVars.NODE_ENV);
+export const LOG_DIR = join(cwd, "logs", envVars.NODE_ENV);
+export const STORAGE_DIR = join(cwd, "storages", envVars.NODE_ENV);
 
 export const logger = createLogger(
     envVars.TOKEN_SYMBOL,
