@@ -23,7 +23,7 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
 (async () => {
     try {
         const distributor = await importKeypairFromFile(
-            envVars.DISTRIBUTOR_KEYPAIR_PATH,
+            envVars.KEYPAIR_PATH_DISTRIBUTOR,
             "distributor"
         );
 

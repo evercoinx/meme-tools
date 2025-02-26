@@ -44,9 +44,9 @@ import {
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importKeypairFromFile(envVars.DEV_KEYPAIR_PATH, "dev");
+        const dev = await importKeypairFromFile(envVars.KEYPAIR_PATH_DEV, "dev");
         const distributor = await importKeypairFromFile(
-            envVars.DISTRIBUTOR_KEYPAIR_PATH,
+            envVars.KEYPAIR_PATH_DISTRIBUTOR,
             "distributor"
         );
 

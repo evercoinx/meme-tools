@@ -27,7 +27,7 @@ import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importKeypairFromFile(envVars.DEV_KEYPAIR_PATH, "dev");
+        const dev = await importKeypairFromFile(envVars.KEYPAIR_PATH_DEV, "dev");
 
         const mint = importMintKeypair();
         if (!mint) {

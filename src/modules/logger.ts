@@ -8,8 +8,13 @@ export interface LogEntry {
     msg: string;
 }
 
-export function createLogger(scope: string, name: string, level: string, logPath: string): Logger {
-    const dirName = join(logPath, scope.toLocaleLowerCase(), name);
+export function createLogger(
+    tokenSymbol: string,
+    name: string,
+    level: string,
+    logPath: string
+): Logger {
+    const dirName = join(logPath, tokenSymbol.toLocaleLowerCase(), name);
     const fileName = `${new Date().toISOString().slice(0, 19)}.log`;
 
     const targets: TransportTargetOptions[] = [
@@ -39,6 +44,7 @@ export function createLogger(scope: string, name: string, level: string, logPath
     }
 
     return pino({
+        name,
         timestamp: stdTimeFunctions.epochTime,
         level,
         base: undefined,

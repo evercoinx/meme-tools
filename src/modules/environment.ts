@@ -14,8 +14,8 @@ interface EnvironmentSchema {
     RPC_URIS: Set<string>;
     RPC_CLUSTER: "devnet" | "mainnet-beta";
     EXPLORER_URI: string;
-    DEV_KEYPAIR_PATH: string;
-    DISTRIBUTOR_KEYPAIR_PATH: string;
+    KEYPAIR_PATH_DEV: string;
+    KEYPAIR_PATH_DISTRIBUTOR: string;
     KEYPAIR_SECRET: string;
     TOKEN_SYMBOL: string;
     TOKEN_NAME: string;
@@ -114,12 +114,12 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .allow("https://solana.fm", "https://explorer.solana.com")
                 .default("https://solana.fm")
                 .description("Solana explorer URI"),
-            DEV_KEYPAIR_PATH: Joi.string()
+            KEYPAIR_PATH_DEV: Joi.string()
                 .required()
                 .trim()
                 .pattern(FILE_PATH_PATTERN)
                 .description("Dev keypair path"),
-            DISTRIBUTOR_KEYPAIR_PATH: Joi.string()
+            KEYPAIR_PATH_DISTRIBUTOR: Joi.string()
                 .required()
                 .trim()
                 .pattern(FILE_PATH_PATTERN)

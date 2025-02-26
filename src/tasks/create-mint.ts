@@ -79,7 +79,7 @@ const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}
         await checkIfImageFileExists(envVars.TOKEN_SYMBOL, "webp");
 
         const mint = generateOrImportMintKeypair();
-        const dev = await importKeypairFromFile(envVars.DEV_KEYPAIR_PATH, "dev");
+        const dev = await importKeypairFromFile(envVars.KEYPAIR_PATH_DEV, "dev");
 
         const groupId = await getOrCreateGroup(`${pkg.name}-${envVars.NODE_ENV}`);
         const imageUri = await uploadImage(groupId);
