@@ -28,12 +28,12 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
         );
 
         const snipers = generateOrImportSwapperKeypairs(
-            envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+            envVars.SNIPER_POOL_SHARE_PERCENTS.length,
             SwapperType.Sniper
         );
         const traders = generateOrImportSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
-        const sniperAmounts = envVars.SNIPER_SHARE_POOL_PERCENTS.map((sharePoolPercent) =>
+        const sniperAmounts = envVars.SNIPER_POOL_SHARE_PERCENTS.map((sharePoolPercent) =>
             new Decimal(envVars.POOL_LIQUIDITY_SOL)
                 .mul(sharePoolPercent)
                 .add(envVars.SNIPER_BALANCE_SOL)

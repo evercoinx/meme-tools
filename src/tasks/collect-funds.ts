@@ -54,7 +54,7 @@ import {
         const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
 
         const snipers = importSwapperKeypairs(
-            envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+            envVars.SNIPER_POOL_SHARE_PERCENTS.length,
             SwapperType.Sniper
         );
         const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);

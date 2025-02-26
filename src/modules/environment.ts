@@ -26,7 +26,7 @@ interface EnvironmentSchema {
     POOL_LIQUIDITY_SOL: number;
     POOL_TRADING_MODE: "volume" | "pump" | "dump";
     POOL_TRADING_CYCLE_COUNT: number;
-    SNIPER_SHARE_POOL_PERCENTS: number[];
+    SNIPER_POOL_SHARE_PERCENTS: number[];
     SNIPER_BALANCE_SOL: number;
     TRADER_COUNT: number;
     TRADER_GROUP_SIZE: number;
@@ -181,7 +181,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(100)
                 .default(2)
                 .description("Pool trading cycle count"),
-            SNIPER_SHARE_POOL_PERCENTS: Joi.array()
+            SNIPER_POOL_SHARE_PERCENTS: Joi.array()
                 .required()
                 .items(Joi.number().min(0.5).max(3).custom(convertToFractionalPercent))
                 .unique()
@@ -251,8 +251,8 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
         .validate({
             ...process.env,
             RPC_URIS: process.env.RPC_URIS?.split(ARRAY_SEPARATOR),
-            SNIPER_SHARE_POOL_PERCENTS:
-                process.env.SNIPER_SHARE_POOL_PERCENTS?.split(ARRAY_SEPARATOR),
+            SNIPER_POOL_SHARE_PERCENTS:
+                process.env.SNIPER_POOL_SHARE_PERCENTS?.split(ARRAY_SEPARATOR),
             PRIORITIZATION_FEE_MULTIPLIERS:
                 process.env.PRIORITIZATION_FEE_MULTIPLIERS?.split(ARRAY_SEPARATOR),
             TRADER_BUY_AMOUNT_RANGE_SOL:

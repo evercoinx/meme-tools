@@ -59,12 +59,12 @@ import {
         }
 
         const snipers = importSwapperKeypairs(
-            envVars.SNIPER_SHARE_POOL_PERCENTS.length,
+            envVars.SNIPER_POOL_SHARE_PERCENTS.length,
             SwapperType.Sniper
         );
         const snipersToBuy = await findSnipersToBuy(snipers, mint);
 
-        const lamportsToBuy = envVars.SNIPER_SHARE_POOL_PERCENTS.map(
+        const lamportsToBuy = envVars.SNIPER_POOL_SHARE_PERCENTS.map(
             (sharePoolPercent) =>
                 new BN(
                     new Decimal(envVars.POOL_LIQUIDITY_SOL)
