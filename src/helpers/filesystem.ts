@@ -16,6 +16,7 @@ export async function checkIfImageFileExists(name: string, extension: string): P
 
 export async function checkIfStorageFileExists(fileName: string): Promise<void> {
     const normalizedFileName = fileName.toLowerCase();
+
     try {
         await access(join(STORAGE_DIR, normalizedFileName));
     } catch {
@@ -24,14 +25,14 @@ export async function checkIfStorageFileExists(fileName: string): Promise<void> 
 }
 
 export async function formatStorageFile(fileName: string): Promise<void> {
-    const filepath = join(STORAGE_DIR, fileName);
-    const fileContents = await readFile(filepath, "utf8");
-    const options = await resolveConfig(filepath);
+    const filePath = join(STORAGE_DIR, fileName);
+    const fileContents = await readFile(filePath, "utf8");
+    const options = await resolveConfig(filePath);
 
     const formattedJson = await format(fileContents, {
         ...options,
-        filepath,
+        filepath: filePath,
     });
 
-    await writeFile(filepath, formattedJson);
+    await writeFile(filePath, formattedJson);
 }

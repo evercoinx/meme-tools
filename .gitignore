@@ -1,6 +1,10 @@
 dist/
-images/
-logs/
+images/*
+!images/production/
+!images/test/
+logs/*
+!logs/production/
 node_modules/
-storages/
+storages/*
+!storages/production/
 .env*
