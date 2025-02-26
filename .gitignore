@@ -3,5 +3,4 @@ images/
 logs/
 node_modules/
 storages/
-.env
-.env.production
+.env*

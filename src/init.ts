@@ -11,6 +11,6 @@ process.on("warning", (warning) => {
 });
 
 dotenv.config({
-    path: process.env.NODE_ENV === "development" ? ".env" : ".env.production",
+    path: `.env.${process.env.NODE_ENV}`,
     encoding: "utf8",
 });

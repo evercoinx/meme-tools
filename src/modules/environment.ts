@@ -1,7 +1,7 @@
 import Decimal from "decimal.js";
 import Joi from "joi";
 
-export type NODE_ENV = "development" | "production";
+export type NODE_ENV = "development" | "test" | "production";
 
 export type LOG_LEVEL = "silent" | "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
@@ -51,7 +51,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             NODE_ENV: Joi.string()
                 .required()
                 .trim()
-                .valid("development", "production")
+                .valid("development", "test", "production")
                 .description("Node environment"),
             LOG_LEVEL: Joi.string()
                 .optional()
