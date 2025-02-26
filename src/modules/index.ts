@@ -36,7 +36,7 @@ export const ZERO_DECIMAL = new Decimal(0);
 
 export const envVars = extractEnvironmentVariables();
 export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
-export const MINT_DUST_AMOUNT = new Decimal(100).mul(UNITS_PER_MINT);
+export const MINT_DUST_UNITS = new Decimal(100).mul(UNITS_PER_MINT);
 
 const cwd = process.cwd();
 export const IMAGE_DIR = join(cwd, "images", envVars.NODE_ENV);

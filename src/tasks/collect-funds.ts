@@ -32,7 +32,7 @@ import {
     heliusClientPool,
     logger,
     MIN_REMAINING_BALANCE_LAMPORTS,
-    MINT_DUST_AMOUNT,
+    MINT_DUST_UNITS,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
@@ -122,7 +122,7 @@ async function closeTokenAccounts(
                     formatPublicKey(mintTokenAccount)
                 );
             } else {
-                if (mintTokenBalance.gt(ZERO_DECIMAL) && mintTokenBalance.lte(MINT_DUST_AMOUNT)) {
+                if (mintTokenBalance.gt(ZERO_DECIMAL) && mintTokenBalance.lte(MINT_DUST_UNITS)) {
                     instructions.push(
                         createBurnInstruction(
                             mintTokenAccount,

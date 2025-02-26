@@ -65,10 +65,10 @@ import {
         const snipersToBuy = await findSnipersToBuy(snipers, mint);
 
         const lamportsToBuy = envVars.SNIPER_POOL_SHARE_PERCENTS.map(
-            (sharePoolPercent) =>
+            (poolSharePercent) =>
                 new BN(
                     new Decimal(envVars.POOL_LIQUIDITY_SOL)
-                        .mul(sharePoolPercent)
+                        .mul(poolSharePercent)
                         .mul(LAMPORTS_PER_SOL)
                         .toFixed(0)
                 )

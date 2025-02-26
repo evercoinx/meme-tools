@@ -12,13 +12,20 @@ import {
     getSolBalance,
     importKeypairFromFile,
 } from "../helpers/account";
-import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
+import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import { generateRandomFloat } from "../helpers/random";
-import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "../modules";
+import {
+    connectionPool,
+    envVars,
+    heliusClientPool,
+    logger,
+    SwapperType,
+    ZERO_DECIMAL,
+} from "../modules";
 
 (async () => {
     try {
@@ -33,14 +40,14 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
         );
         const traders = generateOrImportSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
-        const sniperAmounts = envVars.SNIPER_POOL_SHARE_PERCENTS.map((sharePoolPercent) =>
+        const sniperLamports = envVars.SNIPER_POOL_SHARE_PERCENTS.map((poolSharePercent) =>
             new Decimal(envVars.POOL_LIQUIDITY_SOL)
-                .mul(sharePoolPercent)
+                .mul(poolSharePercent)
                 .add(envVars.SNIPER_BALANCE_SOL)
                 .mul(LAMPORTS_PER_SOL)
                 .trunc()
         );
-        const traderAmounts = new Array(envVars.TRADER_COUNT)
+        const traderLamports = new Array(envVars.TRADER_COUNT)
             .fill(0)
             .map(() =>
                 new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
@@ -51,17 +58,16 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
                     .trunc()
             );
 
-        const sendDistrubuteSniperFundsTransaction = await distributeFunds(
-            sniperAmounts,
+        const sendDistrubuteSniperFundsTransaction = await distributeSniperFunds(
             distributor,
             snipers,
-            SwapperType.Sniper
+            sniperLamports
         );
-        const sendDistrubuteTraderFundsTransaction = await distributeFunds(
-            traderAmounts,
+        const sendDistrubuteTraderFundsTransaction = await distributeTraderFunds(
             distributor,
             traders,
-            SwapperType.Trader
+            traderLamports,
+            new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1]).mul(LAMPORTS_PER_SOL).trunc()
         );
 
         await Promise.all([
@@ -75,63 +81,38 @@ import { connectionPool, envVars, heliusClientPool, logger, SwapperType } from "
     }
 })();
 
-async function distributeFunds(
-    lamports: Decimal[],
+async function distributeSniperFunds(
     distributor: Keypair,
-    accounts: Keypair[],
-    swapperType: SwapperType
+    snipers: Keypair[],
+    lamports: Decimal[]
 ): Promise<Promise<TransactionSignature | undefined>> {
     const instructions: TransactionInstruction[] = [];
-    let fundedAccountCount = 0;
-    const minTraderTransferLamports = new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
-        .mul(LAMPORTS_PER_SOL)
-        .trunc();
+    let fundedSniperCount = 0;
+    let totalLamports = ZERO_DECIMAL;
 
     let connection = connectionPool.current();
     let heliusClient = heliusClientPool.current();
 
-    for (const [i, account] of accounts.entries()) {
-        const solBalance = await getSolBalance(connectionPool, account);
-        if (solBalance.gte(lamports[i])) {
+    for (const [i, sniper] of snipers.entries()) {
+        const solBalance = await getSolBalance(connectionPool, sniper);
+        if (solBalance.gt(0)) {
             logger.warn(
-                "%s (%s) has sufficient balance on wallet: %s SOL. Expected transfer: %s SOL",
-                capitalize(swapperType),
-                formatPublicKey(account.publicKey),
-                formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-                formatDecimal(lamports[i].div(LAMPORTS_PER_SOL))
-            );
-            continue;
-        }
-        if (swapperType === SwapperType.Sniper && solBalance.gt(0)) {
-            logger.warn(
-                "%s (%s) has non zero balance on wallet: %s SOL",
-                capitalize(swapperType),
-                formatPublicKey(account.publicKey),
+                "Sniper (%s) has non zero balance on wallet: %s SOL",
+                formatPublicKey(sniper.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
-            continue;
-        }
-
-        const residualLamports = lamports[i].sub(solBalance);
-        if (swapperType === SwapperType.Trader && residualLamports.lt(minTraderTransferLamports)) {
-            logger.warn(
-                "%s (%s) ineligible for min transfer: %s SOL. Expected transfer: %s SOL",
-                capitalize(swapperType),
-                formatPublicKey(account.publicKey),
-                formatDecimal(minTraderTransferLamports.div(LAMPORTS_PER_SOL)),
-                formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))
+        } else {
+            instructions.push(
+                SystemProgram.transfer({
+                    fromPubkey: distributor.publicKey,
+                    toPubkey: sniper.publicKey,
+                    lamports: lamports[i].toNumber(),
+                })
             );
-            continue;
-        }
 
-        instructions.push(
-            SystemProgram.transfer({
-                fromPubkey: distributor.publicKey,
-                toPubkey: account.publicKey,
-                lamports: residualLamports.toNumber(),
-            })
-        );
-        fundedAccountCount++;
+            fundedSniperCount++;
+            totalLamports = totalLamports.add(lamports[i]);
+        }
 
         connection = connectionPool.next();
         heliusClient = heliusClientPool.next();
@@ -154,6 +135,74 @@ async function distributeFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute funds from distributor (${formatPublicKey(distributor.publicKey)}) to ${fundedAccountCount} ${swapperType}s`
+        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedSniperCount, 0)} sniper(s)`
+    );
+}
+
+async function distributeTraderFunds(
+    distributor: Keypair,
+    traders: Keypair[],
+    lamports: Decimal[],
+    minLamports: Decimal
+): Promise<Promise<TransactionSignature | undefined>> {
+    const instructions: TransactionInstruction[] = [];
+    let fundedTraderCount = 0;
+    let totalLamports = ZERO_DECIMAL;
+
+    let connection = connectionPool.current();
+    let heliusClient = heliusClientPool.current();
+
+    for (const [i, trader] of traders.entries()) {
+        const solBalance = await getSolBalance(connectionPool, trader);
+        if (solBalance.gte(lamports[i])) {
+            logger.warn(
+                "Trader (%s) has sufficient balance on wallet: %s SOL",
+                formatPublicKey(trader.publicKey),
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
+            );
+        } else {
+            const residualLamports = lamports[i].sub(solBalance);
+            if (residualLamports.lt(minLamports)) {
+                logger.warn(
+                    "Trader (%s) transfer below required mininum: %s SOL",
+                    formatPublicKey(trader.publicKey),
+                    formatDecimal(minLamports.div(LAMPORTS_PER_SOL))
+                );
+            } else {
+                instructions.push(
+                    SystemProgram.transfer({
+                        fromPubkey: distributor.publicKey,
+                        toPubkey: trader.publicKey,
+                        lamports: residualLamports.toNumber(),
+                    })
+                );
+
+                fundedTraderCount++;
+                totalLamports = totalLamports.add(residualLamports);
+            }
+        }
+
+        connection = connectionPool.next();
+        heliusClient = heliusClientPool.next();
+    }
+
+    if (instructions.length === 0) {
+        return Promise.resolve(undefined);
+    }
+
+    const computeBudgetInstructions = await getComputeBudgetInstructions(
+        connection,
+        envVars.RPC_CLUSTER,
+        heliusClient,
+        PriorityLevel.LOW,
+        instructions,
+        [distributor]
+    );
+
+    return sendAndConfirmVersionedTransaction(
+        connection,
+        [...computeBudgetInstructions, ...instructions],
+        [distributor],
+        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedTraderCount, 0)} trader(s)`
     );
 }
