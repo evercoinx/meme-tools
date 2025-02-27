@@ -10,13 +10,13 @@ interface EnvironmentSchema {
     LOG_LEVEL: LOG_LEVEL;
     LOGGER_NAME: string;
     PINATA_JWT: string;
-    IPFS_GATEWAY: string;
+    IPFS_GATEWAY_URI: string;
     RPC_URIS: Set<string>;
     RPC_CLUSTER: "devnet" | "mainnet-beta";
     EXPLORER_URI: string;
-    KEYPAIR_PATH_DEV: string;
-    KEYPAIR_PATH_DISTRIBUTOR: string;
-    KEYPAIR_SECRET: string;
+    KEYPAIR_FILE_PATH_DEV: string;
+    KEYPAIR_FILE_PATH_DISTRIBUTOR: string;
+    KEYPAIR_ENCRYPTION_SECRET: string;
     TOKEN_SYMBOL: string;
     TOKEN_NAME: string;
     TOKEN_DESCRIPTION: string;
@@ -68,13 +68,13 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .trim()
                 .pattern(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_.+/=]*$/)
-                .description("Pinata JWT"),
-            IPFS_GATEWAY: Joi.string().required().trim().uri().description("IPFS Gateway"),
+                .description("Pinata JSON web token"),
+            IPFS_GATEWAY_URI: Joi.string().required().trim().uri().description("IPFS Gateway"),
             RPC_URIS: Joi.array()
                 .required()
                 .items(Joi.string().required().trim().uri())
                 .min(1)
-                .max(3)
+                .max(6)
                 .unique()
                 .cast("set")
                 .description("Solana RPC URIs"),
@@ -92,7 +92,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                             } else if (/devnet/i.test(rpcUri)) {
                                 counters.devnet++;
                             } else {
-                                throw new Error(`Unknown cluster for RPC URI: ${rpcUri}`);
+                                throw new Error(`Unknown RPC cluster for URI: ${rpcUri}`);
                             }
                         }
 
@@ -103,7 +103,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                             return "devnet";
                         }
 
-                        throw new Error("Mixed clusters detected");
+                        throw new Error("Mixed RPC clusters detected");
                     },
                 })
             ),
@@ -114,21 +114,21 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .allow("https://solana.fm", "https://explorer.solana.com")
                 .default("https://solana.fm")
                 .description("Solana explorer URI"),
-            KEYPAIR_PATH_DEV: Joi.string()
+            KEYPAIR_FILE_PATH_DEV: Joi.string()
                 .required()
                 .trim()
                 .pattern(FILE_PATH_PATTERN)
-                .description("Dev keypair path"),
-            KEYPAIR_PATH_DISTRIBUTOR: Joi.string()
+                .description("Dev keypair file path"),
+            KEYPAIR_FILE_PATH_DISTRIBUTOR: Joi.string()
                 .required()
                 .trim()
                 .pattern(FILE_PATH_PATTERN)
-                .description("Distributor keypair path"),
-            KEYPAIR_SECRET: Joi.string()
+                .description("Distributor keypair file path"),
+            KEYPAIR_ENCRYPTION_SECRET: Joi.string()
                 .required()
                 .trim()
                 .pattern(/^[0-9a-z]{32}$/)
-                .description("Key pair secret"),
+                .description("Keypair encryption secret"),
             TOKEN_SYMBOL: Joi.string()
                 .required()
                 .trim()

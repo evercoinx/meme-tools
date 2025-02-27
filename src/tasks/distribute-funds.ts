@@ -30,7 +30,7 @@ import {
 (async () => {
     try {
         const distributor = await importKeypairFromFile(
-            envVars.KEYPAIR_PATH_DISTRIBUTOR,
+            envVars.KEYPAIR_FILE_PATH_DISTRIBUTOR,
             "distributor"
         );
 

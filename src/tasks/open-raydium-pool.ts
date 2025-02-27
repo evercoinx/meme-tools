@@ -38,6 +38,7 @@ import {
     SLIPPAGE_PERCENT,
     SwapperType,
     UNITS_PER_MINT,
+    ZERO_BN,
 } from "../modules";
 import {
     createRaydium,
@@ -51,7 +52,7 @@ import {
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importKeypairFromFile(envVars.KEYPAIR_PATH_DEV, "dev");
+        const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
 
         const mint = importMintKeypair();
         if (!mint) {
@@ -137,13 +138,13 @@ async function createPool(
 
     const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
     if (raydiumPoolId) {
-        logger.debug("Raydium pool id loaded from storage", raydiumPoolId);
+        logger.debug("Raydium pool id (%s) loaded from storage", formatPublicKey(raydiumPoolId));
 
         const raydimLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
         if (!raydimLpMint) {
             throw new Error("Raydium LP mint not loaded from storage");
         }
-        logger.debug("Raydium LP mint %s loaded from storage", raydimLpMint);
+        logger.debug("Raydium LP mint (%s) loaded from storage", formatPublicKey(raydimLpMint));
 
         const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
         return [Promise.resolve(undefined), raydiumCpmmPool];
@@ -151,7 +152,7 @@ async function createPool(
 
     const feeConfigs = await raydium.api.getCpmmConfigs();
     if (feeConfigs.length === 0) {
-        throw new Error("No CPMM fee configs found");
+        throw new Error("CPMM fee configs not found");
     }
     feeConfigs.sort((a, b) => a.tradeFeeRate - b.tradeFeeRate);
 
@@ -216,7 +217,7 @@ async function createPool(
         mintB,
         mintAAmount,
         mintBAmount,
-        startTime: new BN(0),
+        startTime: ZERO_BN,
         feeConfig,
         associatedOnly: true,
         ownerInfo: {
@@ -244,8 +245,8 @@ async function createPool(
     storage.set(STORAGE_RAYDIUM_POOL_ID, poolId.toBase58());
     storage.set(STORAGE_RAYDIUM_LP_MINT, lpMint.toBase58());
     storage.save();
-    logger.debug("Raydium pool id %s saved to storage", formatPublicKey(poolId));
-    logger.debug("Raydium LP mint %s saved to storage", formatPublicKey(lpMint));
+    logger.debug("Raydium pool id (%s) saved to storage", formatPublicKey(poolId));
+    logger.debug("Raydium LP mint (%s) saved to storage", formatPublicKey(lpMint));
 
     const baseIn = NATIVE_MINT.toBase58() === mintA.address;
 

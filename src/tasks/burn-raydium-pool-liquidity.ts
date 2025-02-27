@@ -21,7 +21,7 @@ import {
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importKeypairFromFile(envVars.KEYPAIR_PATH_DEV, "dev");
+        const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
 
         const mint = importMintKeypair();
         if (!mint) {

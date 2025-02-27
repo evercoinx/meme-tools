@@ -72,16 +72,17 @@ const generateOffchainTokenMetadata = (
     };
 };
 
-const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}/ipfs/${ipfsHash}`;
+const generatePinataUri = (ipfsHash: string): string =>
+    `${envVars.IPFS_GATEWAY_URI}/ipfs/${ipfsHash}`;
 
 (async () => {
     try {
         await checkIfImageFileExists(envVars.TOKEN_SYMBOL, "webp");
 
         const mint = generateOrImportMintKeypair();
-        const dev = await importKeypairFromFile(envVars.KEYPAIR_PATH_DEV, "dev");
+        const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
 
-        const groupId = await getOrCreateGroup(`${pkg.name}-${envVars.NODE_ENV}`);
+        const groupId = await getOrCreateGroupId(`${pkg.name}-${envVars.NODE_ENV}`);
         const imageUri = await uploadImage(groupId);
         const metadata = await uploadMetadata(groupId, imageUri);
 
@@ -94,7 +95,7 @@ const generatePinataUri = (ipfsHash: string): string => `${envVars.IPFS_GATEWAY}
     }
 })();
 
-async function getOrCreateGroup(groupName: string): Promise<string> {
+async function getOrCreateGroupId(groupName: string): Promise<string> {
     const groups = await pinataClient.groups.list().name(groupName);
     let groupId: string;
 

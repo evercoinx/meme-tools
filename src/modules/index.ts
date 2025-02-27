@@ -62,8 +62,8 @@ export const connectionPool = new Pool(
 export const heliusClientPool = new Pool(
     Array.from(envVars.RPC_URIS).map((rpcUri) => createHeliusClient(rpcUri, envVars.RPC_CLUSTER))
 );
-export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY);
+export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY_URI);
 
-export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_SECRET);
+export const encryption = new Encryption("aes-256-cbc", envVars.KEYPAIR_ENCRYPTION_SECRET);
 export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
 export const storage = createStorage(envVars.TOKEN_SYMBOL, STORAGE_DIR);
