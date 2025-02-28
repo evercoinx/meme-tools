@@ -65,7 +65,7 @@ export async function createRaydium(connection: Connection, owner?: Keypair): Pr
         owner,
         disableFeatureCheck: true,
         disableLoadToken: true,
-        blockhashCommitment: "confirmed",
+        blockhashCommitment: connection.commitment,
         apiRequestInterval: 0,
         apiRequestTimeout: 30_000,
     });
@@ -121,8 +121,7 @@ export async function swapSolToMint(
     lamportsToSwap: (BN | null)[],
     slippage: number,
     priorityLevel: PriorityLevel,
-    transactionOptions?: TransactionOptions,
-    resentErrors?: ContractErrors
+    transactionOptions?: TransactionOptions
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const baseIn = NATIVE_MINT.toBase58() === poolInfo.mintA.address;
     const computeBudgetInstructions: TransactionInstruction[] = [];
@@ -147,8 +146,8 @@ export async function swapSolToMint(
         } catch (error: unknown) {
             if (error instanceof Error && error.message === "destinationAmountSwapped is zero") {
                 logger.warn(
-                    "Account (%s) has too low amount for swap: %s SOL",
-                    account.publicKey.toBase58(),
+                    "Account (%s) has too low amount to swap: %s SOL",
+                    formatPublicKey(account.publicKey),
                     formatDecimal(
                         new Decimal(lamportsToSwap[i].toString(10)).div(LAMPORTS_PER_SOL)
                     ),
@@ -197,8 +196,7 @@ export async function swapSolToMint(
                 [...computeBudgetInstructions, ...instructions],
                 [account],
                 `to swap ${formatDecimal(sourceAmount)} WSOL to ~${formatDecimal(destinationAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} for account (${formatPublicKey(account.publicKey)})`,
-                transactionOptions,
-                resentErrors
+                transactionOptions
             )
         );
     }
@@ -215,8 +213,7 @@ export async function swapMintToSol(
     unitsToSwap: (BN | null)[],
     slippage: number,
     priorityLevel: PriorityLevel,
-    transactionOptions?: TransactionOptions,
-    resentErrors?: ContractErrors
+    transactionOptions?: TransactionOptions
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     const computeBudgetInstructions: TransactionInstruction[] = [];
@@ -241,8 +238,8 @@ export async function swapMintToSol(
         } catch (error: unknown) {
             if (error instanceof Error && error.message === "destinationAmountSwapped is zero") {
                 logger.warn(
-                    "Account (%s) has too low amount for swap: %s %s",
-                    account.publicKey.toBase58(),
+                    "Account (%s) has too low amount to swap: %s %s",
+                    formatPublicKey(account.publicKey),
                     formatDecimal(
                         new Decimal(unitsToSwap[i].toString(10)).div(UNITS_PER_MINT),
                         envVars.TOKEN_DECIMALS
@@ -293,8 +290,7 @@ export async function swapMintToSol(
                 [...computeBudgetInstructions, ...instructions],
                 [account],
                 `to swap ${formatDecimal(sourceAmount, envVars.TOKEN_DECIMALS)} ${envVars.TOKEN_SYMBOL} to ~${formatDecimal(destinationAmount)} WSOL for account (${formatPublicKey(account.publicKey)})`,
-                transactionOptions,
-                resentErrors
+                transactionOptions
             )
         );
     }

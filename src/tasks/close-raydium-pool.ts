@@ -231,7 +231,7 @@ async function removeRaydiumPoolLiquidity(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [dev],
-        `to remove liquidity from pool id ${poolInfo.id}`,
+        `to remove liquidity from pool id (${formatPublicKey(poolInfo.id)})`,
         { skipPreflight: true }
     );
 }

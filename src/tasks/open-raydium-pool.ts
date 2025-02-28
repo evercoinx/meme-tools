@@ -87,8 +87,10 @@ import {
             lamportsToBuy,
             SLIPPAGE_PERCENT,
             PriorityLevel.VERY_HIGH,
-            { skipPreflight: true },
-            RAYDIUM_POOL_ERRORS
+            {
+                skipPreflight: true,
+                resendErrors: RAYDIUM_POOL_ERRORS,
+            }
         );
 
         await Promise.all([sendCreatePoolTransaction, ...sendSwapSolToMintTransactions]);
@@ -239,14 +241,18 @@ async function createPool(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [dev],
-        `to create pool id (${poolId.toBase58()})`
+        `to create pool id (${formatPublicKey(poolId)})`
     );
 
     storage.set(STORAGE_RAYDIUM_POOL_ID, poolId.toBase58());
     storage.set(STORAGE_RAYDIUM_LP_MINT, lpMint.toBase58());
     storage.save();
     logger.debug("Raydium pool id (%s) saved to storage", formatPublicKey(poolId));
-    logger.debug("Raydium LP mint (%s) saved to storage", formatPublicKey(lpMint));
+    logger.debug(
+        "Raydium %s-LP mint (%s) saved to storage",
+        envVars.TOKEN_SYMBOL,
+        formatPublicKey(lpMint)
+    );
 
     const baseIn = NATIVE_MINT.toBase58() === mintA.address;
 

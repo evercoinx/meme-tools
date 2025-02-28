@@ -30,16 +30,8 @@ import { formatDecimal, formatSignature } from "./format";
 export interface TransactionOptions {
     skipPreflight?: boolean;
     preflightCommitment?: Commitment;
+    resendErrors?: ContractErrors;
 }
-
-const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
-const TRANSACTION_POLL_INTERVAL_MS = 1_000;
-const TRANSACTION_RESEND_ATTEMPTS = 5;
-const RECOMMENDED_COMPUTE_UNIT_PRICE = 10_000;
-const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
-const MIN_COMPUTE_UNIT_LIMIT = 1_000;
-const DEFAULT_COMPUTE_UNIT_LIMIT = 200_000;
-const COMPUTE_UNIT_LIMIT_MULTIPLIER = 1.2;
 
 export type ContractErrors = Record<
     number,
@@ -69,6 +61,15 @@ class ResentTransactionError extends Error {
         this.name = "ResentTransactionError";
     }
 }
+
+const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
+const TRANSACTION_POLL_INTERVAL_MS = 1_000;
+const TRANSACTION_RESEND_ATTEMPTS = 5;
+const RECOMMENDED_COMPUTE_UNIT_PRICE = 10_000;
+const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
+const MIN_COMPUTE_UNIT_LIMIT = 1_000;
+const DEFAULT_COMPUTE_UNIT_LIMIT = 200_000;
+const COMPUTE_UNIT_LIMIT_MULTIPLIER = 1.2;
 
 export async function getComputeBudgetInstructions(
     connection: Connection,
@@ -220,7 +221,7 @@ async function getComputeUnitLimit(
     if (err || !unitsConsumed) {
         logger.warn(
             "Simulation failed: %s. Compute unit limit defaults to %s",
-            err ?? "Unknown reason",
+            parseRpcError(err) ?? "Unknown error",
             formatDecimal(DEFAULT_COMPUTE_UNIT_LIMIT, 0)
         );
         return DEFAULT_COMPUTE_UNIT_LIMIT;
@@ -236,8 +237,7 @@ export async function sendAndConfirmVersionedTransaction(
     instructions: TransactionInstruction[],
     signers: Keypair[],
     logMessage: string,
-    transactionOptions?: TransactionOptions,
-    resendErrors?: ContractErrors
+    transactionOptions?: TransactionOptions
 ): Promise<TransactionSignature | undefined> {
     if (!signers.length) {
         throw new Error("Transaction must have at least one signer");
@@ -265,7 +265,11 @@ export async function sendAndConfirmVersionedTransaction(
             });
             logger.info("Transaction (%s) sent %s", formatSignature(signature), logMessage);
 
-            return await pollTransactionConfirmation(connection, signature, resendErrors);
+            return await pollTransactionConfirmation(
+                connection,
+                signature,
+                transactionOptions?.resendErrors
+            );
         } catch (error: unknown) {
             if (
                 error instanceof ResentTransactionError &&
