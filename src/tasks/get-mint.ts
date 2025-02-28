@@ -5,7 +5,7 @@ import Decimal from "decimal.js";
 import { importMintKeypair } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
-import { connectionPool, envVars, explorer, logger, storage } from "../modules";
+import { connectionPool, envVars, explorer, logger, OUTPUT_NOT_ALLOWED, storage } from "../modules";
 
 (async () => {
     try {
@@ -41,9 +41,11 @@ async function getMint(mint: Keypair): Promise<void> {
         chalk.yellow(envVars.TOKEN_SYMBOL),
         formatDecimal(mintInfo.decimals, 0),
         formatDecimal(supply, mintInfo.decimals),
-        mintInfo.mintAuthority ? formatPublicKey(mintInfo.mintAuthority, "long") : chalk.red("n/a"),
+        mintInfo.mintAuthority
+            ? formatPublicKey(mintInfo.mintAuthority, "long")
+            : OUTPUT_NOT_ALLOWED,
         mintInfo.freezeAuthority
             ? formatPublicKey(mintInfo.freezeAuthority, "long")
-            : chalk.red("n/a")
+            : OUTPUT_NOT_ALLOWED
     );
 }

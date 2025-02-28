@@ -15,7 +15,7 @@ import {
     connectionPool,
     envVars,
     logger,
-    OUTPUT_UNKNOWN_KEY,
+    OUTPUT_UNKNOWN_PUBLIC_KEY,
     RAYDIUM_LP_MINT_DECIMALS,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
@@ -75,7 +75,9 @@ async function getFunds(
         const logParams = [
             formatPublicKey(account.publicKey, "long"),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            mintTokenAccount ? formatPublicKey(mintTokenAccount, "long") : OUTPUT_UNKNOWN_KEY,
+            mintTokenAccount
+                ? formatPublicKey(mintTokenAccount, "long")
+                : OUTPUT_UNKNOWN_PUBLIC_KEY,
             mintTokenBalance
                 ? formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS)
                 : chalk.green("?"),
@@ -101,7 +103,7 @@ async function getFunds(
                 ...logParams,
                 lpMintTokenAccount
                     ? formatPublicKey(lpMintTokenAccount, "long")
-                    : OUTPUT_UNKNOWN_KEY,
+                    : OUTPUT_UNKNOWN_PUBLIC_KEY,
                 lpMintTokenBalance
                     ? formatDecimal(
                           lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),

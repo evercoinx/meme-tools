@@ -22,6 +22,8 @@ interface EnvironmentSchema {
     TOKEN_DESCRIPTION: string;
     TOKEN_DECIMALS: number;
     TOKEN_SUPPLY: number;
+    TOKEN_WEBSITE_URI: string;
+    TOKEN_TWITTER_URI: string;
     POOL_SIZE_PERCENT: number;
     POOL_LIQUIDITY_SOL: number;
     POOL_TRADING_MODE: "volume" | "pump" | "dump";
@@ -157,6 +159,18 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(100_000_000_000)
                 .default(1_000_000_000)
                 .description("Token supply"),
+            TOKEN_WEBSITE_URI: Joi.string()
+                .optional()
+                .trim()
+                .allow("")
+                .uri()
+                .description("Token website URI"),
+            TOKEN_TWITTER_URI: Joi.string()
+                .optional()
+                .trim()
+                .allow("")
+                .uri()
+                .description("Token Twitter URI"),
             POOL_SIZE_PERCENT: Joi.number()
                 .required()
                 .min(10)

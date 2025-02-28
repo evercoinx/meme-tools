@@ -17,7 +17,12 @@ import {
     TOKEN_2022_PROGRAM_ID,
     TYPE_SIZE,
 } from "@solana/spl-token";
-import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-token-metadata";
+import {
+    createInitializeInstruction,
+    createUpdateFieldInstruction,
+    pack,
+    TokenMetadata,
+} from "@solana/spl-token-metadata";
 import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana/web3.js";
 import chalk from "chalk";
 import { PriorityLevel } from "helius-sdk";
@@ -42,7 +47,7 @@ import {
     UNITS_PER_MINT,
 } from "../modules";
 
-interface FullTokenMetadata {
+interface OffchainTokenMetadata {
     name: string;
     symbol: string;
     description: string;
@@ -60,16 +65,29 @@ const generateOffchainTokenMetadata = (
     name: string,
     description: string,
     decimals: number,
-    imageUri: string
-): Pick<FullTokenMetadata, "name" | "symbol" | "description" | "decimals" | "image"> => {
+    imageUri: string,
+    websiteUri?: string,
+    twitterUri?: string
+): Omit<OffchainTokenMetadata, "uri"> => {
     const normalizedSymbol = symbol.toUpperCase();
-    return {
+
+    const metadata: OffchainTokenMetadata = {
         symbol: normalizedSymbol,
         name: name || `Official ${normalizedSymbol} Meme`,
         description: description || `Official ${normalizedSymbol} Meme on Solana`,
         decimals,
         image: imageUri,
     };
+
+    if (websiteUri) {
+        metadata.external_url = websiteUri;
+    }
+    if (twitterUri) {
+        metadata.social_links = {};
+        metadata.social_links.twitter = twitterUri;
+    }
+
+    return metadata;
 };
 
 const generatePinataUri = (ipfsHash: string): string =>
@@ -140,8 +158,8 @@ async function uploadImage(groupId: string): Promise<string> {
     return imageUri;
 }
 
-async function uploadMetadata(groupId: string, imageUri: string): Promise<FullTokenMetadata> {
-    let metadata = storage.get<FullTokenMetadata | undefined>(STORAGE_MINT_METADATA);
+async function uploadMetadata(groupId: string, imageUri: string): Promise<OffchainTokenMetadata> {
+    let metadata = storage.get<OffchainTokenMetadata | undefined>(STORAGE_MINT_METADATA);
     if (metadata) {
         logger.debug("Mint metadata file loaded from storage");
         return metadata;
@@ -152,7 +170,9 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<FullTo
         envVars.TOKEN_NAME,
         envVars.TOKEN_DESCRIPTION,
         envVars.TOKEN_DECIMALS,
-        imageUri
+        imageUri,
+        envVars.TOKEN_WEBSITE_URI,
+        envVars.TOKEN_TWITTER_URI
     );
 
     const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
@@ -183,7 +203,7 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<FullTo
 }
 
 async function createMint(
-    fullTokenMetadata: FullTokenMetadata,
+    offchainTokenMetadata: OffchainTokenMetadata,
     dev: Keypair,
     mint: Keypair
 ): Promise<Promise<TransactionSignature | undefined>> {
@@ -209,12 +229,20 @@ async function createMint(
     const metadata: TokenMetadata = {
         mint: mint.publicKey,
         updateAuthority: PublicKey.default,
-        name: fullTokenMetadata.name,
-        symbol: fullTokenMetadata.symbol,
+        name: offchainTokenMetadata.name,
+        symbol: offchainTokenMetadata.symbol,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        uri: fullTokenMetadata.uri!,
+        uri: offchainTokenMetadata.uri!,
         additionalMetadata: [],
     };
+
+    if (offchainTokenMetadata.external_url) {
+        metadata.additionalMetadata.push(["website", offchainTokenMetadata.external_url]);
+    }
+    if (offchainTokenMetadata.social_links?.twitter) {
+        metadata.additionalMetadata.push(["twitter", offchainTokenMetadata.social_links.twitter]);
+    }
+
     // Size of Mint account with MetadataPointer extension
     const mintSize = getMintLen([ExtensionType.MetadataPointer]);
     // Size of Metadata extension: 2 bytes for type, 2 bytes for length
@@ -269,6 +297,22 @@ async function createMint(
             uri: metadata.uri,
             programId: TOKEN_2022_PROGRAM_ID,
         }),
+    ];
+
+    for (const [field, value] of metadata.additionalMetadata) {
+        instructions.push(
+            // Add a custom field to the metadata account
+            createUpdateFieldInstruction({
+                metadata: mint.publicKey,
+                updateAuthority: dev.publicKey,
+                field,
+                value,
+                programId: TOKEN_2022_PROGRAM_ID,
+            })
+        );
+    }
+
+    instructions.push(
         // Create the associated token account of the owner
         createAssociatedTokenAccountInstruction(
             dev.publicKey,
@@ -295,8 +339,8 @@ async function createMint(
             null,
             [],
             TOKEN_2022_PROGRAM_ID
-        ),
-    ];
+        )
+    );
 
     const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,

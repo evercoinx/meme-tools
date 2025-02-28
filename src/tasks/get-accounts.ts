@@ -7,7 +7,7 @@ import {
 } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
-import { envVars, logger, OUTPUT_UNKNOWN_KEY, storage, SwapperType } from "../modules";
+import { envVars, logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage, SwapperType } from "../modules";
 
 (async () => {
     try {
@@ -55,8 +55,8 @@ function getAccounts(
 
     logger.info(
         "Mint keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
-        mint ? formatPublicKey(mint.publicKey, "long") : OUTPUT_UNKNOWN_KEY,
-        mint ? bs58.encode(mint.secretKey) : OUTPUT_UNKNOWN_KEY
+        mint ? formatPublicKey(mint.publicKey, "long") : OUTPUT_UNKNOWN_PUBLIC_KEY,
+        mint ? bs58.encode(mint.secretKey) : OUTPUT_UNKNOWN_PUBLIC_KEY
     );
 
     for (const [i, sniper] of snipers.entries()) {
