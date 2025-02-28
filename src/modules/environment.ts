@@ -113,8 +113,8 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .optional()
                 .trim()
                 .uri()
-                .allow("https://solana.fm", "https://explorer.solana.com")
-                .default("https://solana.fm")
+                .allow("https://explorer.solana.com", "https://solana.fm", "https://solscan.io")
+                .default("https://solscan.io")
                 .description("Solana explorer URI"),
             KEYPAIR_FILE_PATH_DEV: Joi.string()
                 .required()
