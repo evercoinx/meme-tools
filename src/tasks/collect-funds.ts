@@ -192,7 +192,7 @@ async function closeTokenAccounts(
                         heliusClient,
                         PriorityLevel.LOW,
                         instructions,
-                        [dev]
+                        [account]
                     ))
                 );
             }

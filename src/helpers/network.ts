@@ -12,6 +12,7 @@ import {
     ComputeBudgetProgram,
     Connection,
     Keypair,
+    LAMPORTS_PER_SOL,
     SystemProgram,
     TransactionError,
     TransactionInstruction,
@@ -21,7 +22,7 @@ import {
 } from "@solana/web3.js";
 import bs58 from "bs58";
 import Decimal from "decimal.js";
-import { PriorityLevel, UiTransactionEncoding } from "helius-sdk";
+import { GetPriorityFeeEstimateResponse, PriorityLevel, UiTransactionEncoding } from "helius-sdk";
 import { explorer, logger, TRANSACTION_CONFIRMATION_TIMEOUT_MS, ZERO_DECIMAL } from "../modules";
 import { HeliusClient } from "../modules/helius";
 import { formatDecimal, formatSignature } from "./format";
@@ -34,7 +35,11 @@ export interface TransactionOptions {
 const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
 const TRANSACTION_POLL_INTERVAL_MS = 1_000;
 const TRANSACTION_RESEND_ATTEMPTS = 5;
-const DEFAULT_COMPUTE_UNIT_LIMIT = 220_000;
+const RECOMMENDED_COMPUTE_UNIT_PRICE = 10_000;
+const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
+const MIN_COMPUTE_UNIT_LIMIT = 1_000;
+const DEFAULT_COMPUTE_UNIT_LIMIT = 200_000;
+const COMPUTE_UNIT_LIMIT_MULTIPLIER = 1.2;
 
 export type ContractErrors = Record<
     number,
@@ -73,28 +78,20 @@ export async function getComputeBudgetInstructions(
     instructions: TransactionInstruction[],
     signers: Keypair[]
 ): Promise<TransactionInstruction[]> {
-    const setComputeUnitLimitInstruction = ComputeBudgetProgram.setComputeUnitLimit({
-        units: DEFAULT_COMPUTE_UNIT_LIMIT,
-    });
-
-    const payer = signers[0];
-    const transaction = await createTransaction(
+    const computeUnitPrice = await getComputeUnitPrice(
         connection,
-        [setComputeUnitLimitInstruction, ...instructions],
-        payer
-    );
-    const priorityFee = await getPriorityFeeEstimate(
         cluster,
         heliusClient,
-        transaction,
+        instructions,
+        signers,
         priorityLevel
     );
 
+    const computeUnitLimit = await getComputeUnitLimit(connection, instructions, signers);
+
     return [
-        setComputeUnitLimitInstruction,
-        ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: priorityFee,
-        }),
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: computeUnitPrice }),
+        ComputeBudgetProgram.setComputeUnitLimit({ units: computeUnitLimit }),
     ];
 }
 
@@ -149,38 +146,89 @@ export async function getWrapSolInstructions(
 async function createTransaction(
     connection: Connection,
     instructions: TransactionInstruction[],
-    payer: Keypair
+    signers: Keypair[]
 ): Promise<VersionedTransaction> {
     const { blockhash } = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
         instructions,
-        payerKey: payer.publicKey,
+        payerKey: signers[0].publicKey,
         recentBlockhash: blockhash,
     });
 
-    return new VersionedTransaction(messageV0.compileToV0Message());
+    const transaction = new VersionedTransaction(messageV0.compileToV0Message());
+    transaction.sign(signers);
+
+    return transaction;
 }
 
-async function getPriorityFeeEstimate(
+async function getComputeUnitPrice(
+    connection: Connection,
     cluster: string,
     heliusClient: HeliusClient,
-    transaction: VersionedTransaction,
+    instructions: TransactionInstruction[],
+    signers: Keypair[],
     priorityLevel: PriorityLevel
 ): Promise<number> {
     if (cluster === "devnet") {
-        return [PriorityLevel.MIN, PriorityLevel.LOW].includes(priorityLevel) ? 0 : 10_000;
+        return [PriorityLevel.MIN, PriorityLevel.LOW].includes(priorityLevel)
+            ? 0
+            : RECOMMENDED_COMPUTE_UNIT_PRICE;
     }
 
-    const serializedTransaction = transaction.serialize();
+    const transaction = await createTransaction(connection, instructions, signers);
     const options =
         priorityLevel === PriorityLevel.DEFAULT ? { recommended: true } : { priorityLevel };
 
-    const response = await heliusClient.getPriorityFeeEstimate({
-        transaction: bs58.encode(serializedTransaction),
-        options: { ...options, transactionEncoding: UiTransactionEncoding.Base58 },
-    });
+    let response: GetPriorityFeeEstimateResponse | undefined;
+    try {
+        response = await heliusClient.getPriorityFeeEstimate({
+            transaction: bs58.encode(transaction.serialize()),
+            options: {
+                ...options,
+                transactionEncoding: UiTransactionEncoding.Base58,
+            },
+        });
+    } catch (error: unknown) {
+        logger.warn(
+            "%s. Compute unit price defaults to %s SOL",
+            error instanceof Error ? error.message : String(error),
+            formatDecimal(new Decimal(RECOMMENDED_COMPUTE_UNIT_PRICE).div(LAMPORTS_PER_SOL))
+        );
+        return RECOMMENDED_COMPUTE_UNIT_PRICE;
+    }
 
-    return response.priorityFeeEstimate ?? 0;
+    return response.priorityFeeEstimate ?? RECOMMENDED_COMPUTE_UNIT_PRICE;
+}
+
+async function getComputeUnitLimit(
+    connection: Connection,
+    instructions: TransactionInstruction[],
+    signers: Keypair[]
+): Promise<number> {
+    const transaction = await createTransaction(
+        connection,
+        [
+            ComputeBudgetProgram.setComputeUnitLimit({ units: MAX_COMPUTE_UNIT_LIMIT }),
+            ...instructions,
+        ],
+        signers
+    );
+
+    const {
+        value: { err, unitsConsumed },
+    } = await connection.simulateTransaction(transaction, { sigVerify: signers.length > 0 });
+    if (err || !unitsConsumed) {
+        logger.warn(
+            "Simulation failed: %s. Compute unit limit defaults to %s",
+            err ?? "Unknown reason",
+            formatDecimal(DEFAULT_COMPUTE_UNIT_LIMIT, 0)
+        );
+        return DEFAULT_COMPUTE_UNIT_LIMIT;
+    }
+
+    return unitsConsumed < MIN_COMPUTE_UNIT_LIMIT
+        ? MIN_COMPUTE_UNIT_LIMIT
+        : new Decimal(unitsConsumed).mul(COMPUTE_UNIT_LIMIT_MULTIPLIER).trunc().toNumber();
 }
 
 export async function sendAndConfirmVersionedTransaction(
@@ -191,13 +239,22 @@ export async function sendAndConfirmVersionedTransaction(
     transactionOptions?: TransactionOptions,
     resendErrors?: ContractErrors
 ): Promise<TransactionSignature | undefined> {
+    if (!signers.length) {
+        throw new Error("Transaction must have at least one signer");
+    }
+
+    const computeBudgetInstructions = instructions.filter((instruction) =>
+        instruction.programId.equals(ComputeBudgetProgram.programId)
+    );
+    if (computeBudgetInstructions.length < 2) {
+        throw new Error("Transaction must have instructions setting compute unit price and limit");
+    }
+
+    const transaction = await createTransaction(connection, instructions, signers);
+
     let signature: TransactionSignature | undefined;
-
-    const transaction = await createTransaction(connection, instructions, signers[0]);
-    transaction.sign(signers);
-
-    const startTime = Date.now();
     let resendAttempts = 0;
+    const startTime = Date.now();
 
     do {
         try {
