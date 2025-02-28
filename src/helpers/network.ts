@@ -221,7 +221,7 @@ async function getComputeUnitLimit(
     if (err || !unitsConsumed) {
         logger.warn(
             "Simulation failed: %s. Compute unit limit defaults to %s",
-            parseRpcError(err) ?? "Unknown error",
+            formatRpcError(err),
             formatDecimal(DEFAULT_COMPUTE_UNIT_LIMIT, 0)
         );
         return DEFAULT_COMPUTE_UNIT_LIMIT;

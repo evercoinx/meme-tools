@@ -24,6 +24,7 @@ interface EnvironmentSchema {
     TOKEN_SUPPLY: number;
     TOKEN_WEBSITE_URI: string;
     TOKEN_TWITTER_URI: string;
+    TOKEN_TELEGRAM_URI: string;
     POOL_SIZE_PERCENT: number;
     POOL_LIQUIDITY_SOL: number;
     POOL_TRADING_MODE: "volume" | "pump" | "dump";
@@ -170,7 +171,25 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .trim()
                 .allow("")
                 .uri()
+                .custom((value: string) => {
+                    if (value && !value.startsWith("https://x.com")) {
+                        throw new Error(`Invalid Twitter URI: ${value}`);
+                    }
+                    return value;
+                })
                 .description("Token Twitter URI"),
+            TOKEN_TELEGRAM_URI: Joi.string()
+                .optional()
+                .trim()
+                .allow("")
+                .uri()
+                .custom((value: string) => {
+                    if (value && !value.startsWith("https://t.me")) {
+                        throw new Error(`Invalid Telegram URI: ${value}`);
+                    }
+                    return value;
+                })
+                .description("Token Telegram URI"),
             POOL_SIZE_PERCENT: Joi.number()
                 .required()
                 .min(10)

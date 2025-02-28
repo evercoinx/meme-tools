@@ -67,7 +67,8 @@ const generateOffchainTokenMetadata = (
     decimals: number,
     imageUri: string,
     websiteUri?: string,
-    twitterUri?: string
+    twitterUri?: string,
+    telegramUri?: string
 ): Omit<OffchainTokenMetadata, "uri"> => {
     const normalizedSymbol = symbol.toUpperCase();
 
@@ -83,8 +84,12 @@ const generateOffchainTokenMetadata = (
         metadata.external_url = websiteUri;
     }
     if (twitterUri) {
-        metadata.social_links = {};
+        metadata.social_links ??= {};
         metadata.social_links.twitter = twitterUri;
+    }
+    if (telegramUri) {
+        metadata.social_links ??= {};
+        metadata.social_links.telegram = telegramUri;
     }
 
     return metadata;
@@ -172,7 +177,8 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<Offcha
         envVars.TOKEN_DECIMALS,
         imageUri,
         envVars.TOKEN_WEBSITE_URI,
-        envVars.TOKEN_TWITTER_URI
+        envVars.TOKEN_TWITTER_URI,
+        envVars.TOKEN_TELEGRAM_URI
     );
 
     const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
@@ -241,6 +247,9 @@ async function createMint(
     }
     if (offchainTokenMetadata.social_links?.twitter) {
         metadata.additionalMetadata.push(["twitter", offchainTokenMetadata.social_links.twitter]);
+    }
+    if (offchainTokenMetadata.social_links?.telegram) {
+        metadata.additionalMetadata.push(["telegram", offchainTokenMetadata.social_links.telegram]);
     }
 
     // Size of Mint account with MetadataPointer extension
