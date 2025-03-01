@@ -9,13 +9,15 @@ export function generateRandomInteger(range: [number, number]): number {
     return randomInt(range[0], range[1] + 1);
 }
 
-export function generateRandomBoolean(): boolean {
-    return Boolean(generateRandomInteger([0, 1]));
+export function generateRandomBoolean(trueBiasPercent: number): boolean {
+    return randomInt(100) < trueBiasPercent;
 }
 
-export function shuffle<T>(array: T[]): T[] {
-    return array
-        .map((value) => ({ value, sort: randomBytes(4).readUInt32LE(0) }))
-        .sort((a, b) => a.sort - b.sort)
-        .map(({ value }) => value);
+export function shuffle<T>(items: T[]): T[] {
+    return items.length < 2
+        ? items
+        : items
+              .map((value) => ({ value, sort: randomBytes(4).readUInt32LE(0) }))
+              .sort((a, b) => a.sort - b.sort)
+              .map(({ value }) => value);
 }

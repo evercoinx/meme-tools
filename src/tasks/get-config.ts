@@ -1,13 +1,13 @@
 import { basename } from "node:path";
 import chalk from "chalk";
+import Decimal from "decimal.js";
 import { envVars, logger, OUTPUT_UNKNOWN_VALUE } from "../modules";
 import { formatDecimal, formatPercent } from "../helpers/format";
-import Decimal from "decimal.js";
 
 (async () => {
     try {
         logger.info(
-            "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s\n\t\tExplorer URI: %s\n\n\t\tKeypair file name (Dev): %s\n\t\tKeypair file name (Distributor): %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken supply: %s\n\t\tToken tags: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\n\t\tSniper shares in pool: %s\n\t\tSniper balance: %s SOL\n\n\t\tTrader count: %s\n\t\tTrader group size: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\t\tTrader swap delay: %s sec",
+            "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s\n\t\tExplorer URI: %s\n\n\t\tKeypair file name (Dev): %s\n\t\tKeypair file name (Distributor): %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken supply: %s\n\t\tToken tags: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\t\tPool trading pump bias: %s\n\n\t\tSniper shares in pool: %s\n\t\tSniper balance: %s SOL\n\n\t\tTrader count: %s\n\t\tTrader group size: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\t\tTrader swap delay: %s sec",
             chalk.bgYellow(envVars.NODE_ENV),
             chalk.blue(envVars.IPFS_GATEWAY_URI),
             Array.from(envVars.RPC_URIS)
@@ -32,6 +32,7 @@ import Decimal from "decimal.js";
             chalk.green(formatPercent(envVars.POOL_SIZE_PERCENT)),
             chalk.green(formatDecimal(envVars.POOL_LIQUIDITY_SOL)),
             chalk.green(formatDecimal(envVars.POOL_TRADING_CYCLE_COUNT)),
+            chalk.green(formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT)),
             envVars.SNIPER_POOL_SHARE_PERCENTS.map((poolShare) =>
                 chalk.green(formatPercent(poolShare))
             ).join(" "),
@@ -45,9 +46,9 @@ import Decimal from "decimal.js";
                 formatDecimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
             ),
             chalk.green(
-                formatPercent(new Decimal(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT[0])),
+                formatPercent(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT[0]),
                 "-",
-                formatPercent(new Decimal(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT[1]))
+                formatPercent(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT[1])
             ),
             chalk.green(
                 formatDecimal(new Decimal(envVars.TRADER_SWAP_DELAY_RANGE_SEC[0]).div(1_000), 3),

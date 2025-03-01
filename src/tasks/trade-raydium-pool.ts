@@ -10,7 +10,7 @@ import {
     importSwapperKeypairs,
 } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
-import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
+import { formatDecimal, formatPercent, formatPublicKey } from "../helpers/format";
 import {
     generateRandomBoolean,
     generateRandomFloat,
@@ -63,21 +63,23 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
         const raydium = await createRaydium(connectionPool.current());
         const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
 
-        let raydiumPoolTradingCycle = storage.get<number | undefined>(
-            STORAGE_RAYDIUM_POOL_TRADING_CYCLE
-        );
-        raydiumPoolTradingCycle = raydiumPoolTradingCycle ? raydiumPoolTradingCycle + 1 : 0;
+        let poolTradingCycle = storage.get<number | undefined>(STORAGE_RAYDIUM_POOL_TRADING_CYCLE);
+        poolTradingCycle = poolTradingCycle ? poolTradingCycle + 1 : 0;
 
         const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
 
-        const raydiumPoolTradingCycleCount =
-            raydiumPoolTradingCycle + envVars.POOL_TRADING_CYCLE_COUNT;
-        for (let i = raydiumPoolTradingCycle; i < raydiumPoolTradingCycleCount; i++) {
+        const poolTradingCycleCount = poolTradingCycle + envVars.POOL_TRADING_CYCLE_COUNT;
+        const poolTradingPumpBiasPercent = new Decimal(envVars.POOL_TRADING_PUMP_BIAS_PERCENT)
+            .mul(100)
+            .round()
+            .toNumber();
+
+        for (let i = poolTradingCycle; i < poolTradingCycleCount; i++) {
             logger.info(
-                "\n%s\nTrading cycle #%d (%s mode)\n%s",
+                "\n%s\nTrading cycle #%d (Pump bias: %s)\n%s",
                 OUTPUT_SEPARATOR,
                 i,
-                capitalize(envVars.POOL_TRADING_MODE),
+                formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT),
                 OUTPUT_SEPARATOR
             );
 
@@ -90,9 +92,9 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
                 raydiumCpmmPool,
                 shuffle(traders),
                 mint,
-                envVars.POOL_TRADING_MODE,
                 envVars.TRADER_GROUP_SIZE,
-                i
+                i,
+                poolTradingPumpBiasPercent
             );
         }
 
@@ -108,33 +110,17 @@ async function executeTradeCycle(
     raydiumCpmmPool: RaydiumCpmmPool,
     traders: Keypair[],
     mint: Keypair,
-    tradingMode: "volume" | "pump" | "dump",
     traderGroupSize: number,
-    raydiumPoolTradingCycle: number
+    poolTradingCycle: number,
+    poolTradingPumpBiasPercent: number
 ): Promise<void> {
     for (let i = 0; i < traders.length; i += traderGroupSize) {
         const traderGroup = shuffle(traders.slice(i, i + traderGroupSize));
 
-        switch (tradingMode) {
-            case "volume": {
-                if (raydiumPoolTradingCycle === 0 || generateRandomBoolean()) {
-                    await pumpPool(raydium, raydiumCpmmPool, traderGroup);
-                } else {
-                    await dumpPool(raydium, raydiumCpmmPool, traderGroup, mint);
-                }
-                break;
-            }
-            case "pump": {
-                await pumpPool(raydium, raydiumCpmmPool, traderGroup);
-                break;
-            }
-            case "dump": {
-                await dumpPool(raydium, raydiumCpmmPool, traderGroup, mint);
-                break;
-            }
-            default: {
-                throw new Error(`Unknown trading mode: ${envVars.POOL_TRADING_MODE}`);
-            }
+        if (poolTradingCycle === 0 || generateRandomBoolean(poolTradingPumpBiasPercent)) {
+            await pumpPool(raydium, raydiumCpmmPool, traderGroup);
+        } else {
+            await dumpPool(raydium, raydiumCpmmPool, traderGroup, mint);
         }
 
         if (i !== traders.length - 1) {

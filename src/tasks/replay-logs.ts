@@ -46,6 +46,4 @@ async function replayLogs(dirPath: string): Promise<void> {
             logger[methodName]({ time }, msg);
         }
     }
-
-    process.exit(0);
 }
