@@ -51,7 +51,7 @@ import {
             .fill(0)
             .map(() =>
                 new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
-                    .mul(envVars.TRADER_SWAP_ATTEMPTS)
+                    .mul(envVars.POOL_TRADING_CYCLE_COUNT)
                     .add(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
                     .add(envVars.TRADER_BALANCE_SOL)
                     .mul(LAMPORTS_PER_SOL)
