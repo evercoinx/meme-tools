@@ -31,6 +31,9 @@
         "burn-raydium-pool-liquidity": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/burn-raydium-pool-liquidity.ts",
         "burn-raydium-pool-liquidity:view": "yarn burn-raydium-pool-liquidity && yarn get-funds",
         "burn-raydium-pool-liquidity:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=burn-raydium-pool-liquidity ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
+        "lock-raydium-pool-liquidity": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/lock-raydium-pool-liquidity.ts",
+        "lock-raydium-pool-liquidity:view": "yarn lock-raydium-pool-liquidity && yarn get-funds",
+        "lock-raydium-pool-liquidity:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=lock-raydium-pool-liquidity ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
         "trade-raydium-pool-volume": "NODE_ENV=$(yarn config get meme-tools:env) POOL_TRADING_MODE=volume ts-node -r ./src/init.ts src/tasks/trade-raydium-pool.ts",
         "trade-raydium-pool-volume:view": "yarn trade-raydium-pool-volume && yarn get-funds",
         "trade-raydium-pool-pump": "NODE_ENV=$(yarn config get meme-tools:env) POOL_TRADING_MODE=pump ts-node -r ./src/init.ts src/tasks/trade-raydium-pool.ts",
@@ -59,7 +62,7 @@
         "node": ">=22"
     },
     "dependencies": {
-        "@raydium-io/raydium-sdk-v2": "^0.1.115-alpha",
+        "@raydium-io/raydium-sdk-v2": "^0.1.116-alpha",
         "@solana/spl-token": "^0.4.9",
         "@solana/web3.js": "^1.98.0",
         "arweave": "^1.15.5",
