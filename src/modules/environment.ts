@@ -25,6 +25,7 @@ interface EnvironmentSchema {
     TOKEN_WEBSITE_URI: string;
     TOKEN_TWITTER_URI: string;
     TOKEN_TELEGRAM_URI: string;
+    TOKEN_TAGS: Set<string>;
     POOL_SIZE_PERCENT: number;
     POOL_LIQUIDITY_SOL: number;
     POOL_TRADING_MODE: "volume" | "pump" | "dump";
@@ -190,6 +191,19 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                     return value;
                 })
                 .description("Token Telegram URI"),
+            TOKEN_TAGS: Joi.array()
+                .required()
+                .items(
+                    Joi.string()
+                        .required()
+                        .trim()
+                        .allow("ai", "celebrity", "gaming", "meme", "sports")
+                )
+                .min(1)
+                .max(3)
+                .unique()
+                .cast("set")
+                .description("Token tags"),
             POOL_SIZE_PERCENT: Joi.number()
                 .required()
                 .min(10)
@@ -284,6 +298,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
         .validate({
             ...process.env,
             RPC_URIS: process.env.RPC_URIS?.split(ARRAY_SEPARATOR),
+            TOKEN_TAGS: process.env.TOKEN_TAGS?.split(ARRAY_SEPARATOR),
             SNIPER_POOL_SHARE_PERCENTS:
                 process.env.SNIPER_POOL_SHARE_PERCENTS?.split(ARRAY_SEPARATOR),
             PRIORITIZATION_FEE_MULTIPLIERS:

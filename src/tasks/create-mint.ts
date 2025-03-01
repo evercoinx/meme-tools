@@ -29,7 +29,7 @@ import { PriorityLevel } from "helius-sdk";
 import pkg from "../../package.json";
 import { generateOrImportMintKeypair, importKeypairFromFile } from "../helpers/account";
 import { checkIfImageFileExists } from "../helpers/filesystem";
-import { formatPublicKey } from "../helpers/format";
+import { capitalize, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -66,19 +66,28 @@ const generateOffchainTokenMetadata = (
     description: string,
     decimals: number,
     imageUri: string,
+    tags: Set<string>,
     websiteUri?: string,
     twitterUri?: string,
     telegramUri?: string
 ): Omit<OffchainTokenMetadata, "uri"> => {
+    if (tags.size === 0) {
+        throw new Error("Tags must have at least one item");
+    }
+
     const normalizedSymbol = symbol.toUpperCase();
+    const [tag] = tags;
+    const defaultName = `Official ${normalizedSymbol} ${capitalize(tag)}`;
 
     const metadata: OffchainTokenMetadata = {
         symbol: normalizedSymbol,
-        name: name || `Official ${normalizedSymbol} Meme`,
-        description: description || `Official ${normalizedSymbol} Meme on Solana`,
+        name: name || defaultName,
+        description: description || `${defaultName} on Solana`,
         decimals,
         image: imageUri,
     };
+
+    metadata.tags = Array.from(tags);
 
     if (websiteUri) {
         metadata.external_url = websiteUri;
@@ -176,6 +185,7 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<Offcha
         envVars.TOKEN_DESCRIPTION,
         envVars.TOKEN_DECIMALS,
         imageUri,
+        envVars.TOKEN_TAGS,
         envVars.TOKEN_WEBSITE_URI,
         envVars.TOKEN_TWITTER_URI,
         envVars.TOKEN_TELEGRAM_URI

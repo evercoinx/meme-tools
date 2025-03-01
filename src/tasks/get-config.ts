@@ -6,7 +6,7 @@ import { formatDecimal } from "../helpers/format";
 (async () => {
     try {
         logger.info(
-            "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s\n\t\tExplorer URI: %s\n\n\t\tKeypair file name (Dev): %s\n\t\tKeypair file name (Distributor): %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken supply: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\n\t\tSniper shares in pool: %s\n\t\tSniper balance: %s SOL\n\n\t\tTrader count: %s\n\t\tTrader group size: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\t\tTrader swap delay: %s sec\n\t\tTrader swap attempts: %s",
+            "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s\n\t\tExplorer URI: %s\n\n\t\tKeypair file name (Dev): %s\n\t\tKeypair file name (Distributor): %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken supply: %s\n\t\tToken tags: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\n\t\tSniper shares in pool: %s\n\t\tSniper balance: %s SOL\n\n\t\tTrader count: %s\n\t\tTrader group size: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\t\tTrader swap delay: %s sec\n\t\tTrader swap attempts: %s",
             chalk.bgYellow(envVars.NODE_ENV),
             chalk.blue(envVars.IPFS_GATEWAY_URI),
             Array.from(envVars.RPC_URIS)
@@ -19,6 +19,9 @@ import { formatDecimal } from "../helpers/format";
             chalk.yellow(envVars.TOKEN_NAME),
             chalk.yellow(envVars.TOKEN_DESCRIPTION),
             chalk.green(formatDecimal(envVars.TOKEN_SUPPLY, 0)),
+            Array.from(envVars.TOKEN_TAGS)
+                .map((tag) => chalk.yellow(tag))
+                .join(" "),
             envVars.TOKEN_WEBSITE_URI
                 ? chalk.blue(envVars.TOKEN_WEBSITE_URI)
                 : OUTPUT_UNKNOWN_VALUE,
