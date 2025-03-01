@@ -13,6 +13,7 @@ import {
     Connection,
     Keypair,
     LAMPORTS_PER_SOL,
+    Signer,
     SystemProgram,
     TransactionError,
     TransactionInstruction,
@@ -25,7 +26,7 @@ import Decimal from "decimal.js";
 import { GetPriorityFeeEstimateResponse, PriorityLevel, UiTransactionEncoding } from "helius-sdk";
 import { explorer, logger, TRANSACTION_CONFIRMATION_TIMEOUT_MS, ZERO_DECIMAL } from "../modules";
 import { HeliusClient } from "../modules/helius";
-import { formatDecimal, formatSignature } from "./format";
+import { capitalize, formatDecimal, formatSignature } from "./format";
 
 export interface TransactionOptions {
     skipPreflight?: boolean;
@@ -147,7 +148,7 @@ export async function getWrapSolInstructions(
 async function createTransaction(
     connection: Connection,
     instructions: TransactionInstruction[],
-    signers: Keypair[]
+    signers: Signer[]
 ): Promise<VersionedTransaction> {
     const { blockhash } = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
@@ -167,7 +168,7 @@ async function getComputeUnitPrice(
     cluster: string,
     heliusClient: HeliusClient,
     instructions: TransactionInstruction[],
-    signers: Keypair[],
+    signers: Signer[],
     priorityLevel: PriorityLevel
 ): Promise<number> {
     if (cluster === "devnet") {
@@ -204,7 +205,7 @@ async function getComputeUnitPrice(
 async function getComputeUnitLimit(
     connection: Connection,
     instructions: TransactionInstruction[],
-    signers: Keypair[]
+    signers: Signer[]
 ): Promise<number> {
     const transaction = await createTransaction(
         connection,
@@ -215,13 +216,26 @@ async function getComputeUnitLimit(
         signers
     );
 
-    const {
-        value: { err, unitsConsumed },
-    } = await connection.simulateTransaction(transaction, { sigVerify: signers.length > 0 });
-    if (err || !unitsConsumed) {
+    let unitsConsumed: number | undefined;
+    let rpcError: TransactionError | null;
+
+    try {
+        ({
+            value: { unitsConsumed, err: rpcError },
+        } = await connection.simulateTransaction(transaction, { sigVerify: signers.length > 0 }));
+    } catch (error: unknown) {
+        logger.warn(
+            "%s. Compute unit limit defaults to %s",
+            capitalize(error instanceof Error ? error.message : String(error)),
+            formatDecimal(DEFAULT_COMPUTE_UNIT_LIMIT, 0)
+        );
+        return DEFAULT_COMPUTE_UNIT_LIMIT;
+    }
+
+    if (rpcError || !unitsConsumed) {
         logger.warn(
             "Simulation failed: %s. Compute unit limit defaults to %s",
-            formatRpcError(err),
+            formatRpcError(rpcError),
             formatDecimal(DEFAULT_COMPUTE_UNIT_LIMIT, 0)
         );
         return DEFAULT_COMPUTE_UNIT_LIMIT;
@@ -235,7 +249,7 @@ async function getComputeUnitLimit(
 export async function sendAndConfirmVersionedTransaction(
     connection: Connection,
     instructions: TransactionInstruction[],
-    signers: Keypair[],
+    signers: Signer[],
     logMessage: string,
     transactionOptions?: TransactionOptions
 ): Promise<TransactionSignature | undefined> {

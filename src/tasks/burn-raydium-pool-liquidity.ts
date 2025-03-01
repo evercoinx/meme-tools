@@ -3,7 +3,7 @@ import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import { PriorityLevel } from "helius-sdk";
 import { getTokenAccountInfo, importKeypairFromFile, importMintKeypair } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
-import { formatPublicKey } from "../helpers/format";
+import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -13,6 +13,7 @@ import {
     envVars,
     heliusClientPool,
     logger,
+    RAYDIUM_LP_MINT_DECIMALS,
     storage,
     STORAGE_RAYDIUM_LP_MINT,
 } from "../modules";
@@ -70,9 +71,13 @@ async function burnRaydiumPoolLiquidity(
     }
     if (lpMintBalance.lte(0)) {
         logger.warn(
-            "Dev (%s) has insufficient balance on ATA (%s): 0 LP-%s",
+            "Dev (%s) has insufficient balance on ATA (%s): %s LP-%s",
             formatPublicKey(dev.publicKey),
             formatPublicKey(lpMintTokenAccount),
+            formatDecimal(
+                lpMintBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
+                RAYDIUM_LP_MINT_DECIMALS
+            ),
             envVars.TOKEN_SYMBOL
         );
         return;

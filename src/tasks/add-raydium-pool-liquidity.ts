@@ -105,6 +105,6 @@ async function addRaydiumPoolLiquidity(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [dev],
-        `to add liquidity to pool id ${raydiumPoolId}`
+        `to add liquidity to pool id (${formatPublicKey(raydiumPoolId)})`
     );
 }
