@@ -59,7 +59,7 @@ import { logger } from "../modules";
 
         logger.info(
             "Pool shares: %s",
-            poolShares.map((poolShare) => chalk.green(poolShare)).join(" ")
+            poolShares.map((poolShare) => chalk.green(poolShare)).join(",")
         );
         logger.info("Total sum: %s", formatDecimal(sumNumbers(poolShares), 2));
 

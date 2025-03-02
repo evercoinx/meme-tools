@@ -1,5 +1,4 @@
 import { PublicKey } from "@solana/web3.js";
-import chalk from "chalk";
 
 const SOLANA_COM = "explorer.solana.com";
 const SOLANA_FM = "solana.fm";
@@ -36,19 +35,30 @@ export class Explorer {
     }
 
     generateTransactionUri(signature: string): string {
-        return chalk.blue(`${this.baseUri}/tx/${signature}?cluster=${this.cluster}`);
+        return this.generateLink(
+            `${this.baseUri}/tx/${signature}?cluster=${this.cluster}`,
+            "<Transaction link>"
+        );
     }
 
     generateAddressUri(address: string | PublicKey): string {
         const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
-        return chalk.blue(`${this.baseUri}/address/${normalizedAddress}?cluster=${this.cluster}`);
+        return this.generateLink(
+            `${this.baseUri}/address/${normalizedAddress}?cluster=${this.cluster}`,
+            "<Address link>"
+        );
     }
 
     generateTokenUri(address: string | PublicKey): string {
         const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
         const tokenPath = this.baseUri.includes(SOLSCAN_IO) ? "token" : "address";
-        return chalk.blue(
-            `${this.baseUri}/${tokenPath}/${normalizedAddress}?cluster=${this.cluster}`
+        return this.generateLink(
+            `${this.baseUri}/${tokenPath}/${normalizedAddress}?cluster=${this.cluster}`,
+            "<Token link>"
         );
+    }
+
+    generateLink(href: string, tag: string): string {
+        return `\x1b]8;;${href}\x1b\\${tag}\x1b]8;;\x1b\\`;
     }
 }
