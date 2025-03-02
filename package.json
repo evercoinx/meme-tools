@@ -43,6 +43,7 @@
         "collect-funds": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/collect-funds.ts",
         "collect-funds:view": "yarn collect-funds && yarn get-funds",
         "collect-funds:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=collect-funds ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
+        "generate-pool-shares": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/generate-pool-shares.ts --count 29 --sum 50 --deviation 16 --attempts 50000",
         "get-config": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-config.ts",
         "get-accounts": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-accounts.ts",
         "get-funds": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-funds.ts",

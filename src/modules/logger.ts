@@ -31,7 +31,7 @@ export function createLogger(
         },
     ];
 
-    if (name && !/^(cleanup|get|replay)/i.test(name)) {
+    if (name && !/^(cleanup|generate|get|replay)/i.test(name)) {
         targets.push({
             target: "pino/file",
             level: "info",
