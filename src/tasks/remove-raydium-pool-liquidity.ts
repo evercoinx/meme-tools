@@ -1,9 +1,9 @@
 import { Percent, TxVersion } from "@raydium-io/raydium-sdk-v2";
-import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { PriorityLevel } from "helius-sdk";
-import { getTokenAccountInfo, importKeypairFromFile, importMintKeypair } from "../helpers/account";
+import { getTokenAccountInfo, importKeypairFromFile } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
@@ -15,10 +15,10 @@ import {
     envVars,
     heliusClientPool,
     logger,
+    RAYDIUM_LP_MINT_DECIMALS,
     storage,
+    STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
-    ZERO_DECIMAL,
-    UNITS_PER_MINT,
     ZERO_BN,
 } from "../modules";
 import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
@@ -29,9 +29,9 @@ import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
 
         const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
 
-        const mint = importMintKeypair();
-        if (!mint) {
-            throw new Error("Mint not loaded from storage");
+        const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
+        if (!raydiumLpMint) {
+            throw new Error("Raydium LP mint not loaded from storage");
         }
 
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
@@ -39,13 +39,13 @@ import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
             throw new Error("Raydium pool id not loaded from storage");
         }
 
-        const sendAddRaydiumPoolLiquidityTransaction = await addRaydiumPoolLiquidity(
+        const sendRemoveRaydiumPoolLiquidityTransaction = await removeRaydiumPoolLiquidity(
             new PublicKey(raydiumPoolId),
             dev,
-            mint
+            new PublicKey(raydiumLpMint)
         );
 
-        await Promise.all([sendAddRaydiumPoolLiquidityTransaction]);
+        await Promise.all([sendRemoveRaydiumPoolLiquidityTransaction]);
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(error);
@@ -53,10 +53,10 @@ import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
     }
 })();
 
-async function addRaydiumPoolLiquidity(
+async function removeRaydiumPoolLiquidity(
     raydiumPoolId: PublicKey,
     dev: Keypair,
-    mint: Keypair
+    lpMint: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>> {
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
@@ -64,27 +64,30 @@ async function addRaydiumPoolLiquidity(
     const raydium = await createRaydium(connection, dev);
     const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
 
-    const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+    const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
         connectionPool,
         dev,
-        mint.publicKey,
-        TOKEN_2022_PROGRAM_ID
+        lpMint,
+        TOKEN_PROGRAM_ID
     );
-    if (!mintTokenBalance) {
+    if (!lpMintTokenBalance) {
         logger.warn(
             "Dev (%s) has uninitialized %s ATA (%s)",
             formatPublicKey(dev.publicKey),
             envVars.TOKEN_SYMBOL,
-            formatPublicKey(mintTokenAccount)
+            formatPublicKey(lpMintTokenAccount)
         );
         return;
     }
-    if (mintTokenBalance.lte(ZERO_DECIMAL)) {
+    if (lpMintTokenBalance.lte(0)) {
         logger.warn(
-            "Dev (%s) has insufficient balance on ATA (%s): %s %s",
+            "Dev (%s) has insufficient balance on ATA (%s): %s LP-%s",
             formatPublicKey(dev.publicKey),
-            formatPublicKey(mintTokenAccount),
-            formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
+            formatPublicKey(lpMintTokenAccount),
+            formatDecimal(
+                lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
+                RAYDIUM_LP_MINT_DECIMALS
+            ),
             envVars.TOKEN_SYMBOL
         );
         return;
@@ -92,12 +95,11 @@ async function addRaydiumPoolLiquidity(
 
     const {
         transaction: { instructions },
-    } = await raydium.cpmm.addLiquidity<TxVersion.LEGACY>({
+    } = await raydium.cpmm.withdrawLiquidity<TxVersion.LEGACY>({
         poolInfo,
         poolKeys,
-        inputAmount: new BN(mintTokenBalance.toFixed(0)),
+        lpAmount: new BN(lpMintTokenBalance.toFixed(0)),
         slippage: new Percent(ZERO_BN),
-        baseIn: NATIVE_MINT.toBase58() === poolInfo.mintB.address,
     });
 
     const computeBudgetInstructions = await getComputeBudgetInstructions(
@@ -113,6 +115,6 @@ async function addRaydiumPoolLiquidity(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [dev],
-        `to add liquidity to pool id (${formatPublicKey(raydiumPoolId)})`
+        `to remove liquidity to pool id (${formatPublicKey(raydiumPoolId)})`
     );
 }

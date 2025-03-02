@@ -63,13 +63,13 @@ async function lockRaydiumPoolLiquidity(
     const raydium = await createRaydium(connection, dev);
     const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
 
-    const [lpMintTokenAccount, lpMintBalance] = await getTokenAccountInfo(
+    const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
         connectionPool,
         dev,
         lpMint,
         TOKEN_PROGRAM_ID
     );
-    if (!lpMintBalance) {
+    if (!lpMintTokenBalance) {
         logger.warn(
             "Dev (%s) has uninitialized %s ATA (%s)",
             formatPublicKey(dev.publicKey),
@@ -78,13 +78,13 @@ async function lockRaydiumPoolLiquidity(
         );
         return;
     }
-    if (lpMintBalance.lte(0)) {
+    if (lpMintTokenBalance.lte(0)) {
         logger.warn(
             "Dev (%s) has insufficient balance on ATA (%s): %s LP-%s",
             formatPublicKey(dev.publicKey),
             formatPublicKey(lpMintTokenAccount),
             formatDecimal(
-                lpMintBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
+                lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
                 RAYDIUM_LP_MINT_DECIMALS
             ),
             envVars.TOKEN_SYMBOL
@@ -104,7 +104,7 @@ async function lockRaydiumPoolLiquidity(
     const { transaction } = await raydium.cpmm.lockLp<TxVersion.LEGACY>({
         ...{
             poolInfo,
-            lpAmount: new BN(lpMintBalance.toFixed(0)),
+            lpAmount: new BN(lpMintTokenBalance.toFixed(0)),
             withMetadata: true,
         },
         ...clusterLpLockData,
