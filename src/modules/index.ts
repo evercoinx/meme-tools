@@ -32,6 +32,7 @@ export const OUTPUT_NOT_ALLOWED = chalk.red("n/a");
 export const OUTPUT_SEPARATOR = chalk.gray("=".repeat(80));
 export const OUTPUT_UNKNOWN_PUBLIC_KEY = chalk.gray("?".repeat(44));
 export const OUTPUT_UNKNOWN_VALUE = chalk.gray("?");
+export const SWAPPER_GROUP_SIZE = 20;
 export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);

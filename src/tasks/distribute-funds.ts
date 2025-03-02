@@ -23,6 +23,7 @@ import {
     envVars,
     heliusClientPool,
     logger,
+    SWAPPER_GROUP_SIZE,
     SwapperType,
     ZERO_DECIMAL,
 } from "../modules";
@@ -57,22 +58,38 @@ import {
                     .mul(LAMPORTS_PER_SOL)
                     .trunc()
             );
+        const minTradeLamports = new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
+            .mul(LAMPORTS_PER_SOL)
+            .trunc();
 
-        const sendDistrubuteSniperFundsTransaction = await distributeSniperFunds(
-            distributor,
-            snipers,
-            sniperLamports
-        );
-        const sendDistrubuteTraderFundsTransaction = await distributeTraderFunds(
-            distributor,
-            traders,
-            traderLamports,
-            new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1]).mul(LAMPORTS_PER_SOL).trunc()
-        );
+        const sendDistrubuteSniperFundsTransactions = [];
+        for (let i = 0; i < snipers.length; i += SWAPPER_GROUP_SIZE) {
+            const sniperGroup = snipers.slice(i, i + SWAPPER_GROUP_SIZE);
+            const sniperGroupLamports = sniperLamports.slice(i, i + SWAPPER_GROUP_SIZE);
+
+            sendDistrubuteSniperFundsTransactions.push(
+                await distributeSniperFunds(distributor, sniperGroup, sniperGroupLamports)
+            );
+        }
+
+        const sendDistrubuteTraderFundsTransactions = [];
+        for (let i = 0; i < traders.length; i += SWAPPER_GROUP_SIZE) {
+            const traderGroup = traders.slice(i, i + SWAPPER_GROUP_SIZE);
+            const traderGroupLamports = traderLamports.slice(i, i + SWAPPER_GROUP_SIZE);
+
+            sendDistrubuteTraderFundsTransactions.push(
+                await distributeTraderFunds(
+                    distributor,
+                    traderGroup,
+                    traderGroupLamports,
+                    minTradeLamports
+                )
+            );
+        }
 
         await Promise.all([
-            sendDistrubuteSniperFundsTransaction,
-            sendDistrubuteTraderFundsTransaction,
+            ...sendDistrubuteSniperFundsTransactions,
+            ...sendDistrubuteTraderFundsTransactions,
         ]);
         process.exit(0);
     } catch (error: unknown) {

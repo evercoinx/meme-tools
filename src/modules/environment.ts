@@ -268,7 +268,6 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             TRADER_SELL_AMOUNT_RANGE_PERCENT: Joi.array()
                 .required()
                 .items(Joi.number().min(1).max(100).custom(convertToFractionalPercent))
-                .unique()
                 .min(2)
                 .max(2)
                 .description("Trader sell amount range (in percent)"),

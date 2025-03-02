@@ -68,19 +68,19 @@ import {
         );
         await Promise.all(sendCloseTokenAccountsTransactions);
 
-        const sendSniperCollectFundsTransactions = await collectFunds(
+        const sendCollectSniperFundsTransactions = await collectFunds(
             snipers,
             distributor,
             SwapperType.Sniper
         );
-        const sendTraderCollectFundsTransactions = await collectFunds(
+        const sendCollectTraderFundsTransactions = await collectFunds(
             traders,
             distributor,
             SwapperType.Trader
         );
         await Promise.all([
-            ...sendSniperCollectFundsTransactions,
-            ...sendTraderCollectFundsTransactions,
+            ...sendCollectSniperFundsTransactions,
+            ...sendCollectTraderFundsTransactions,
         ]);
         process.exit(0);
     } catch (error: unknown) {
