@@ -215,11 +215,10 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(20)
                 .description("Pool liquidity (in SOL)"),
             POOL_TRADING_CYCLE_COUNT: Joi.number()
-                .optional()
+                .required()
                 .integer()
-                .min(2)
+                .min(1)
                 .max(100)
-                .default(2)
                 .description("Pool trading cycle count"),
             POOL_TRADING_PUMP_BIAS_PERCENT: Joi.number()
                 .optional()

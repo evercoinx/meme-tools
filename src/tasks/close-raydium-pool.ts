@@ -20,11 +20,8 @@ import {
     envVars,
     heliusClientPool,
     logger,
-    RAYDIUM_LP_MINT_DECIMALS,
     storage,
-    STORAGE_RAYDIUM_LP_MINT,
-    STORAGE_RAYDIUM_POOL_ID,
-    SLIPPAGE_PERCENT,
+    SWAPPER_SLIPPAGE_PERCENT,
     SwapperType,
     UNITS_PER_MINT,
     ZERO_BN,
@@ -33,9 +30,11 @@ import {
 import {
     createRaydium,
     loadRaydiumCpmmPool,
+    RAYDIUM_LP_MINT_DECIMALS,
     RaydiumCpmmPool,
     swapMintToSol,
 } from "../modules/raydium";
+import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
 
 (async () => {
     try {
@@ -79,17 +78,6 @@ import {
 
         const devUnitsToSell = await findUnitsToSell([dev], mint, SwapperType.Dev);
 
-        const sendDevSwapMintToSolTransactions = await swapMintToSol(
-            connectionPool,
-            heliusClientPool,
-            raydium,
-            raydiumCpmmPool,
-            [dev],
-            devUnitsToSell,
-            SLIPPAGE_PERCENT,
-            PriorityLevel.VERY_HIGH,
-            { skipPreflight: true }
-        );
         const sendSniperSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
@@ -97,7 +85,18 @@ import {
             raydiumCpmmPool,
             snipers,
             sniperUnitsToSell,
-            SLIPPAGE_PERCENT,
+            SWAPPER_SLIPPAGE_PERCENT,
+            PriorityLevel.VERY_HIGH,
+            { skipPreflight: true }
+        );
+        const sendDevSwapMintToSolTransactions = await swapMintToSol(
+            connectionPool,
+            heliusClientPool,
+            raydium,
+            raydiumCpmmPool,
+            [dev],
+            devUnitsToSell,
+            SWAPPER_SLIPPAGE_PERCENT,
             PriorityLevel.VERY_HIGH,
             { skipPreflight: true }
         );
@@ -108,14 +107,14 @@ import {
             raydiumCpmmPool,
             traders,
             traderUnitsToSell,
-            SLIPPAGE_PERCENT,
+            SWAPPER_SLIPPAGE_PERCENT,
             PriorityLevel.HIGH,
             { skipPreflight: true }
         );
 
         await Promise.all([
-            ...sendDevSwapMintToSolTransactions,
             ...sendSniperSwapMintToSolTransactions,
+            ...sendDevSwapMintToSolTransactions,
             ...sendTraderSwapMintToSolTransactions,
         ]);
         process.exit(0);
@@ -202,7 +201,7 @@ async function removeRaydiumPoolLiquidity(
             formatPublicKey(lpMintTokenAccount),
             formatDecimal(
                 lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
-                envVars.TOKEN_DECIMALS
+                RAYDIUM_LP_MINT_DECIMALS
             ),
             envVars.TOKEN_SYMBOL
         );

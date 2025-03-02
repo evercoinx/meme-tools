@@ -41,6 +41,8 @@ export interface RaydiumCpmmPool {
     tradeFee: BN;
 }
 
+export const RAYDIUM_LP_MINT_DECIMALS = 9;
+
 export const RAYDIUM_POOL_ERRORS: ContractErrors = {
     2012: {
         instruction: "SwapBaseInput",

@@ -4,8 +4,9 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@sol
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { capitalize, formatPublicKey } from "./format";
-import { encryption, logger, storage, STORAGE_MINT_SECRET_KEY, SwapperType } from "../modules";
+import { encryption, logger, storage, SwapperType } from "../modules";
 import { Pool } from "../modules/pool";
+import { STORAGE_MINT_SECRET_KEY } from "../modules/storage";
 
 export async function importKeypairFromFile(filePath: string, label: string): Promise<Keypair> {
     const secretKey: number[] = JSON.parse(await fs.readFile(filePath, "utf8"));

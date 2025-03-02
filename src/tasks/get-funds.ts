@@ -16,12 +16,12 @@ import {
     envVars,
     logger,
     OUTPUT_UNKNOWN_PUBLIC_KEY,
-    RAYDIUM_LP_MINT_DECIMALS,
     storage,
-    STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
     UNITS_PER_MINT,
 } from "../modules";
+import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
+import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
 
 (async () => {
     try {

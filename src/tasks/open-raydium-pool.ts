@@ -33,9 +33,7 @@ import {
     heliusClientPool,
     logger,
     storage,
-    STORAGE_RAYDIUM_LP_MINT,
-    STORAGE_RAYDIUM_POOL_ID,
-    SLIPPAGE_PERCENT,
+    SWAPPER_SLIPPAGE_PERCENT,
     SwapperType,
     UNITS_PER_MINT,
     ZERO_BN,
@@ -47,6 +45,7 @@ import {
     RAYDIUM_POOL_ERRORS,
     swapSolToMint,
 } from "../modules/raydium";
+import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
 
 (async () => {
     try {
@@ -85,7 +84,7 @@ import {
             raydiumCpmmPool,
             snipersToBuy,
             lamportsToBuy,
-            SLIPPAGE_PERCENT,
+            SWAPPER_SLIPPAGE_PERCENT,
             PriorityLevel.VERY_HIGH,
             {
                 skipPreflight: true,

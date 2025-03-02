@@ -42,10 +42,9 @@ import {
     logger,
     pinataClient,
     storage,
-    STORAGE_MINT_IMAGE_URI,
-    STORAGE_MINT_METADATA,
     UNITS_PER_MINT,
 } from "../modules";
+import { STORAGE_MINT_IMAGE_URI, STORAGE_MINT_METADATA } from "../modules/storage";
 
 interface OffchainTokenMetadata {
     name: string;

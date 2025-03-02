@@ -34,11 +34,11 @@ import {
     MIN_REMAINING_BALANCE_LAMPORTS,
     MINT_DUST_UNITS,
     storage,
-    STORAGE_RAYDIUM_LP_MINT,
     SwapperType,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
 } from "../modules";
+import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 
 (async () => {
     try {

@@ -16,12 +16,12 @@ import {
     heliusClientPool,
     logger,
     storage,
-    STORAGE_RAYDIUM_POOL_ID,
     ZERO_DECIMAL,
     UNITS_PER_MINT,
     ZERO_BN,
 } from "../modules";
 import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
+import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
 
 (async () => {
     try {

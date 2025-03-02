@@ -1,3 +1,4 @@
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
@@ -24,10 +25,7 @@ import {
     logger,
     OUTPUT_SEPARATOR,
     storage,
-    STORAGE_RAYDIUM_LP_MINT,
-    STORAGE_RAYDIUM_POOL_ID,
-    STORAGE_RAYDIUM_POOL_TRADING_CYCLE,
-    SLIPPAGE_PERCENT,
+    SWAPPER_SLIPPAGE_PERCENT,
     SwapperType,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
@@ -39,7 +37,11 @@ import {
     swapMintToSol,
     swapSolToMint,
 } from "../modules/raydium";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
+import {
+    STORAGE_RAYDIUM_LP_MINT,
+    STORAGE_RAYDIUM_POOL_ID,
+    STORAGE_RAYDIUM_POOL_TRADING_CYCLE,
+} from "../modules/storage";
 
 (async () => {
     try {
@@ -118,9 +120,9 @@ async function executeTradeCycle(
         const traderGroup = shuffle(traders.slice(i, i + traderGroupSize));
 
         if (poolTradingCycle === 0 || generateRandomBoolean(poolTradingPumpBiasPercent)) {
-            await pumpPool(raydium, raydiumCpmmPool, traderGroup);
+            await pumpPool(raydium, raydiumCpmmPool, traderGroup, i);
         } else {
-            await dumpPool(raydium, raydiumCpmmPool, traderGroup, mint);
+            await dumpPool(raydium, raydiumCpmmPool, traderGroup, i, mint);
         }
 
         if (i !== traders.length - 1) {
@@ -132,7 +134,8 @@ async function executeTradeCycle(
 async function pumpPool(
     raydium: Raydium,
     raydiumCpmmPool: RaydiumCpmmPool,
-    traderGroup: Keypair[]
+    traderGroup: Keypair[],
+    traderGroupNumber: number
 ): Promise<void> {
     const lamportsToBuy = await findLamportsToBuy(traderGroup);
     const sendSwapSolToMintTransactions = await swapSolToMint(
@@ -142,11 +145,14 @@ async function pumpPool(
         raydiumCpmmPool,
         traderGroup,
         lamportsToBuy,
-        SLIPPAGE_PERCENT,
+        SWAPPER_SLIPPAGE_PERCENT,
         PriorityLevel.LOW
     );
     if (sendSwapSolToMintTransactions.length === 0) {
-        logger.debug("No buy transactions found. Skipping");
+        logger.info(
+            "Trader group: %s. No buy transactions found. Skipping",
+            formatDecimal(traderGroupNumber, 0)
+        );
         return;
     }
 
@@ -155,7 +161,8 @@ async function pumpPool(
     await new Promise((resolve) => {
         const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
         logger.info(
-            "%s buy transaction(s) executed. Pausing: %s sec",
+            "Trader group: %s. Buy transactions executed: %s. Pause: %s sec",
+            formatDecimal(traderGroupNumber, 0),
             formatDecimal(sendSwapSolToMintTransactions.length, 0),
             formatDecimal(delay / 1_000, 3)
         );
@@ -193,6 +200,7 @@ async function dumpPool(
     raydium: Raydium,
     raydiumCpmmPool: RaydiumCpmmPool,
     traderGroup: Keypair[],
+    traderGroupNumber: number,
     mint: Keypair
 ): Promise<void> {
     const unitsToSell = await findUnitsToSell(traderGroup, mint);
@@ -203,11 +211,14 @@ async function dumpPool(
         raydiumCpmmPool,
         traderGroup,
         unitsToSell,
-        SLIPPAGE_PERCENT,
+        SWAPPER_SLIPPAGE_PERCENT,
         PriorityLevel.LOW
     );
     if (sendSwapMintToSolTransactions.length === 0) {
-        logger.debug("No sell transactions found. Skipping");
+        logger.info(
+            "Trader group: %s. No sell transactions found. Skipping",
+            formatDecimal(traderGroupNumber, 0)
+        );
         return;
     }
 
@@ -216,7 +227,8 @@ async function dumpPool(
     await new Promise((resolve) => {
         const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
         logger.info(
-            "%s sell transaction(s) executed. Pausing: %s sec",
+            "Trader group: %s. Sell transactions executed: %s. Pause: %s sec",
+            formatDecimal(traderGroupNumber, 0),
             formatDecimal(sendSwapMintToSolTransactions.length, 0),
             formatDecimal(delay / 1_000, 3)
         );

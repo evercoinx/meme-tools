@@ -18,21 +18,13 @@ export enum SwapperType {
     Trader = "trader",
 }
 
-export const STORAGE_MINT_IMAGE_URI = "mint_image_uri";
-export const STORAGE_MINT_METADATA = "mint_metadata";
-export const STORAGE_MINT_SECRET_KEY = "mint_secret_key";
-export const STORAGE_RAYDIUM_LP_MINT = "raydium_lp_mint";
-export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
-export const STORAGE_RAYDIUM_POOL_TRADING_CYCLE = "raydium_pool_trading_cycle";
-
 export const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
-export const RAYDIUM_LP_MINT_DECIMALS = 9;
-export const SLIPPAGE_PERCENT = 1;
 export const OUTPUT_NOT_ALLOWED = chalk.red("n/a");
 export const OUTPUT_SEPARATOR = chalk.gray("=".repeat(80));
 export const OUTPUT_UNKNOWN_PUBLIC_KEY = chalk.gray("?".repeat(44));
 export const OUTPUT_UNKNOWN_VALUE = chalk.gray("?");
 export const SWAPPER_GROUP_SIZE = 20;
+export const SWAPPER_SLIPPAGE_PERCENT = 1;
 export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);

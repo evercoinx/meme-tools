@@ -8,15 +8,9 @@ import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
-import {
-    connectionPool,
-    envVars,
-    heliusClientPool,
-    logger,
-    RAYDIUM_LP_MINT_DECIMALS,
-    storage,
-    STORAGE_RAYDIUM_LP_MINT,
-} from "../modules";
+import { connectionPool, envVars, heliusClientPool, logger, storage } from "../modules";
+import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
+import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 
 (async () => {
     try {
