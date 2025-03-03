@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 import chalk from "chalk";
-import { formatDecimal } from "../helpers/format";
+import { formatDecimal, formatInteger } from "../helpers/format";
 import { generateRandomFloat } from "../helpers/random";
 import { logger } from "../modules";
 
@@ -12,20 +12,16 @@ import { logger } from "../modules";
             options: {
                 count: {
                     type: "string",
-                    short: "c",
                 },
                 sum: {
                     type: "string",
-                    short: "s",
                 },
                 deviation: {
                     type: "string",
-                    short: "d",
                 },
                 attempts: {
                     type: "string",
-                    short: "a",
-                    default: "10000",
+                    default: "100000",
                 },
             },
         });
@@ -50,18 +46,10 @@ import { logger } from "../modules";
             throw new Error("Too many attempts");
         }
 
-        const poolShares = generatePoolShares(
-            parsedCount,
-            parsedSum,
-            parsedDeviation,
-            parsedAttempts
-        );
+        const shares = generateShares(parsedCount, parsedSum, parsedDeviation, parsedAttempts);
 
-        logger.info(
-            "Pool shares: %s",
-            poolShares.map((poolShare) => chalk.green(poolShare)).join(",")
-        );
-        logger.info("Total sum: %s", formatDecimal(sumNumbers(poolShares), 2));
+        logger.info("Shares: %s", shares.map((share) => chalk.green(share)).join(","));
+        logger.info("Total sum: %s", formatDecimal(sumNumbers(shares), 2));
 
         process.exit(0);
     } catch (error: unknown) {
@@ -70,11 +58,11 @@ import { logger } from "../modules";
     }
 })();
 
-function generatePoolShares(
+function generateShares(
     count: number,
     totalSum: number,
     deviation: number,
-    maxAttempts: number
+    attempts: number
 ): number[] {
     const average = totalSum / count;
     const min = average * (1 - deviation);
@@ -82,7 +70,7 @@ function generatePoolShares(
     const range = max - min;
     const targetExcess = totalSum - count * min;
 
-    for (let i = 0; i < maxAttempts; i++) {
+    for (let i = 0; i < attempts; i++) {
         const randoms = Array.from({ length: count }, () => generateRandomFloat([0, 1]));
         const randomSum = sumNumbers(randoms);
 
@@ -97,7 +85,7 @@ function generatePoolShares(
         }
     }
 
-    throw new Error(`Failed to generate valid numbers after ${maxAttempts} attempts`);
+    throw new Error(`Failed to generate shares. Attempts: ${formatInteger(attempts)}`);
 }
 
 function sumNumbers(numbers: number[]) {
