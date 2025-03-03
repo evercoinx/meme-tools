@@ -1,6 +1,8 @@
 import { rm } from "fs/promises";
+import chalk from "chalk";
 import pkg from "../../package.json";
-import { checkIfStorageFileExists } from "../helpers/filesystem";
+import { checkIfStorageFileExists, countFiles } from "../helpers/filesystem";
+import { formatDecimal } from "../helpers/format";
 import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
 
 (async () => {
@@ -26,11 +28,13 @@ import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
 })();
 
 async function purgeLogFiles(): Promise<void> {
+    const logFileCount = await countFiles(LOG_DIR);
+
     await rm(LOG_DIR, {
         recursive: true,
         force: true,
     });
-    logger.info("Log files purged");
+    logger.info("Logs purged. Total files: %s", formatDecimal(logFileCount, 0));
 }
 
 async function clearStorageFile(): Promise<void> {
@@ -38,7 +42,7 @@ async function clearStorageFile(): Promise<void> {
         await checkIfStorageFileExists(storage.cacheId);
 
         storage.clear();
-        logger.info("Storage cleared");
+        logger.info("Storage cleared. Total keys: %s", formatDecimal(storage.keys().length, 0));
     } catch (error: unknown) {
         logger.warn(error instanceof Error ? error.message : String(error));
     }
@@ -47,7 +51,7 @@ async function clearStorageFile(): Promise<void> {
 async function getGroupId(groupName: string): Promise<string | undefined> {
     const groups = await pinataClient.groups.list().name(groupName);
     if (groups.length === 0) {
-        logger.warn(`Group not found: ${groupName}`);
+        logger.warn("Group not found: %s", chalk.yellow(groupName));
         return;
     }
 
@@ -65,7 +69,7 @@ async function unpinIpfsFiles(groupId: string): Promise<void> {
             name: imageFileName,
         });
     } else {
-        logger.warn("Mint image file not found: %s", imageFileName);
+        logger.warn("Mint image file not found: %s", chalk.blue(imageFileName));
     }
 
     const metadataFileName = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
@@ -76,14 +80,14 @@ async function unpinIpfsFiles(groupId: string): Promise<void> {
             name: metadataFileName,
         });
     } else {
-        logger.warn("Mint metadata file not found: %s", metadataFileName);
+        logger.warn("Mint metadata file not found: %s", chalk.blue(metadataFileName));
     }
 
     if (filesToUnpin.length > 0) {
         await pinataClient.unpin(filesToUnpin.map(({ cid }) => cid));
 
         for (const fileToUnpin of filesToUnpin) {
-            logger.info("File unpinned from IPFS: %s", fileToUnpin.name);
+            logger.info("File unpinned from IPFS: %s", chalk.blue(fileToUnpin.name));
         }
     }
 }
