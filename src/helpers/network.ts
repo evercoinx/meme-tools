@@ -26,7 +26,13 @@ import Decimal from "decimal.js";
 import { GetPriorityFeeEstimateResponse, PriorityLevel, UiTransactionEncoding } from "helius-sdk";
 import { explorer, logger, TRANSACTION_CONFIRMATION_TIMEOUT_MS, ZERO_DECIMAL } from "../modules";
 import { HeliusClient } from "../modules/helius";
-import { capitalize, formatDecimal, formatSignature } from "./format";
+import {
+    capitalize,
+    formatDecimal,
+    formatInteger,
+    formatMilliseconds,
+    formatSignature,
+} from "./format";
 
 export interface TransactionOptions {
     skipPreflight?: boolean;
@@ -227,7 +233,7 @@ async function getComputeUnitLimit(
         logger.warn(
             "%s. Compute unit limit defaults to %s",
             capitalize(error instanceof Error ? error.message : String(error)),
-            formatDecimal(DEFAULT_COMPUTE_UNIT_LIMIT, 0)
+            formatInteger(DEFAULT_COMPUTE_UNIT_LIMIT)
         );
         return DEFAULT_COMPUTE_UNIT_LIMIT;
     }
@@ -236,7 +242,7 @@ async function getComputeUnitLimit(
         logger.warn(
             "Simulation failed: %s. Compute unit limit defaults to %s",
             formatRpcError(rpcError),
-            formatDecimal(DEFAULT_COMPUTE_UNIT_LIMIT, 0)
+            formatInteger(DEFAULT_COMPUTE_UNIT_LIMIT)
         );
         return DEFAULT_COMPUTE_UNIT_LIMIT;
     }
@@ -319,7 +325,7 @@ async function pollTransactionConfirmation(
                 clearInterval(intervalId);
                 reject(
                     new ResentTransactionError(
-                        `Transaction (${formatSignature(signature)}) timed out after ${formatDecimal(elapsed / 1_000, 3)} sec`
+                        `Transaction (${formatSignature(signature)}) timed out after ${formatMilliseconds(elapsed)} sec`
                     )
                 );
             }

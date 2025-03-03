@@ -57,6 +57,14 @@ export function formatDecimal(value: NumberLike, decimalPlaces = 9): string {
     );
 }
 
+export function formatInteger(value: NumberLike): string {
+    return formatDecimal(value, 0);
+}
+
+export function formatMilliseconds(value: number): string {
+    return formatDecimal(value / 1_000, 3);
+}
+
 export function formatPercent(value: NumberLike): string {
     if (Decimal.isDecimal(value)) {
         value = value.toNumber();

@@ -11,7 +11,13 @@ import {
     importSwapperKeypairs,
 } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
-import { formatDecimal, formatPercent, formatPublicKey } from "../helpers/format";
+import {
+    formatDecimal,
+    formatInteger,
+    formatMilliseconds,
+    formatPercent,
+    formatPublicKey,
+} from "../helpers/format";
 import {
     generateRandomBoolean,
     generateRandomFloat,
@@ -151,7 +157,7 @@ async function pumpPool(
     if (sendSwapSolToMintTransactions.length === 0) {
         logger.info(
             "Trader group: %s. No buy transactions found. Skipping",
-            formatDecimal(traderGroupNumber, 0)
+            formatInteger(traderGroupNumber)
         );
         return;
     }
@@ -161,10 +167,10 @@ async function pumpPool(
     await new Promise((resolve) => {
         const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
         logger.info(
-            "Trader group: %s. Buy transactions executed: %s. Pause: %s sec",
-            formatDecimal(traderGroupNumber, 0),
-            formatDecimal(sendSwapSolToMintTransactions.length, 0),
-            formatDecimal(delay / 1_000, 3)
+            "Trader group: %s. Buy transactions executed: %s. Pausing: %s sec",
+            formatInteger(traderGroupNumber),
+            formatInteger(sendSwapSolToMintTransactions.length),
+            formatMilliseconds(delay)
         );
         setTimeout(resolve, delay);
     });
@@ -217,7 +223,7 @@ async function dumpPool(
     if (sendSwapMintToSolTransactions.length === 0) {
         logger.info(
             "Trader group: %s. No sell transactions found. Skipping",
-            formatDecimal(traderGroupNumber, 0)
+            formatInteger(traderGroupNumber)
         );
         return;
     }
@@ -227,10 +233,10 @@ async function dumpPool(
     await new Promise((resolve) => {
         const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
         logger.info(
-            "Trader group: %s. Sell transactions executed: %s. Pause: %s sec",
-            formatDecimal(traderGroupNumber, 0),
-            formatDecimal(sendSwapMintToSolTransactions.length, 0),
-            formatDecimal(delay / 1_000, 3)
+            "Trader group: %s. Sell transactions executed: %s. Pausing: %s sec",
+            formatInteger(traderGroupNumber),
+            formatInteger(sendSwapMintToSolTransactions.length),
+            formatMilliseconds(delay)
         );
         setTimeout(resolve, delay);
     });

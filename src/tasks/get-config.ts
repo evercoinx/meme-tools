@@ -2,7 +2,7 @@ import { basename } from "node:path";
 import chalk from "chalk";
 import Decimal from "decimal.js";
 import { envVars, logger, OUTPUT_UNKNOWN_VALUE } from "../modules";
-import { formatDecimal, formatPercent } from "../helpers/format";
+import { formatDecimal, formatInteger, formatPercent } from "../helpers/format";
 
 (async () => {
     try {
@@ -19,7 +19,7 @@ import { formatDecimal, formatPercent } from "../helpers/format";
             chalk.yellow(envVars.TOKEN_SYMBOL),
             chalk.yellow(envVars.TOKEN_NAME),
             chalk.yellow(envVars.TOKEN_DESCRIPTION),
-            chalk.green(formatDecimal(envVars.TOKEN_SUPPLY, 0)),
+            chalk.green(formatInteger(envVars.TOKEN_SUPPLY)),
             Array.from(envVars.TOKEN_TAGS)
                 .map((tag) => chalk.yellow(tag))
                 .join(" "),
@@ -31,14 +31,14 @@ import { formatDecimal, formatPercent } from "../helpers/format";
                 : OUTPUT_UNKNOWN_VALUE,
             chalk.green(formatPercent(envVars.POOL_SIZE_PERCENT)),
             chalk.green(formatDecimal(envVars.POOL_LIQUIDITY_SOL)),
-            chalk.green(formatDecimal(envVars.POOL_TRADING_CYCLE_COUNT)),
+            chalk.green(formatInteger(envVars.POOL_TRADING_CYCLE_COUNT)),
             chalk.green(formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT)),
             envVars.SNIPER_POOL_SHARE_PERCENTS.map((poolShare) =>
                 chalk.green(formatPercent(poolShare))
             ).join(" "),
             chalk.green(formatDecimal(envVars.SNIPER_BALANCE_SOL)),
-            chalk.green(formatDecimal(envVars.TRADER_COUNT, 0)),
-            chalk.green(formatDecimal(envVars.TRADER_GROUP_SIZE, 0)),
+            chalk.green(formatInteger(envVars.TRADER_COUNT)),
+            chalk.green(formatInteger(envVars.TRADER_GROUP_SIZE)),
             chalk.green(formatDecimal(envVars.TRADER_BALANCE_SOL)),
             chalk.green(
                 formatDecimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[0]),

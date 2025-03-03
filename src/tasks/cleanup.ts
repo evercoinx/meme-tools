@@ -2,7 +2,7 @@ import { rm } from "fs/promises";
 import chalk from "chalk";
 import pkg from "../../package.json";
 import { checkIfStorageFileExists, countFiles } from "../helpers/filesystem";
-import { formatDecimal } from "../helpers/format";
+import { formatInteger } from "../helpers/format";
 import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
 
 (async () => {
@@ -34,7 +34,7 @@ async function purgeLogFiles(): Promise<void> {
         recursive: true,
         force: true,
     });
-    logger.info("Logs purged. Total files: %s", formatDecimal(logFileCount, 0));
+    logger.info("Logs purged. Total files: %s", formatInteger(logFileCount));
 }
 
 async function clearStorageFile(): Promise<void> {
@@ -42,7 +42,7 @@ async function clearStorageFile(): Promise<void> {
         await checkIfStorageFileExists(storage.cacheId);
 
         storage.clear();
-        logger.info("Storage cleared. Total keys: %s", formatDecimal(storage.keys().length, 0));
+        logger.info("Storage cleared. Total keys: %s", formatInteger(storage.keys().length));
     } catch (error: unknown) {
         logger.warn(error instanceof Error ? error.message : String(error));
     }

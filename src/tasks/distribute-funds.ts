@@ -12,7 +12,7 @@ import {
     getSolBalance,
     importKeypairFromFile,
 } from "../helpers/account";
-import { formatDecimal, formatPublicKey } from "../helpers/format";
+import { formatDecimal, formatInteger, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -155,7 +155,7 @@ async function distributeSniperFunds(
 
     if (dryRun) {
         logger.info(
-            `Distributing ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedSniperCount, 0)} snipers`
+            `Distributing ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(fundedSniperCount)} snipers`
         );
         return Promise.resolve(undefined);
     }
@@ -173,7 +173,7 @@ async function distributeSniperFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedSniperCount, 0)} snipers`
+        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(fundedSniperCount)} snipers`
     );
 }
 
@@ -232,7 +232,7 @@ async function distributeTraderFunds(
 
     if (dryRun) {
         logger.info(
-            `Distributing ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedTraderCount, 0)} traders`
+            `Distributing ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(fundedTraderCount)} traders`
         );
         return Promise.resolve(undefined);
     }
@@ -250,6 +250,6 @@ async function distributeTraderFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedTraderCount, 0)} traders`
+        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(fundedTraderCount)} traders`
     );
 }
