@@ -47,8 +47,13 @@ export const RAYDIUM_POOL_ERRORS: ContractErrors = {
     2012: {
         instruction: "SwapBaseInput",
         code: "ContraintAddress",
-        message: "Address constraint violated",
+        message: "An address constraint was violated",
     },
+    // 2505: {
+    //     instruction: "SwapBaseInput",
+    //     code: "RequireGtViolated",
+    //     message: "A require_gt expression was violated",
+    // },
     6000: {
         instruction: "SwapBaseInput",
         code: "NotApproved",
@@ -146,16 +151,26 @@ export async function swapSolToMint(
                 tradeFee
             );
         } catch (error: unknown) {
-            if (error instanceof Error && error.message === "destinationAmountSwapped is zero") {
-                logger.warn(
-                    "Account (%s) has too low amount to swap: %s SOL",
-                    formatPublicKey(account.publicKey),
-                    formatDecimal(
-                        new Decimal(lamportsToSwap[i].toString(10)).div(LAMPORTS_PER_SOL)
-                    ),
-                    envVars.TOKEN_SYMBOL
-                );
-                continue;
+            if (error instanceof Error) {
+                if (error.message.includes("destinationAmountSwapped is zero")) {
+                    logger.warn(
+                        "Account (%s) has too low amount to swap: %s SOL",
+                        formatPublicKey(account.publicKey),
+                        formatDecimal(
+                            new Decimal(lamportsToSwap[i].toString(10)).div(LAMPORTS_PER_SOL)
+                        ),
+                        envVars.TOKEN_SYMBOL
+                    );
+                    continue;
+                }
+                if (error.message.includes("quotient is zero")) {
+                    logger.warn(
+                        "Account (%s) hits insufficient pool reserves: %s / %s",
+                        formatPublicKey(account.publicKey),
+                        ...getPrintedPoolReserves(baseReserve, quoteReserve, baseIn)
+                    );
+                    continue;
+                }
             }
 
             throw error;
@@ -238,17 +253,27 @@ export async function swapMintToSol(
                 tradeFee
             );
         } catch (error: unknown) {
-            if (error instanceof Error && error.message === "destinationAmountSwapped is zero") {
-                logger.warn(
-                    "Account (%s) has too low amount to swap: %s %s",
-                    formatPublicKey(account.publicKey),
-                    formatDecimal(
-                        new Decimal(unitsToSwap[i].toString(10)).div(UNITS_PER_MINT),
-                        envVars.TOKEN_DECIMALS
-                    ),
-                    envVars.TOKEN_SYMBOL
-                );
-                continue;
+            if (error instanceof Error) {
+                if (error.message.includes("destinationAmountSwapped is zero")) {
+                    logger.warn(
+                        "Account (%s) has too low amount to swap: %s %s",
+                        formatPublicKey(account.publicKey),
+                        formatDecimal(
+                            new Decimal(unitsToSwap[i].toString(10)).div(UNITS_PER_MINT),
+                            envVars.TOKEN_DECIMALS
+                        ),
+                        envVars.TOKEN_SYMBOL
+                    );
+                    continue;
+                }
+                if (error.message.includes("quotient is zero")) {
+                    logger.warn(
+                        "Account (%s) hits insufficient pool reserves: %s / %s",
+                        formatPublicKey(account.publicKey),
+                        ...getPrintedPoolReserves(baseReserve, quoteReserve, baseIn)
+                    );
+                    continue;
+                }
             }
 
             throw error;
@@ -298,4 +323,26 @@ export async function swapMintToSol(
     }
 
     return sendTransactions;
+}
+
+function getPrintedPoolReserves(
+    baseReserve: BN,
+    quoteReserve: BN,
+    baseIn: boolean
+): [string, string] {
+    if (baseIn) {
+        const base = formatDecimal(new Decimal(baseReserve.toString(10)).div(LAMPORTS_PER_SOL));
+        const quote = formatDecimal(
+            new Decimal(quoteReserve.toString(10)).div(UNITS_PER_MINT),
+            envVars.TOKEN_DECIMALS
+        );
+        return [`${base} WSOL`, `${quote} ${envVars.TOKEN_SYMBOL}`];
+    }
+
+    const base = formatDecimal(
+        new Decimal(quoteReserve.toString(10)).div(UNITS_PER_MINT),
+        envVars.TOKEN_DECIMALS
+    );
+    const quote = formatDecimal(new Decimal(baseReserve.toString(10)).div(LAMPORTS_PER_SOL));
+    return [`${base} ${envVars.TOKEN_SYMBOL}`, `${quote} WSOL`];
 }
