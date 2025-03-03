@@ -47,12 +47,13 @@
         "collect-funds": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/collect-funds.ts",
         "collect-funds:view": "yarn collect-funds && yarn get-funds",
         "collect-funds:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=collect-funds ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
-        "generate-pool-shares": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/generate-pool-shares.ts --count 29 --sum 50 --deviation 16 --attempts 50000",
         "get-config": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-config.ts",
         "get-accounts": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-accounts.ts",
         "get-funds": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-funds.ts",
         "get-mint": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-mint.ts",
-        "get-raydium-pool": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-raydium-pool.ts"
+        "get-raydium-pool": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-raydium-pool.ts",
+        "generate-pool-shares": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/generate-pool-shares.ts --count 29 --sum 50 --deviation 16 --attempts 50000",
+        "generate-encryption-secret": "hexdump -vn16 -e'4/4 \"%08x\" 1 \"\n\"' /dev/urandom"
     },
     "keywords": [],
     "author": "EverCoinX <2901744+evercoinx@users.noreply.github.com>",
@@ -63,7 +64,7 @@
         "node": ">=22"
     },
     "dependencies": {
-        "@raydium-io/raydium-sdk-v2": "^0.1.116-alpha",
+        "@raydium-io/raydium-sdk-v2": "^0.1.117-alpha",
         "@solana/spl-token": "^0.4.9",
         "@solana/web3.js": "^1.98.0",
         "arweave": "^1.15.5",
