@@ -19,6 +19,7 @@
         "distribute-funds": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/distribute-funds.ts",
         "distribute-funds:view": "yarn distribute-funds && yarn get-funds",
         "distribute-funds:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=distribute-funds ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
+        "distribute-funds:dry-run": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/distribute-funds.ts --dry-run",
         "create-mint": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/create-mint.ts",
         "create-mint:view": "yarn create-mint && yarn get-mint && yarn get-funds",
         "create-mint:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=create-mint ts-node -r ./src/init.ts src/tasks/replay-logs.ts",

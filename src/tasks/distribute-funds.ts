@@ -27,9 +27,15 @@ import {
     SwapperType,
     ZERO_DECIMAL,
 } from "../modules";
+import { isDryRun } from "../modules/environment";
 
 (async () => {
     try {
+        const dryRun = isDryRun();
+        if (dryRun) {
+            logger.warn("Dry run mode enabled");
+        }
+
         const distributor = await importKeypairFromFile(
             envVars.KEYPAIR_FILE_PATH_DISTRIBUTOR,
             "distributor"
@@ -37,9 +43,14 @@ import {
 
         const snipers = generateOrImportSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            SwapperType.Sniper
+            SwapperType.Sniper,
+            dryRun
         );
-        const traders = generateOrImportSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
+        const traders = generateOrImportSwapperKeypairs(
+            envVars.TRADER_COUNT,
+            SwapperType.Trader,
+            dryRun
+        );
 
         const sniperLamports = envVars.SNIPER_POOL_SHARE_PERCENTS.map((poolSharePercent) =>
             new Decimal(envVars.POOL_LIQUIDITY_SOL)
@@ -68,7 +79,7 @@ import {
             const sniperGroupLamports = sniperLamports.slice(i, i + SWAPPER_GROUP_SIZE);
 
             sendDistrubuteSniperFundsTransactions.push(
-                await distributeSniperFunds(distributor, sniperGroup, sniperGroupLamports)
+                await distributeSniperFunds(distributor, sniperGroup, sniperGroupLamports, dryRun)
             );
         }
 
@@ -82,7 +93,8 @@ import {
                     distributor,
                     traderGroup,
                     traderGroupLamports,
-                    minTradeLamports
+                    minTradeLamports,
+                    dryRun
                 )
             );
         }
@@ -101,7 +113,8 @@ import {
 async function distributeSniperFunds(
     distributor: Keypair,
     snipers: Keypair[],
-    lamports: Decimal[]
+    lamports: Decimal[],
+    dryRun: boolean
 ): Promise<Promise<TransactionSignature | undefined>> {
     const instructions: TransactionInstruction[] = [];
     let fundedSniperCount = 0;
@@ -136,6 +149,14 @@ async function distributeSniperFunds(
     }
 
     if (instructions.length === 0) {
+        logger.warn("No funds to distribute among snipers");
+        return Promise.resolve(undefined);
+    }
+
+    if (dryRun) {
+        logger.info(
+            `Distributing ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedSniperCount, 0)} snipers`
+        );
         return Promise.resolve(undefined);
     }
 
@@ -152,7 +173,7 @@ async function distributeSniperFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedSniperCount, 0)} sniper(s)`
+        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedSniperCount, 0)} snipers`
     );
 }
 
@@ -160,7 +181,8 @@ async function distributeTraderFunds(
     distributor: Keypair,
     traders: Keypair[],
     lamports: Decimal[],
-    minLamports: Decimal
+    minLamports: Decimal,
+    dryRun: boolean
 ): Promise<Promise<TransactionSignature | undefined>> {
     const instructions: TransactionInstruction[] = [];
     let fundedTraderCount = 0;
@@ -204,6 +226,14 @@ async function distributeTraderFunds(
     }
 
     if (instructions.length === 0) {
+        logger.warn("No funds to distribute among traders");
+        return Promise.resolve(undefined);
+    }
+
+    if (dryRun) {
+        logger.info(
+            `Distributing ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedTraderCount, 0)} traders`
+        );
         return Promise.resolve(undefined);
     }
 
@@ -220,6 +250,6 @@ async function distributeTraderFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedTraderCount, 0)} trader(s)`
+        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatDecimal(fundedTraderCount, 0)} traders`
     );
 }

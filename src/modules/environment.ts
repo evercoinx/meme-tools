@@ -1,3 +1,4 @@
+import { parseArgs } from "node:util";
 import Decimal from "decimal.js";
 import Joi from "joi";
 
@@ -47,6 +48,22 @@ const convertToFractionalPercent = (percent: string) =>
     new Decimal(percent).div(100).toDP(4).toNumber();
 const convertToMilliseconds = (seconds: string) =>
     new Decimal(seconds).mul(1_000).round().toNumber();
+
+export function isDryRun(): boolean {
+    const {
+        values: { "dry-run": dryRun },
+    } = parseArgs({
+        options: {
+            "dry-run": {
+                type: "boolean",
+                short: "d",
+                default: false,
+            },
+        },
+    });
+
+    return dryRun;
+}
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()

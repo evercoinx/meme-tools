@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import pino, { Logger, stdTimeFunctions, TransportTargetOptions } from "pino";
+import { isDryRun } from "./environment";
 
 export interface LogEntry {
     level: number;
@@ -31,7 +32,7 @@ export function createLogger(
         },
     ];
 
-    if (name && !/^(cleanup|generate|get|replay)/i.test(name)) {
+    if (name && !/^(cleanup|generate|get|replay)/i.test(name) && !isDryRun()) {
         targets.push({
             target: "pino/file",
             level: "info",

@@ -56,7 +56,8 @@ export function importMintKeypair(): Keypair | undefined {
 
 export function generateOrImportSwapperKeypairs(
     swapperCount: number,
-    swapperType: SwapperType
+    swapperType: SwapperType,
+    dryRun = false
 ): Keypair[] {
     const swappers: Keypair[] = [];
     const storageKeys = generateSecretStorageKeys(swapperCount, swapperType);
@@ -68,27 +69,33 @@ export function generateOrImportSwapperKeypairs(
         if (encryptedSecretKey) {
             const secretKey = encryption.decrypt(encryptedSecretKey);
             swapper = Keypair.fromSecretKey(secretKey);
-            logger.debug(
-                "%s (%s) key pair loaded from stroage",
-                capitalize(swapperType),
-                formatPublicKey(swapper.publicKey)
-            );
+
+            if (!dryRun) {
+                logger.debug(
+                    "%s (%s) key pair loaded from stroage",
+                    capitalize(swapperType),
+                    formatPublicKey(swapper.publicKey)
+                );
+            }
         } else {
             swapper = Keypair.generate();
-            logger.info(
-                `%s (%s) key pair generated`,
-                capitalize(swapperType),
-                formatPublicKey(swapper.publicKey)
-            );
 
-            const encryptedSwapperSecretKey = encryption.encrypt(swapper.secretKey);
-            storage.set(storageKeys[i], encryptedSwapperSecretKey);
-            storage.save();
-            logger.debug(
-                "%s (%s) secret key saved to storage",
-                capitalize(swapperType),
-                formatPublicKey(swapper.publicKey)
-            );
+            if (!dryRun) {
+                logger.info(
+                    `%s (%s) key pair generated`,
+                    capitalize(swapperType),
+                    formatPublicKey(swapper.publicKey)
+                );
+
+                const encryptedSwapperSecretKey = encryption.encrypt(swapper.secretKey);
+                storage.set(storageKeys[i], encryptedSwapperSecretKey);
+                storage.save();
+                logger.debug(
+                    "%s (%s) secret key saved to storage",
+                    capitalize(swapperType),
+                    formatPublicKey(swapper.publicKey)
+                );
+            }
         }
 
         swappers.push(swapper);
