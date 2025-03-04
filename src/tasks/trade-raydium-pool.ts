@@ -68,13 +68,13 @@ import {
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
+        const traders = importSwapperKeypairs(KeypairKind.Trader);
+
         const raydium = await createRaydium(connectionPool.current());
         const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
 
         let poolTradingCycle = storage.get<number | undefined>(STORAGE_RAYDIUM_POOL_TRADING_CYCLE);
         poolTradingCycle = poolTradingCycle ? poolTradingCycle + 1 : 0;
-
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, KeypairKind.Trader);
 
         const poolTradingCycleCount = poolTradingCycle + envVars.POOL_TRADING_CYCLE_COUNT;
         const poolTradingPumpBiasPercent = new Decimal(envVars.POOL_TRADING_PUMP_BIAS_PERCENT)

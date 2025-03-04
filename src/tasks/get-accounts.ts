@@ -8,7 +8,7 @@ import {
 } from "../helpers/account";
 import { fileExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
-import { envVars, logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage } from "../modules";
+import { logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage } from "../modules";
 
 (async () => {
     try {
@@ -16,11 +16,8 @@ import { envVars, logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage } from "../modules"
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
         const distributor = await importKeypairFromFile(KeypairKind.Distributor);
-        const snipers = importSwapperKeypairs(
-            envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            KeypairKind.Sniper
-        );
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, KeypairKind.Trader);
+        const snipers = importSwapperKeypairs(KeypairKind.Sniper);
+        const traders = importSwapperKeypairs(KeypairKind.Trader);
         const mint = importMintKeypair();
 
         getAccounts(dev, distributor, snipers, traders, mint);

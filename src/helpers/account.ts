@@ -3,11 +3,15 @@ import { basename, join } from "node:path";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { capitalize, formatPublicKey } from "./format";
-import { encryption, KEYPAIR_DIR, logger, storage } from "../modules";
+import { encryption, envVars, KEYPAIR_DIR, logger, storage } from "../modules";
 import { Pool } from "../modules/pool";
-import { STORAGE_MINT_SECRET_KEY } from "../modules/storage";
+import {
+    STORAGE_MINT_SECRET_KEY,
+    STORAGE_SNIPER_COUNT,
+    STORAGE_TRADER_COUNT,
+} from "../modules/storage";
 import { findFileNames } from "./filesystem";
+import { capitalize, formatInteger, formatPublicKey } from "./format";
 
 export enum KeypairKind {
     Dev = "dev",
@@ -26,12 +30,12 @@ const KEYPAIR_MASKS: Record<KeypairKind, [string, string] | null> = {
 export async function importKeypairFromFile(keypairKind: KeypairKind): Promise<Keypair> {
     const keypairMask = KEYPAIR_MASKS[keypairKind];
     if (!keypairMask) {
-        throw new Error(`Key pair ${keypairKind} mask not defined`);
+        throw new Error(`${capitalize(keypairKind)} key pair mask not defined`);
     }
 
     const fileNames = await findFileNames(KEYPAIR_DIR, keypairMask[0], keypairMask[1]);
     if (fileNames.length === 0) {
-        throw new Error(`Key pair ${keypairKind} file not found`);
+        throw new Error(`${capitalize(keypairKind)} key pair file not found`);
     }
     if (fileNames.length >= 2) {
         throw new Error(`Multiple key pair files found: ${fileNames.length}`);
@@ -89,6 +93,10 @@ export function generateOrImportSwapperKeypairs(
     keypairKind: KeypairKind,
     dryRun = false
 ): Keypair[] {
+    if (![KeypairKind.Sniper, KeypairKind.Trader].includes(keypairKind)) {
+        throw new Error(`Unexpected key pair kind: ${keypairKind}`);
+    }
+
     const swappers: Keypair[] = [];
     const storageKeys = generateSecretStorageKeys(count, keypairKind);
 
@@ -112,7 +120,7 @@ export function generateOrImportSwapperKeypairs(
 
             if (!dryRun) {
                 logger.info(
-                    `%s (%s) key pair generated`,
+                    "%s (%s) key pair generated",
                     capitalize(keypairKind),
                     formatPublicKey(swapper.publicKey)
                 );
@@ -131,18 +139,41 @@ export function generateOrImportSwapperKeypairs(
         swappers.push(swapper);
     }
 
+    const storageCountKey =
+        keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
+    const savedCount = storage.get<number | undefined>(storageCountKey);
+
+    if (!savedCount || count > savedCount) {
+        storage.set(storageCountKey, count);
+        storage.save();
+        logger.debug("%s count %s saved to storage", capitalize(keypairKind), formatInteger(count));
+    }
+
     return swappers;
 }
 
-export function importSwapperKeypairs(count: number, keypairKind: KeypairKind): Keypair[] {
+export function importSwapperKeypairs(keypairKind: KeypairKind): Keypair[] {
+    if (![KeypairKind.Sniper, KeypairKind.Trader].includes(keypairKind)) {
+        throw new Error(`Unexpected key pair kind: ${keypairKind}`);
+    }
+
+    const storageCountKey =
+        keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
+
+    const count = storage.get<number | undefined>(storageCountKey);
+    if (!count) {
+        throw new Error(`${capitalize(keypairKind)} count not loaded from storage`);
+    }
+
     const swappers: Keypair[] = [];
     const storageKeys = generateSecretStorageKeys(count, keypairKind);
 
     for (let i = 0; i < count; i++) {
         const encryptedSecretKey = storage.get<string>(storageKeys[i]);
         if (!encryptedSecretKey) {
-            logger.warn("%s %d secret key not loaded from storage", capitalize(keypairKind), i);
-            continue;
+            throw new Error(
+                `${capitalize(keypairKind)} secret key ${formatInteger(i)} not loaded from storage`
+            );
         }
 
         const secretKey = encryption.decrypt(encryptedSecretKey);
@@ -177,12 +208,18 @@ export async function getSolBalance(
     try {
         return getBalance(connectionPool.current(), account.publicKey);
     } catch {
-        logger.warn("Failed to get SOL balance for account (%s). Attempt: 1/2");
+        logger.warn(
+            "Failed to get SOL balance of account (%s). Attempt: 1/2",
+            formatPublicKey(account.publicKey)
+        );
 
         try {
             return getBalance(connectionPool.next(), account.publicKey);
         } catch {
-            logger.warn("Failed to get SOL balance for account (%s). Attempt: 2/2");
+            logger.warn(
+                "Failed to get SOL balance of account (%s). Attempt: 2/2",
+                formatPublicKey(account.publicKey)
+            );
             connectionPool.next();
 
             return getBalance(connectionPool.next(), account.publicKey);
@@ -215,7 +252,12 @@ export async function getTokenAccountInfo(
             return [tokenAccount, undefined];
         }
 
-        logger.warn("Failed to get mint balance for account (%s). Attempt: 1/2");
+        logger.warn(
+            "Failed to get balance for %s ATA (%s) of account (%s). Attempt: 1/2",
+            envVars.TOKEN_SYMBOL,
+            formatPublicKey(tokenAccount),
+            formatPublicKey(account.publicKey)
+        );
 
         try {
             return [
@@ -227,7 +269,12 @@ export async function getTokenAccountInfo(
                 return [tokenAccount, undefined];
             }
 
-            logger.warn("Failed to get mint balance for account (%s). Attempt: 2/2");
+            logger.warn(
+                "Failed to get balance for %s ATA (%s) of account (%s). Attempt: 2/2",
+                envVars.TOKEN_SYMBOL,
+                formatPublicKey(tokenAccount),
+                formatPublicKey(account.publicKey)
+            );
 
             return [
                 tokenAccount,

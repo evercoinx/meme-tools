@@ -52,16 +52,13 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
         await fileExists(storage.cacheFilePath);
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
+        const snipers = importSwapperKeypairs(KeypairKind.Sniper);
 
         const mint = importMintKeypair();
         if (!mint) {
             throw new Error("Mint not loaded from storage");
         }
 
-        const snipers = importSwapperKeypairs(
-            envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            KeypairKind.Sniper
-        );
         const snipersToBuy = await findSnipersToBuy(snipers, mint);
 
         const lamportsToBuy = envVars.SNIPER_POOL_SHARE_PERCENTS.map(

@@ -29,11 +29,8 @@ import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
         const distributor = await importKeypairFromFile(KeypairKind.Distributor);
-        const snipers = importSwapperKeypairs(
-            envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            KeypairKind.Sniper
-        );
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, KeypairKind.Trader);
+        const snipers = importSwapperKeypairs(KeypairKind.Sniper);
+        const traders = importSwapperKeypairs(KeypairKind.Trader);
         const mint = importMintKeypair();
 
         await getFunds(dev, distributor, snipers, traders, mint);

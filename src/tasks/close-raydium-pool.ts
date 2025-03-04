@@ -56,14 +56,11 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
         }
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
+        const snipers = importSwapperKeypairs(KeypairKind.Sniper);
+        const traders = importSwapperKeypairs(KeypairKind.Trader);
+
         const raydium = await createRaydium(connectionPool.current(), dev);
         const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
-
-        const snipers = importSwapperKeypairs(
-            envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            KeypairKind.Sniper
-        );
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, KeypairKind.Trader);
 
         const sniperUnitsToSell = await findUnitsToSell(snipers, mint, KeypairKind.Sniper);
         const traderUnitsToSell = await findUnitsToSell(traders, mint, KeypairKind.Trader);
