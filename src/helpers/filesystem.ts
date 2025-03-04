@@ -1,24 +1,24 @@
 import { access, readdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import { format, resolveConfig } from "prettier";
-import { IMAGE_DIR, LOG_DIR, STORAGE_DIR } from "../modules";
+import { IMAGE_DIR, STORAGE_DIR } from "../modules";
 
-export async function countFiles(dir: string): Promise<number> {
+export async function countFiles(dirPath: string, extensions: string[]): Promise<number> {
     try {
-        await access(LOG_DIR);
+        await access(dirPath);
     } catch {
         return 0;
     }
 
     let count = 0;
-    const entries = await readdir(dir, { withFileTypes: true });
+    const entries = await readdir(dirPath, { withFileTypes: true });
 
     for (const entry of entries) {
-        const fullPath = join(dir, entry.name);
+        const fullPath = join(dirPath, entry.name);
 
         if (entry.isDirectory()) {
-            count += await countFiles(fullPath);
-        } else if (entry.isFile()) {
+            count += await countFiles(fullPath, extensions);
+        } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
             count += 1;
         }
     }
