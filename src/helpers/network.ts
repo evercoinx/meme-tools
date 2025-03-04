@@ -247,9 +247,11 @@ async function getComputeUnitLimit(
         return DEFAULT_COMPUTE_UNIT_LIMIT;
     }
 
-    return unitsConsumed < MIN_COMPUTE_UNIT_LIMIT
-        ? MIN_COMPUTE_UNIT_LIMIT
-        : new Decimal(unitsConsumed).mul(COMPUTE_UNIT_LIMIT_MULTIPLIER).trunc().toNumber();
+    if (unitsConsumed < MIN_COMPUTE_UNIT_LIMIT) {
+        unitsConsumed = MIN_COMPUTE_UNIT_LIMIT;
+    }
+
+    return new Decimal(unitsConsumed).mul(COMPUTE_UNIT_LIMIT_MULTIPLIER).trunc().toNumber();
 }
 
 export async function sendAndConfirmVersionedTransaction(

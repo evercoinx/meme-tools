@@ -121,7 +121,7 @@ async function distributeSniperFunds(
     for (const [i, sniper] of snipers.entries()) {
         const solBalance = await getSolBalance(connectionPool, sniper);
         if (solBalance.gt(0)) {
-            logger.warn(
+            logger.debug(
                 "Sniper (%s) has non zero balance on wallet: %s SOL",
                 formatPublicKey(sniper.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
@@ -144,7 +144,7 @@ async function distributeSniperFunds(
     }
 
     if (instructions.length === 0) {
-        logger.warn("No funds to distribute among snipers");
+        logger.warn("No funds to distribute among %s snipers", formatInteger(snipers.length));
         return Promise.resolve(undefined);
     }
 
@@ -189,7 +189,7 @@ async function distributeTraderFunds(
     for (const [i, trader] of traders.entries()) {
         const solBalance = await getSolBalance(connectionPool, trader);
         if (solBalance.gte(lamports[i])) {
-            logger.warn(
+            logger.debug(
                 "Trader (%s) has sufficient balance on wallet: %s SOL",
                 formatPublicKey(trader.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
@@ -197,7 +197,7 @@ async function distributeTraderFunds(
         } else {
             const residualLamports = lamports[i].sub(solBalance);
             if (residualLamports.lt(minLamports)) {
-                logger.warn(
+                logger.debug(
                     "Trader (%s) transfer below required mininum: %s SOL",
                     formatPublicKey(trader.publicKey),
                     formatDecimal(minLamports.div(LAMPORTS_PER_SOL))
@@ -221,7 +221,7 @@ async function distributeTraderFunds(
     }
 
     if (instructions.length === 0) {
-        logger.warn("No funds to distribute among traders");
+        logger.warn("No funds to distribute among %s traders", formatInteger(traders.length));
         return Promise.resolve(undefined);
     }
 

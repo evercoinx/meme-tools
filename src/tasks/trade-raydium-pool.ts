@@ -84,9 +84,10 @@ import {
 
         for (let i = poolTradingCycle; i < poolTradingCycleCount; i++) {
             logger.info(
-                "\n%s\nTrading cycle #%d (Pump bias: %s)\n%s",
+                "\n%s\nTrading cycle: %s. Total trades: %s. Pump bias: %s\n%s",
                 OUTPUT_SEPARATOR,
-                i,
+                formatInteger(i),
+                formatInteger(traders.length),
                 formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT),
                 OUTPUT_SEPARATOR
             );
@@ -126,9 +127,24 @@ async function executeTradeCycle(
         const traderGroup = shuffle(traders.slice(i, i + traderGroupSize));
 
         if (poolTradingCycle === 0 || generateRandomBoolean(poolTradingPumpBiasPercent)) {
-            await pumpPool(raydium, raydiumCpmmPool, traderGroup, i);
+            await pumpPool(
+                raydium,
+                raydiumCpmmPool,
+                traderGroup,
+                poolTradingCycle,
+                i,
+                traders.length
+            );
         } else {
-            await dumpPool(raydium, raydiumCpmmPool, traderGroup, i, mint);
+            await dumpPool(
+                raydium,
+                raydiumCpmmPool,
+                traderGroup,
+                mint,
+                poolTradingCycle,
+                i,
+                traders.length
+            );
         }
 
         if (i !== traders.length - 1) {
@@ -140,24 +156,28 @@ async function executeTradeCycle(
 async function pumpPool(
     raydium: Raydium,
     raydiumCpmmPool: RaydiumCpmmPool,
-    traderGroup: Keypair[],
-    traderGroupNumber: number
+    traders: Keypair[],
+    poolTradingCycle: number,
+    tradeNumber: number,
+    totalTrades: number
 ): Promise<void> {
-    const lamportsToBuy = await findLamportsToBuy(traderGroup);
+    const lamportsToBuy = await findLamportsToBuy(traders);
     const sendSwapSolToMintTransactions = await swapSolToMint(
         connectionPool,
         heliusClientPool,
         raydium,
         raydiumCpmmPool,
-        traderGroup,
+        traders,
         lamportsToBuy,
         SWAPPER_SLIPPAGE_PERCENT,
         PriorityLevel.LOW
     );
     if (sendSwapSolToMintTransactions.length === 0) {
-        logger.info(
-            "Trader group: %s. No buy transactions found. Skipping",
-            formatInteger(traderGroupNumber)
+        logger.warn(
+            "Cycle: %s. Trade: %s/%s. No buy transactions found. Skipping",
+            formatInteger(poolTradingCycle),
+            formatInteger(tradeNumber),
+            formatInteger(totalTrades)
         );
         return;
     }
@@ -167,8 +187,10 @@ async function pumpPool(
     await new Promise((resolve) => {
         const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
         logger.info(
-            "Trader group: %s. Buy transactions executed: %s. Pausing: %s sec",
-            formatInteger(traderGroupNumber),
+            "Cycle: %s. Trade: %s/%s. Buy transactions executed: %s. Pausing: %s sec",
+            formatInteger(poolTradingCycle),
+            formatInteger(tradeNumber),
+            formatInteger(totalTrades),
             formatInteger(sendSwapSolToMintTransactions.length),
             formatMilliseconds(delay)
         );
@@ -205,25 +227,29 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
 async function dumpPool(
     raydium: Raydium,
     raydiumCpmmPool: RaydiumCpmmPool,
-    traderGroup: Keypair[],
-    traderGroupNumber: number,
-    mint: Keypair
+    traders: Keypair[],
+    mint: Keypair,
+    poolTradingCycle: number,
+    tradeNumber: number,
+    totalTrades: number
 ): Promise<void> {
-    const unitsToSell = await findUnitsToSell(traderGroup, mint);
+    const unitsToSell = await findUnitsToSell(traders, mint);
     const sendSwapMintToSolTransactions = await swapMintToSol(
         connectionPool,
         heliusClientPool,
         raydium,
         raydiumCpmmPool,
-        traderGroup,
+        traders,
         unitsToSell,
         SWAPPER_SLIPPAGE_PERCENT,
         PriorityLevel.LOW
     );
     if (sendSwapMintToSolTransactions.length === 0) {
-        logger.info(
-            "Trader group: %s. No sell transactions found. Skipping",
-            formatInteger(traderGroupNumber)
+        logger.warn(
+            "Cycle: %s. Trade: %s/%s. No sell transactions found. Skipping",
+            formatInteger(poolTradingCycle),
+            formatInteger(tradeNumber),
+            formatInteger(totalTrades)
         );
         return;
     }
@@ -233,8 +259,10 @@ async function dumpPool(
     await new Promise((resolve) => {
         const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
         logger.info(
-            "Trader group: %s. Sell transactions executed: %s. Pausing: %s sec",
-            formatInteger(traderGroupNumber),
+            "Cycle: %s. Trade: %s/%s. Sell transactions executed: %s. Pausing: %s sec",
+            formatInteger(poolTradingCycle),
+            formatInteger(tradeNumber),
+            formatInteger(totalTrades),
             formatInteger(sendSwapMintToSolTransactions.length),
             formatMilliseconds(delay)
         );
@@ -254,6 +282,7 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
         );
 
         if (!mintTokenBalance) {
+            unitsToSell[i] = null;
             logger.warn(
                 "Trader (%s) has uninitialized %s ATA (%s)",
                 formatPublicKey(trader.publicKey),
