@@ -19,21 +19,19 @@ import {
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import { generateRandomFloat } from "../helpers/random";
-import {
-    connectionPool,
-    envVars,
-    heliusClientPool,
-    logger,
-    SWAPPER_GROUP_SIZE,
-    ZERO_DECIMAL,
-} from "../modules";
+import { connectionPool, envVars, heliusClientPool, logger, ZERO_DECIMAL } from "../modules";
 import { isDryRun } from "../modules/environment";
 
 (async () => {
     try {
+        let swapperGroupSize: number;
+
         const dryRun = isDryRun();
         if (dryRun) {
             logger.warn("Dry run mode enabled");
+            swapperGroupSize = Number.MAX_SAFE_INTEGER;
+        } else {
+            swapperGroupSize = 20;
         }
 
         const distributor = await importKeypairFromFile(KeypairKind.Distributor);
@@ -71,9 +69,9 @@ import { isDryRun } from "../modules/environment";
             .trunc();
 
         const sendDistrubuteSniperFundsTransactions = [];
-        for (let i = 0; i < snipers.length; i += SWAPPER_GROUP_SIZE) {
-            const sniperGroup = snipers.slice(i, i + SWAPPER_GROUP_SIZE);
-            const sniperGroupLamports = sniperLamports.slice(i, i + SWAPPER_GROUP_SIZE);
+        for (let i = 0; i < snipers.length; i += swapperGroupSize) {
+            const sniperGroup = snipers.slice(i, i + swapperGroupSize);
+            const sniperGroupLamports = sniperLamports.slice(i, i + swapperGroupSize);
 
             sendDistrubuteSniperFundsTransactions.push(
                 await distributeSniperFunds(distributor, sniperGroup, sniperGroupLamports, dryRun)
@@ -81,9 +79,9 @@ import { isDryRun } from "../modules/environment";
         }
 
         const sendDistrubuteTraderFundsTransactions = [];
-        for (let i = 0; i < traders.length; i += SWAPPER_GROUP_SIZE) {
-            const traderGroup = traders.slice(i, i + SWAPPER_GROUP_SIZE);
-            const traderGroupLamports = traderLamports.slice(i, i + SWAPPER_GROUP_SIZE);
+        for (let i = 0; i < traders.length; i += swapperGroupSize) {
+            const traderGroup = traders.slice(i, i + swapperGroupSize);
+            const traderGroupLamports = traderLamports.slice(i, i + swapperGroupSize);
 
             sendDistrubuteTraderFundsTransactions.push(
                 await distributeTraderFunds(
