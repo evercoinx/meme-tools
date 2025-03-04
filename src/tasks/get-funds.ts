@@ -1,6 +1,5 @@
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import chalk from "chalk";
 import Decimal from "decimal.js";
 import {
     getSolBalance,
@@ -17,6 +16,7 @@ import {
     envVars,
     logger,
     OUTPUT_UNKNOWN_PUBLIC_KEY,
+    OUTPUT_UNKNOWN_VALUE,
     storage,
     UNITS_PER_MINT,
 } from "../modules";
@@ -77,7 +77,7 @@ async function getFunds(
                 : OUTPUT_UNKNOWN_PUBLIC_KEY,
             mintTokenBalance
                 ? formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS)
-                : chalk.green("?"),
+                : OUTPUT_UNKNOWN_VALUE,
             envVars.TOKEN_SYMBOL,
         ];
 
@@ -106,7 +106,7 @@ async function getFunds(
                           lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
                           RAYDIUM_LP_MINT_DECIMALS
                       )
-                    : chalk.green("?"),
+                    : OUTPUT_UNKNOWN_VALUE,
                 envVars.TOKEN_SYMBOL
             );
         } else {

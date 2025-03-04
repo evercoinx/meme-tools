@@ -58,12 +58,21 @@ export function formatDecimal(value: NumberLike, decimalPlaces = 9): string {
     );
 }
 
+export function formatFileName(path: string): string {
+    return chalk.blue(basename(path));
+}
+
 export function formatInteger(value: NumberLike): string {
     return formatDecimal(value, 0);
 }
 
-export function formatMilliseconds(value: number): string {
-    return formatDecimal(value / 1_000, 3);
+export function formatMilliseconds(value: NumberLike): string {
+    if (value instanceof BN) {
+        value = new Decimal(value.toString(10));
+    } else if (typeof value === "bigint") {
+        value = new Decimal(value.toString());
+    }
+    return formatDecimal(new Decimal(value).div(1_000), 3);
 }
 
 export function formatPercent(value: NumberLike): string {
@@ -99,10 +108,10 @@ export function formatSignature(signature: string, format: "short" | "long" = "s
     );
 }
 
-export function formatFileName(path: string): string {
-    return chalk.blue(basename(path));
+export function formatText(text: string, highlighted = false): string {
+    return highlighted ? chalk.bgYellow(text) : chalk.yellow(text);
 }
 
-export function formatName(name: string): string {
-    return chalk.yellow(name);
+export function formatUri(uri: string): string {
+    return chalk.blue(uri);
 }

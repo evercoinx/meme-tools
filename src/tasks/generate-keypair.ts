@@ -1,10 +1,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import { parseArgs } from "node:util";
-import chalk from "chalk";
 import { Keypair } from "@solana/web3.js";
 import { countFiles } from "../helpers/filesystem";
-import { formatInteger } from "../helpers/format";
+import { formatFileName, formatInteger } from "../helpers/format";
 import { KEYPAIR_DIR, logger } from "../modules";
 
 (async () => {
@@ -61,11 +60,13 @@ async function generateKeypair(dirPath: string, prefix: string, postfix: string,
             return;
         }
 
-        const filePath = join(dirPath, `${publicKey}${fileExtension}`);
+        const fileName = `${publicKey}${fileExtension}`;
+        const filePath = join(dirPath, fileName);
+
         await writeFile(filePath, JSON.stringify(Array.from(keypair.secretKey)), {
-            mode: 0o600,
+            mode: 0o400,
         });
-        logger.info("Keypair generated: %s", chalk.blue(basename(filePath)));
+        logger.info("Keypair generated: %s", formatFileName(fileName));
         return;
     }
 

@@ -1,5 +1,4 @@
 import { parseArgs } from "node:util";
-import chalk from "chalk";
 import { formatDecimal, formatInteger } from "../helpers/format";
 import { generateRandomFloat } from "../helpers/random";
 import { logger } from "../modules";
@@ -48,7 +47,7 @@ import { logger } from "../modules";
 
         const shares = generateShares(parsedCount, parsedSum, parsedDeviation, parsedAttempts);
 
-        logger.info("Shares: %s", shares.map((share) => chalk.green(share)).join(","));
+        logger.info("Shares: %s", shares.map((share) => formatDecimal(share, 2)).join(","));
         logger.info("Total sum: %s", formatDecimal(sumNumbers(shares), 2));
 
         process.exit(0);

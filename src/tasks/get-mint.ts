@@ -1,10 +1,9 @@
 import { getMint as getMintInfo, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
-import chalk from "chalk";
 import Decimal from "decimal.js";
 import { importMintKeypair } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
-import { formatDecimal, formatInteger, formatPublicKey } from "../helpers/format";
+import { formatDecimal, formatInteger, formatText, formatPublicKey } from "../helpers/format";
 import { connectionPool, envVars, explorer, logger, OUTPUT_NOT_ALLOWED, storage } from "../modules";
 
 (async () => {
@@ -39,7 +38,7 @@ async function getMint(mint: Keypair): Promise<void> {
         envVars.RPC_CLUSTER,
         formatPublicKey(mintInfo.address, "long"),
         explorer.generateTokenUri(mintInfo.address),
-        chalk.yellow(envVars.TOKEN_SYMBOL),
+        formatText(envVars.TOKEN_SYMBOL),
         formatInteger(mintInfo.decimals),
         formatDecimal(supply, mintInfo.decimals),
         mintInfo.mintAuthority

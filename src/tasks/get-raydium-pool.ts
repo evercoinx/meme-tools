@@ -1,11 +1,11 @@
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import chalk from "chalk";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import {
     formatCurrency,
     formatDate,
     formatDecimal,
+    formatText,
     formatPercent,
     formatPublicKey,
 } from "../helpers/format";
@@ -80,7 +80,7 @@ async function getPool(raydiumPoolId: PublicKey): Promise<void> {
         mintB.symbol,
         formatPublicKey(mintB.address, "long"),
         formatPublicKey(lpMint.address, "long"),
-        chalk.yellow(type),
+        formatText(type),
         formatDecimal(1, 0),
         ...(NATIVE_MINT.toBase58() === mintA.address
             ? [mintA.symbol, formatDecimal(price, mintA.decimals), mintB.symbol]

@@ -1,13 +1,13 @@
 import { rm } from "fs/promises";
 import pkg from "../../package.json";
 import { checkIfStorageFileExists, countFiles } from "../helpers/filesystem";
-import { formatFileName, formatInteger, formatName } from "../helpers/format";
+import { formatFileName, formatInteger, formatText } from "../helpers/format";
 import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
 
 (async () => {
     try {
         if (envVars.NODE_ENV === "production") {
-            logger.warn("Cleanup forbidden. Environment: %s", envVars.NODE_ENV);
+            logger.warn("Cleanup forbidden. Environment: %s", formatText(envVars.NODE_ENV, true));
             process.exit(0);
         }
 
@@ -50,7 +50,7 @@ async function clearStorageFile(): Promise<void> {
 async function getGroupId(groupName: string): Promise<string | undefined> {
     const groups = await pinataClient.groups.list().name(groupName);
     if (groups.length === 0) {
-        logger.warn("Group not found: %s", formatName(groupName));
+        logger.warn("Group not found: %s", formatText(groupName));
         return;
     }
 
