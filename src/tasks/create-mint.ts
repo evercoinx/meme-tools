@@ -27,7 +27,11 @@ import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana
 import chalk from "chalk";
 import { PriorityLevel } from "helius-sdk";
 import pkg from "../../package.json";
-import { generateOrImportMintKeypair, importKeypairFromFile } from "../helpers/account";
+import {
+    generateOrImportMintKeypair,
+    importKeypairFromFile,
+    KeypairKind,
+} from "../helpers/account";
 import { checkIfImageFileExists } from "../helpers/filesystem";
 import { capitalize, formatPublicKey } from "../helpers/format";
 import {
@@ -108,10 +112,10 @@ const generatePinataUri = (ipfsHash: string): string =>
 
 (async () => {
     try {
-        await checkIfImageFileExists(envVars.TOKEN_SYMBOL, "webp");
+        await checkIfImageFileExists(envVars.TOKEN_SYMBOL, ".webp");
 
         const mint = generateOrImportMintKeypair();
-        const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
+        const dev = await importKeypairFromFile(KeypairKind.Dev);
 
         const groupId = await getOrCreateGroupId(`${pkg.name}-${envVars.NODE_ENV}`);
         const imageUri = await uploadImage(groupId);

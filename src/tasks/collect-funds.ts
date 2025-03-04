@@ -44,12 +44,8 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
-        const distributor = await importKeypairFromFile(
-            envVars.KEYPAIR_FILE_PATH_DISTRIBUTOR,
-            "distributor"
-        );
-
+        const dev = await importKeypairFromFile(KeypairKind.Dev);
+        const distributor = await importKeypairFromFile(KeypairKind.Distributor);
         const mint = importMintKeypair();
         const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
 

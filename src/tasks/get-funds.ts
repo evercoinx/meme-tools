@@ -27,11 +27,8 @@ import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
-        const distributor = await importKeypairFromFile(
-            envVars.KEYPAIR_FILE_PATH_DISTRIBUTOR,
-            "distributor"
-        );
+        const dev = await importKeypairFromFile(KeypairKind.Dev);
+        const distributor = await importKeypairFromFile(KeypairKind.Distributor);
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
             KeypairKind.Sniper

@@ -2,7 +2,7 @@ import { rm } from "fs/promises";
 import pkg from "../../package.json";
 import { checkIfStorageFileExists, countFiles } from "../helpers/filesystem";
 import { formatFileName, formatInteger, formatName } from "../helpers/format";
-import { envVars, KEYPAIR_DIR, LOG_DIR, logger, pinataClient, storage } from "../modules";
+import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
 
 (async () => {
     try {
@@ -12,12 +12,6 @@ import { envVars, KEYPAIR_DIR, LOG_DIR, logger, pinataClient, storage } from "..
         }
 
         await purgeLogFiles();
-        if (envVars.NODE_ENV === "test") {
-            await purgeKeypairFiles();
-        } else {
-            logger.warn("Keypair purge skipped");
-        }
-
         await clearStorageFile();
 
         const groupId = await getGroupId(`${pkg.name}-${envVars.NODE_ENV}`);
@@ -40,16 +34,6 @@ async function purgeLogFiles(): Promise<void> {
         force: true,
     });
     logger.info("Logs purged. Total files: %s", formatInteger(fileCount));
-}
-
-async function purgeKeypairFiles(): Promise<void> {
-    const fileCount = await countFiles(KEYPAIR_DIR, [".json"]);
-
-    await rm(KEYPAIR_DIR, {
-        recursive: true,
-        force: true,
-    });
-    logger.info("Keypairs purged. Total files: %s", formatInteger(fileCount));
 }
 
 async function clearStorageFile(): Promise<void> {

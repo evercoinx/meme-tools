@@ -14,12 +14,8 @@ import { envVars, logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage } from "../modules"
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
-        const distributor = await importKeypairFromFile(
-            envVars.KEYPAIR_FILE_PATH_DISTRIBUTOR,
-            "distributor"
-        );
-
+        const dev = await importKeypairFromFile(KeypairKind.Dev);
+        const distributor = await importKeypairFromFile(KeypairKind.Distributor);
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
             KeypairKind.Sniper

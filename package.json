@@ -52,9 +52,9 @@
         "get-funds": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-funds.ts",
         "get-mint": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-mint.ts",
         "get-raydium-pool": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-raydium-pool.ts",
-        "generate-keypair": "yarn generate-keypair:dev && yarn generate-keypair:dist",
+        "generate-keypair": "yarn generate-keypair:dev && yarn generate-keypair:dis",
         "generate-keypair:dev": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/generate-keypair.ts --prefix De --postfix V",
-        "generate-keypair:dist": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/generate-keypair.ts --prefix Di --postfix R",
+        "generate-keypair:dis": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/generate-keypair.ts --prefix Di --postfix S",
         "generate-shares": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/generate-shares.ts --count 29 --sum 50 --deviation 16",
         "generate-encryption-secret": "hexdump -vn16 -e'4/4 \"%08x\" 1 \"\n\"' /dev/urandom"
     },

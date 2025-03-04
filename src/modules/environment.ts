@@ -15,8 +15,6 @@ interface EnvironmentSchema {
     RPC_URIS: Set<string>;
     RPC_CLUSTER: "devnet" | "mainnet-beta";
     EXPLORER_URI: string;
-    KEYPAIR_FILE_PATH_DEV: string;
-    KEYPAIR_FILE_PATH_DISTRIBUTOR: string;
     KEYPAIR_ENCRYPTION_SECRET: string;
     TOKEN_SYMBOL: string;
     TOKEN_NAME: string;
@@ -41,11 +39,11 @@ interface EnvironmentSchema {
     TRADER_SWAP_DELAY_RANGE_SEC: [number, number];
 }
 
-const FILE_PATH_PATTERN = /^\/([\w.-]+\/?)*$/;
 const ARRAY_SEPARATOR = ",";
 
 const convertToFractionalPercent = (percent: string) =>
     new Decimal(percent).div(100).toDP(4).toNumber();
+
 const convertToMilliseconds = (seconds: string) =>
     new Decimal(seconds).mul(1_000).round().toNumber();
 
@@ -134,16 +132,6 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .allow("https://explorer.solana.com", "https://solana.fm", "https://solscan.io")
                 .default("https://solscan.io")
                 .description("Solana explorer URI"),
-            KEYPAIR_FILE_PATH_DEV: Joi.string()
-                .required()
-                .trim()
-                .pattern(FILE_PATH_PATTERN)
-                .description("Dev keypair file path"),
-            KEYPAIR_FILE_PATH_DISTRIBUTOR: Joi.string()
-                .required()
-                .trim()
-                .pattern(FILE_PATH_PATTERN)
-                .description("Distributor keypair file path"),
             KEYPAIR_ENCRYPTION_SECRET: Joi.string()
                 .required()
                 .trim()

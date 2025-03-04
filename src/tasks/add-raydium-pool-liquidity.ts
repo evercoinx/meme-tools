@@ -1,9 +1,14 @@
 import { Percent, TxVersion } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { PriorityLevel } from "helius-sdk";
-import { getTokenAccountInfo, importKeypairFromFile, importMintKeypair } from "../helpers/account";
+import {
+    getTokenAccountInfo,
+    importKeypairFromFile,
+    importMintKeypair,
+    KeypairKind,
+} from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
@@ -27,7 +32,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
     try {
         await checkIfStorageFileExists(storage.cacheId);
 
-        const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
+        const dev = await importKeypairFromFile(KeypairKind.Dev);
 
         const mint = importMintKeypair();
         if (!mint) {

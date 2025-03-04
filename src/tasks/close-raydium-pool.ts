@@ -55,7 +55,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const dev = await importKeypairFromFile(envVars.KEYPAIR_FILE_PATH_DEV, "dev");
+        const dev = await importKeypairFromFile(KeypairKind.Dev);
         const raydium = await createRaydium(connectionPool.current(), dev);
         const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
 

@@ -1,12 +1,13 @@
 import fs from "node:fs/promises";
-import { basename } from "node:path";
+import { basename, join } from "node:path";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { capitalize, formatPublicKey } from "./format";
-import { encryption, logger, storage } from "../modules";
+import { encryption, KEYPAIR_DIR, logger, storage } from "../modules";
 import { Pool } from "../modules/pool";
 import { STORAGE_MINT_SECRET_KEY } from "../modules/storage";
+import { findFileNames } from "./filesystem";
 
 export enum KeypairKind {
     Dev = "dev",
@@ -15,12 +16,34 @@ export enum KeypairKind {
     Trader = "trader",
 }
 
-export async function importKeypairFromFile(filePath: string, label: string): Promise<Keypair> {
+const KEYPAIR_MASKS: Record<KeypairKind, [string, string] | null> = {
+    [KeypairKind.Dev]: ["De", "V"],
+    [KeypairKind.Distributor]: ["Di", "S"],
+    [KeypairKind.Sniper]: null,
+    [KeypairKind.Trader]: null,
+};
+
+export async function importKeypairFromFile(keypairKind: KeypairKind): Promise<Keypair> {
+    const keypairMask = KEYPAIR_MASKS[keypairKind];
+    if (!keypairMask) {
+        throw new Error(`Key pair ${keypairKind} mask not defined`);
+    }
+
+    const fileNames = await findFileNames(KEYPAIR_DIR, keypairMask[0], keypairMask[1]);
+    if (fileNames.length === 0) {
+        throw new Error(`Key pair ${keypairKind} file not found`);
+    }
+    if (fileNames.length >= 2) {
+        throw new Error(`Multiple key pair files found: ${fileNames.length}`);
+    }
+
+    const filePath = join(KEYPAIR_DIR, fileNames[0]);
     const secretKey: number[] = JSON.parse(await fs.readFile(filePath, "utf8"));
+
     const account = Keypair.fromSecretKey(Uint8Array.from(secretKey));
     logger.debug(
         "%s (%s) key pair loaded from file: %s",
-        capitalize(label),
+        capitalize(keypairKind),
         formatPublicKey(account.publicKey),
         basename(filePath)
     );
@@ -62,14 +85,14 @@ export function importMintKeypair(): Keypair | undefined {
 }
 
 export function generateOrImportSwapperKeypairs(
-    swapperCount: number,
+    count: number,
     keypairKind: KeypairKind,
     dryRun = false
 ): Keypair[] {
     const swappers: Keypair[] = [];
-    const storageKeys = generateSecretStorageKeys(swapperCount, keypairKind);
+    const storageKeys = generateSecretStorageKeys(count, keypairKind);
 
-    for (let i = 0; i < swapperCount; i++) {
+    for (let i = 0; i < count; i++) {
         let swapper: Keypair | undefined;
 
         const encryptedSecretKey = storage.get<string | undefined>(storageKeys[i]);
@@ -111,11 +134,11 @@ export function generateOrImportSwapperKeypairs(
     return swappers;
 }
 
-export function importSwapperKeypairs(swapperCount: number, keypairKind: KeypairKind): Keypair[] {
+export function importSwapperKeypairs(count: number, keypairKind: KeypairKind): Keypair[] {
     const swappers: Keypair[] = [];
-    const storageKeys = generateSecretStorageKeys(swapperCount, keypairKind);
+    const storageKeys = generateSecretStorageKeys(count, keypairKind);
 
-    for (let i = 0; i < swapperCount; i++) {
+    for (let i = 0; i < count; i++) {
         const encryptedSecretKey = storage.get<string>(storageKeys[i]);
         if (!encryptedSecretKey) {
             logger.warn("%s %d secret key not loaded from storage", capitalize(keypairKind), i);

@@ -1,5 +1,5 @@
 import { access, readdir, readFile, writeFile } from "node:fs/promises";
-import { extname, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { format, resolveConfig } from "prettier";
 import { IMAGE_DIR, STORAGE_DIR } from "../modules";
 
@@ -11,7 +11,10 @@ export async function countFiles(dirPath: string, extensions: string[]): Promise
     }
 
     let count = 0;
-    const entries = await readdir(dirPath, { withFileTypes: true });
+    const entries = await readdir(dirPath, {
+        withFileTypes: true,
+        encoding: "utf8",
+    });
 
     for (const entry of entries) {
         const fullPath = join(dirPath, entry.name);
@@ -26,9 +29,35 @@ export async function countFiles(dirPath: string, extensions: string[]): Promise
     return count;
 }
 
+export async function findFileNames(
+    dirPath: string,
+    prefix: string,
+    postfix: string
+): Promise<string[]> {
+    try {
+        await access(dirPath);
+    } catch {
+        return [];
+    }
+
+    const fileNames = await readdir(dirPath, {
+        withFileTypes: false,
+        encoding: "utf8",
+    });
+    const matchedFileNames: string[] = [];
+
+    for (const fileName of fileNames) {
+        const name = basename(fileName, ".json");
+        if (name.startsWith(prefix) && name.endsWith(postfix)) {
+            matchedFileNames.push(fileName);
+        }
+    }
+
+    return matchedFileNames;
+}
+
 export async function checkIfImageFileExists(name: string, extension: string): Promise<void> {
-    const normalizedName = name.toLowerCase();
-    const fileName = `${normalizedName}.${extension}`;
+    const fileName = `${name.toLowerCase()}${extension}`;
 
     try {
         await access(join(IMAGE_DIR, fileName));

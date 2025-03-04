@@ -36,10 +36,7 @@ import { isDryRun } from "../modules/environment";
             logger.warn("Dry run mode enabled");
         }
 
-        const distributor = await importKeypairFromFile(
-            envVars.KEYPAIR_FILE_PATH_DISTRIBUTOR,
-            "distributor"
-        );
+        const distributor = await importKeypairFromFile(KeypairKind.Distributor);
 
         const snipers = generateOrImportSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
