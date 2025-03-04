@@ -1,7 +1,6 @@
 import { access, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { format, resolveConfig } from "prettier";
-import { IMAGE_DIR, STORAGE_DIR } from "../modules";
 
 export async function countFiles(dirPath: string, extensions: string[]): Promise<number> {
     try {
@@ -56,28 +55,15 @@ export async function findFileNames(
     return matchedFileNames;
 }
 
-export async function checkIfImageFileExists(name: string, extension: string): Promise<void> {
-    const fileName = `${name.toLowerCase()}${extension}`;
-
+export async function fileExists(filePath: string): Promise<void> {
     try {
-        await access(join(IMAGE_DIR, fileName));
+        await access(filePath);
     } catch {
-        throw new Error(`Image file not found: ${fileName}`);
+        throw new Error(`File not found: ${basename(filePath)}`);
     }
 }
 
-export async function checkIfStorageFileExists(fileName: string): Promise<void> {
-    const normalizedFileName = fileName.toLowerCase();
-
-    try {
-        await access(join(STORAGE_DIR, normalizedFileName));
-    } catch {
-        throw new Error(`Storage file not found: ${normalizedFileName}`);
-    }
-}
-
-export async function formatStorageFile(fileName: string): Promise<void> {
-    const filePath = join(STORAGE_DIR, fileName);
+export async function formatStorageFile(filePath: string): Promise<void> {
     const fileContents = await readFile(filePath, "utf8");
     const options = await resolveConfig(filePath);
 

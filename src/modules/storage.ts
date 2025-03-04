@@ -8,18 +8,18 @@ export const STORAGE_RAYDIUM_LP_MINT = "raydium_lp_mint";
 export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 export const STORAGE_RAYDIUM_POOL_TRADING_CYCLE = "raydium_pool_trading_cycle";
 
-export function createStorage(tokenSymbol: string, storagePath: string): FlatCache {
+export function createStorage(dirPath: string, tokenSymbol: string): FlatCache {
     const fileName = `${tokenSymbol.toLowerCase()}.json`;
 
     const storage = create({
         cacheId: fileName,
-        cacheDir: storagePath,
+        cacheDir: dirPath,
         deserialize: JSON.parse,
         serialize: JSON.stringify,
     });
 
-    storage.on(FlatCacheEvents.SAVE, async () => formatStorageFile(fileName));
-    storage.on(FlatCacheEvents.CLEAR, async () => formatStorageFile(fileName));
+    storage.on(FlatCacheEvents.SAVE, async () => formatStorageFile(storage.cacheFilePath));
+    storage.on(FlatCacheEvents.CLEAR, async () => formatStorageFile(storage.cacheFilePath));
 
     return storage;
 }

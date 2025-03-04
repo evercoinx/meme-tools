@@ -6,13 +6,13 @@ import {
     importMintKeypair,
     KeypairKind,
 } from "../helpers/account";
-import { checkIfStorageFileExists } from "../helpers/filesystem";
+import { fileExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
 import { envVars, logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage } from "../modules";
 
 (async () => {
     try {
-        await checkIfStorageFileExists(storage.cacheId);
+        await fileExists(storage.cacheFilePath);
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
         const distributor = await importKeypairFromFile(KeypairKind.Distributor);

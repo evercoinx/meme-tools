@@ -2,13 +2,13 @@ import { getMint as getMintInfo, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token
 import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { importMintKeypair } from "../helpers/account";
-import { checkIfStorageFileExists } from "../helpers/filesystem";
+import { fileExists } from "../helpers/filesystem";
 import { formatDecimal, formatInteger, formatText, formatPublicKey } from "../helpers/format";
 import { connectionPool, envVars, explorer, logger, OUTPUT_NOT_ALLOWED, storage } from "../modules";
 
 (async () => {
     try {
-        await checkIfStorageFileExists(storage.cacheId);
+        await fileExists(storage.cacheFilePath);
 
         const mint = importMintKeypair();
         if (!mint) {

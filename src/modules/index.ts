@@ -69,4 +69,4 @@ export const encryption = new Encryption(
     "encrypted"
 );
 export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
-export const storage = createStorage(envVars.TOKEN_SYMBOL, STORAGE_DIR);
+export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);

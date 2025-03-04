@@ -9,7 +9,7 @@ import {
     importSwapperKeypairs,
     KeypairKind,
 } from "../helpers/account";
-import { checkIfStorageFileExists } from "../helpers/filesystem";
+import { fileExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
 import {
     connectionPool,
@@ -25,7 +25,7 @@ import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
 
 (async () => {
     try {
-        await checkIfStorageFileExists(storage.cacheId);
+        await fileExists(storage.cacheDirPath);
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
         const distributor = await importKeypairFromFile(KeypairKind.Distributor);
