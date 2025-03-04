@@ -47,6 +47,7 @@ import {
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
     STORAGE_RAYDIUM_POOL_TRADING_CYCLE,
+    STORAGE_TRADER_COUNT,
 } from "../modules/storage";
 
 (async () => {
@@ -68,8 +69,12 @@ import {
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const traders = importSwapperKeypairs(KeypairKind.Trader);
+        const traderCount = storage.get<number | undefined>(STORAGE_TRADER_COUNT);
+        if (traderCount && envVars.TRADER_COUNT > traderCount) {
+            throw new Error(`${envVars.TRADER_COUNT - traderCount} traders have no funds`);
+        }
 
+        const traders = importSwapperKeypairs(KeypairKind.Trader);
         const raydium = await createRaydium(connectionPool.current());
         const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
 
@@ -83,11 +88,13 @@ import {
             .toNumber();
 
         for (let i = poolTradingCycle; i < poolTradingCycleCount; i++) {
+            const activeTraders = shuffle(traders).slice(0, envVars.TRADER_COUNT);
+
             logger.info(
                 "\n%s\nTrading cycle: %s. Total trades: %s. Pump bias: %s\n%s",
                 OUTPUT_SEPARATOR,
                 formatInteger(i),
-                formatInteger(traders.length),
+                formatInteger(activeTraders.length),
                 formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT),
                 OUTPUT_SEPARATOR
             );
@@ -99,7 +106,7 @@ import {
             await executeTradeCycle(
                 raydium,
                 raydiumCpmmPool,
-                shuffle(traders),
+                activeTraders,
                 mint,
                 envVars.TRADER_GROUP_SIZE,
                 i,
@@ -132,7 +139,7 @@ async function executeTradeCycle(
                 raydiumCpmmPool,
                 traderGroup,
                 poolTradingCycle,
-                i,
+                i + 1,
                 traders.length
             );
         } else {
@@ -142,7 +149,7 @@ async function executeTradeCycle(
                 traderGroup,
                 mint,
                 poolTradingCycle,
-                i,
+                i + 1,
                 traders.length
             );
         }

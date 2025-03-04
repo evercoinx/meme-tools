@@ -139,14 +139,20 @@ export function generateOrImportSwapperKeypairs(
         swappers.push(swapper);
     }
 
-    const storageCountKey =
-        keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
-    const savedCount = storage.get<number | undefined>(storageCountKey);
+    if (!dryRun) {
+        const storageCountKey =
+            keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
+        const savedCount = storage.get<number | undefined>(storageCountKey);
 
-    if (!savedCount || count > savedCount) {
-        storage.set(storageCountKey, count);
-        storage.save();
-        logger.debug("%s count %s saved to storage", capitalize(keypairKind), formatInteger(count));
+        if (!savedCount || count > savedCount) {
+            storage.set(storageCountKey, count);
+            storage.save();
+            logger.debug(
+                "%s count %s saved to storage",
+                capitalize(keypairKind),
+                formatInteger(count)
+            );
+        }
     }
 
     return swappers;
@@ -171,9 +177,7 @@ export function importSwapperKeypairs(keypairKind: KeypairKind): Keypair[] {
     for (let i = 0; i < count; i++) {
         const encryptedSecretKey = storage.get<string>(storageKeys[i]);
         if (!encryptedSecretKey) {
-            throw new Error(
-                `${capitalize(keypairKind)} secret key ${formatInteger(i)} not loaded from storage`
-            );
+            throw new Error(`${capitalize(keypairKind)} secret key ${i} not loaded from storage`);
         }
 
         const secretKey = encryption.decrypt(encryptedSecretKey);
