@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import chalk from "chalk";
@@ -96,4 +97,12 @@ export function formatSignature(signature: string, format: "short" | "long" = "s
     return chalk.yellow(
         format === "short" ? `${signature.slice(0, 8)}...${signature.slice(-8)}` : signature
     );
+}
+
+export function formatFileName(path: string): string {
+    return chalk.blue(basename(path));
+}
+
+export function formatName(name: string): string {
+    return chalk.yellow(name);
 }

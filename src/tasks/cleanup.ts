@@ -1,18 +1,23 @@
 import { rm } from "fs/promises";
-import chalk from "chalk";
 import pkg from "../../package.json";
 import { checkIfStorageFileExists, countFiles } from "../helpers/filesystem";
-import { formatInteger } from "../helpers/format";
-import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
+import { formatFileName, formatInteger, formatName } from "../helpers/format";
+import { envVars, KEYPAIR_DIR, LOG_DIR, logger, pinataClient, storage } from "../modules";
 
 (async () => {
     try {
         if (envVars.NODE_ENV === "production") {
-            logger.error("Cleanup for environment forbidden: %s", envVars.NODE_ENV);
+            logger.warn("Cleanup forbidden. Environment: %s", envVars.NODE_ENV);
             process.exit(0);
         }
 
         await purgeLogFiles();
+        if (envVars.NODE_ENV === "test") {
+            await purgeKeypairFiles();
+        } else {
+            logger.warn("Keypair purge skipped");
+        }
+
         await clearStorageFile();
 
         const groupId = await getGroupId(`${pkg.name}-${envVars.NODE_ENV}`);
@@ -28,13 +33,23 @@ import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
 })();
 
 async function purgeLogFiles(): Promise<void> {
-    const logFileCount = await countFiles(LOG_DIR);
+    const fileCount = await countFiles(LOG_DIR, [".log"]);
 
     await rm(LOG_DIR, {
         recursive: true,
         force: true,
     });
-    logger.info("Logs purged. Total files: %s", formatInteger(logFileCount));
+    logger.info("Logs purged. Total files: %s", formatInteger(fileCount));
+}
+
+async function purgeKeypairFiles(): Promise<void> {
+    const fileCount = await countFiles(KEYPAIR_DIR, [".json"]);
+
+    await rm(KEYPAIR_DIR, {
+        recursive: true,
+        force: true,
+    });
+    logger.info("Keypairs purged. Total files: %s", formatInteger(fileCount));
 }
 
 async function clearStorageFile(): Promise<void> {
@@ -51,7 +66,7 @@ async function clearStorageFile(): Promise<void> {
 async function getGroupId(groupName: string): Promise<string | undefined> {
     const groups = await pinataClient.groups.list().name(groupName);
     if (groups.length === 0) {
-        logger.warn("Group not found: %s", chalk.yellow(groupName));
+        logger.warn("Group not found: %s", formatName(groupName));
         return;
     }
 
@@ -69,7 +84,7 @@ async function unpinIpfsFiles(groupId: string): Promise<void> {
             name: imageFileName,
         });
     } else {
-        logger.warn("Mint image file not found: %s", chalk.blue(imageFileName));
+        logger.warn("Mint image file not found: %s", formatFileName(imageFileName));
     }
 
     const metadataFileName = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
@@ -80,14 +95,14 @@ async function unpinIpfsFiles(groupId: string): Promise<void> {
             name: metadataFileName,
         });
     } else {
-        logger.warn("Mint metadata file not found: %s", chalk.blue(metadataFileName));
+        logger.warn("Mint metadata file not found: %s", formatFileName(metadataFileName));
     }
 
     if (filesToUnpin.length > 0) {
         await pinataClient.unpin(filesToUnpin.map(({ cid }) => cid));
 
         for (const fileToUnpin of filesToUnpin) {
-            logger.info("File unpinned from IPFS: %s", chalk.blue(fileToUnpin.name));
+            logger.info("File unpinned from IPFS: %s", formatFileName(fileToUnpin.name));
         }
     }
 }
