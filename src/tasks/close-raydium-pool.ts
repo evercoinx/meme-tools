@@ -8,6 +8,7 @@ import {
     importKeypairFromFile,
     importMintKeypair,
     importSwapperKeypairs,
+    KeypairKind,
 } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
@@ -22,7 +23,6 @@ import {
     logger,
     storage,
     SWAPPER_SLIPPAGE_PERCENT,
-    SwapperType,
     UNITS_PER_MINT,
     ZERO_BN,
     ZERO_DECIMAL,
@@ -61,12 +61,12 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            SwapperType.Sniper
+            KeypairKind.Sniper
         );
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, KeypairKind.Trader);
 
-        const sniperUnitsToSell = await findUnitsToSell(snipers, mint, SwapperType.Sniper);
-        const traderUnitsToSell = await findUnitsToSell(traders, mint, SwapperType.Trader);
+        const sniperUnitsToSell = await findUnitsToSell(snipers, mint, KeypairKind.Sniper);
+        const traderUnitsToSell = await findUnitsToSell(traders, mint, KeypairKind.Trader);
 
         const sendRemoveRaydiumLiquidityPoolTransaction = await removeRaydiumPoolLiquidity(
             raydium,
@@ -76,7 +76,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
         );
         await Promise.all([sendRemoveRaydiumLiquidityPoolTransaction]);
 
-        const devUnitsToSell = await findUnitsToSell([dev], mint, SwapperType.Dev);
+        const devUnitsToSell = await findUnitsToSell([dev], mint, KeypairKind.Dev);
 
         const sendSniperSwapMintToSolTransactions = await swapMintToSol(
             connectionPool,
@@ -127,7 +127,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 async function findUnitsToSell(
     accounts: Keypair[],
     mint: Keypair,
-    swapperType: SwapperType
+    keypairKind: KeypairKind
 ): Promise<(BN | null)[]> {
     const unitsToSell: (BN | null)[] = [];
 
@@ -143,7 +143,7 @@ async function findUnitsToSell(
             unitsToSell[i] = null;
             logger.warn(
                 "%s (%s) has uninitialized %s ATA (%s)",
-                capitalize(swapperType),
+                capitalize(keypairKind),
                 formatPublicKey(account.publicKey),
                 envVars.TOKEN_SYMBOL,
                 formatPublicKey(mintTokenAccount)
@@ -154,7 +154,7 @@ async function findUnitsToSell(
             unitsToSell[i] = null;
             logger.warn(
                 "%s (%s) has insufficient balance on ATA (%s): %s %s",
-                capitalize(swapperType),
+                capitalize(keypairKind),
                 formatPublicKey(account.publicKey),
                 formatPublicKey(mintTokenAccount),
                 formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),

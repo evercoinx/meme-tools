@@ -8,6 +8,7 @@ import {
     importKeypairFromFile,
     importMintKeypair,
     importSwapperKeypairs,
+    KeypairKind,
 } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
@@ -17,7 +18,6 @@ import {
     logger,
     OUTPUT_UNKNOWN_PUBLIC_KEY,
     storage,
-    SwapperType,
     UNITS_PER_MINT,
 } from "../modules";
 import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
@@ -34,9 +34,9 @@ import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
         );
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            SwapperType.Sniper
+            KeypairKind.Sniper
         );
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, KeypairKind.Trader);
         const mint = importMintKeypair();
 
         await getFunds(dev, distributor, snipers, traders, mint);

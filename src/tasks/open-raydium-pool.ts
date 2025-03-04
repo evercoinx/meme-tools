@@ -19,6 +19,7 @@ import {
     importKeypairFromFile,
     importMintKeypair,
     getTokenAccountInfo,
+    KeypairKind,
 } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatPublicKey } from "../helpers/format";
@@ -34,7 +35,6 @@ import {
     logger,
     storage,
     SWAPPER_SLIPPAGE_PERCENT,
-    SwapperType,
     UNITS_PER_MINT,
     ZERO_BN,
 } from "../modules";
@@ -60,7 +60,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            SwapperType.Sniper
+            KeypairKind.Sniper
         );
         const snipersToBuy = await findSnipersToBuy(snipers, mint);
 

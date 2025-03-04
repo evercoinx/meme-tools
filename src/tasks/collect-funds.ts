@@ -19,6 +19,7 @@ import {
     importKeypairFromFile,
     importMintKeypair,
     importSwapperKeypairs,
+    KeypairKind,
 } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
@@ -34,7 +35,6 @@ import {
     MIN_REMAINING_BALANCE_LAMPORTS,
     MINT_DUST_UNITS,
     storage,
-    SwapperType,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
 } from "../modules";
@@ -55,9 +55,9 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            SwapperType.Sniper
+            KeypairKind.Sniper
         );
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, KeypairKind.Trader);
 
         const sendCloseTokenAccountsTransactions = await closeTokenAccounts(
             dev,
@@ -71,12 +71,12 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
         const sendCollectSniperFundsTransactions = await collectFunds(
             snipers,
             distributor,
-            SwapperType.Sniper
+            KeypairKind.Sniper
         );
         const sendCollectTraderFundsTransactions = await collectFunds(
             traders,
             distributor,
-            SwapperType.Trader
+            KeypairKind.Trader
         );
         await Promise.all([
             ...sendCollectSniperFundsTransactions,
@@ -217,7 +217,7 @@ async function closeTokenAccounts(
 async function collectFunds(
     accounts: Keypair[],
     distributor: Keypair,
-    swapperType: SwapperType
+    keypairKind: KeypairKind
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     const computeBudgetInstructions: TransactionInstruction[] = [];
@@ -230,7 +230,7 @@ async function collectFunds(
         if (solBalance.lte(MIN_REMAINING_BALANCE_LAMPORTS)) {
             logger.warn(
                 "%s (%s) has insufficient balance on wallet: %s SOL",
-                capitalize(swapperType),
+                capitalize(keypairKind),
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
@@ -264,7 +264,7 @@ async function collectFunds(
                 connection,
                 [...computeBudgetInstructions, ...instructions],
                 [account],
-                `to transfer ${formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))} SOL from ${swapperType} (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
+                `to transfer ${formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
             )
         );
 

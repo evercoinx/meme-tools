@@ -4,9 +4,16 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@sol
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { capitalize, formatPublicKey } from "./format";
-import { encryption, logger, storage, SwapperType } from "../modules";
+import { encryption, logger, storage } from "../modules";
 import { Pool } from "../modules/pool";
 import { STORAGE_MINT_SECRET_KEY } from "../modules/storage";
+
+export enum KeypairKind {
+    Dev = "dev",
+    Distributor = "distributor",
+    Sniper = "sniper",
+    Trader = "trader",
+}
 
 export async function importKeypairFromFile(filePath: string, label: string): Promise<Keypair> {
     const secretKey: number[] = JSON.parse(await fs.readFile(filePath, "utf8"));
@@ -56,11 +63,11 @@ export function importMintKeypair(): Keypair | undefined {
 
 export function generateOrImportSwapperKeypairs(
     swapperCount: number,
-    swapperType: SwapperType,
+    keypairKind: KeypairKind,
     dryRun = false
 ): Keypair[] {
     const swappers: Keypair[] = [];
-    const storageKeys = generateSecretStorageKeys(swapperCount, swapperType);
+    const storageKeys = generateSecretStorageKeys(swapperCount, keypairKind);
 
     for (let i = 0; i < swapperCount; i++) {
         let swapper: Keypair | undefined;
@@ -73,7 +80,7 @@ export function generateOrImportSwapperKeypairs(
             if (!dryRun) {
                 logger.debug(
                     "%s (%s) key pair loaded from stroage",
-                    capitalize(swapperType),
+                    capitalize(keypairKind),
                     formatPublicKey(swapper.publicKey)
                 );
             }
@@ -83,7 +90,7 @@ export function generateOrImportSwapperKeypairs(
             if (!dryRun) {
                 logger.info(
                     `%s (%s) key pair generated`,
-                    capitalize(swapperType),
+                    capitalize(keypairKind),
                     formatPublicKey(swapper.publicKey)
                 );
 
@@ -92,7 +99,7 @@ export function generateOrImportSwapperKeypairs(
                 storage.save();
                 logger.debug(
                     "%s (%s) secret key saved to storage",
-                    capitalize(swapperType),
+                    capitalize(keypairKind),
                     formatPublicKey(swapper.publicKey)
                 );
             }
@@ -104,14 +111,14 @@ export function generateOrImportSwapperKeypairs(
     return swappers;
 }
 
-export function importSwapperKeypairs(swapperCount: number, swapperType: SwapperType): Keypair[] {
+export function importSwapperKeypairs(swapperCount: number, keypairKind: KeypairKind): Keypair[] {
     const swappers: Keypair[] = [];
-    const storageKeys = generateSecretStorageKeys(swapperCount, swapperType);
+    const storageKeys = generateSecretStorageKeys(swapperCount, keypairKind);
 
     for (let i = 0; i < swapperCount; i++) {
         const encryptedSecretKey = storage.get<string>(storageKeys[i]);
         if (!encryptedSecretKey) {
-            logger.warn("%s %d secret key not loaded from storage", capitalize(swapperType), i);
+            logger.warn("%s %d secret key not loaded from storage", capitalize(keypairKind), i);
             continue;
         }
 
@@ -119,7 +126,7 @@ export function importSwapperKeypairs(swapperCount: number, swapperType: Swapper
         const swapper = Keypair.fromSecretKey(secretKey);
         logger.debug(
             "%s (%s) key pair loaded from storage",
-            capitalize(swapperType),
+            capitalize(keypairKind),
             formatPublicKey(swapper.publicKey)
         );
 
@@ -131,11 +138,11 @@ export function importSwapperKeypairs(swapperCount: number, swapperType: Swapper
 
 function generateSecretStorageKeys(
     keyCount: number,
-    swapperType: SwapperType
+    keypairKind: KeypairKind
 ): Record<number, string> {
     const secretKeyRecord: Record<number, string> = {};
     for (let i = 0; i < keyCount; i++) {
-        secretKeyRecord[i] = `${swapperType}_${i}_secret_key`;
+        secretKeyRecord[i] = `${keypairKind}_${i}_secret_key`;
     }
     return secretKeyRecord;
 }

@@ -13,12 +13,6 @@ import { createPinataClient } from "./pinata";
 import { Pool } from "./pool";
 import { createStorage } from "./storage";
 
-export enum SwapperType {
-    Dev = "dev",
-    Sniper = "sniper",
-    Trader = "trader",
-}
-
 export const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
 export const OUTPUT_NOT_ALLOWED = chalk.red("n/a");
 export const OUTPUT_SEPARATOR = chalk.gray("=".repeat(80));

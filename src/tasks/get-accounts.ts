@@ -4,10 +4,11 @@ import {
     importSwapperKeypairs,
     importKeypairFromFile,
     importMintKeypair,
+    KeypairKind,
 } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import { formatPublicKey } from "../helpers/format";
-import { envVars, logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage, SwapperType } from "../modules";
+import { envVars, logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage } from "../modules";
 
 (async () => {
     try {
@@ -21,9 +22,9 @@ import { envVars, logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage, SwapperType } from
 
         const snipers = importSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            SwapperType.Sniper
+            KeypairKind.Sniper
         );
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, KeypairKind.Trader);
         const mint = importMintKeypair();
 
         getAccounts(dev, distributor, snipers, traders, mint);

@@ -9,6 +9,7 @@ import {
     getTokenAccountInfo,
     importMintKeypair,
     importSwapperKeypairs,
+    KeypairKind,
 } from "../helpers/account";
 import { checkIfStorageFileExists } from "../helpers/filesystem";
 import {
@@ -32,7 +33,6 @@ import {
     OUTPUT_SEPARATOR,
     storage,
     SWAPPER_SLIPPAGE_PERCENT,
-    SwapperType,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
 } from "../modules";
@@ -74,7 +74,7 @@ import {
         let poolTradingCycle = storage.get<number | undefined>(STORAGE_RAYDIUM_POOL_TRADING_CYCLE);
         poolTradingCycle = poolTradingCycle ? poolTradingCycle + 1 : 0;
 
-        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, SwapperType.Trader);
+        const traders = importSwapperKeypairs(envVars.TRADER_COUNT, KeypairKind.Trader);
 
         const poolTradingCycleCount = poolTradingCycle + envVars.POOL_TRADING_CYCLE_COUNT;
         const poolTradingPumpBiasPercent = new Decimal(envVars.POOL_TRADING_PUMP_BIAS_PERCENT)

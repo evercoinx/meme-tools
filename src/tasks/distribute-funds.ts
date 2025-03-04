@@ -11,6 +11,7 @@ import {
     generateOrImportSwapperKeypairs,
     getSolBalance,
     importKeypairFromFile,
+    KeypairKind,
 } from "../helpers/account";
 import { formatDecimal, formatInteger, formatPublicKey } from "../helpers/format";
 import {
@@ -24,7 +25,6 @@ import {
     heliusClientPool,
     logger,
     SWAPPER_GROUP_SIZE,
-    SwapperType,
     ZERO_DECIMAL,
 } from "../modules";
 import { isDryRun } from "../modules/environment";
@@ -43,12 +43,12 @@ import { isDryRun } from "../modules/environment";
 
         const snipers = generateOrImportSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
-            SwapperType.Sniper,
+            KeypairKind.Sniper,
             dryRun
         );
         const traders = generateOrImportSwapperKeypairs(
             envVars.TRADER_COUNT,
-            SwapperType.Trader,
+            KeypairKind.Trader,
             dryRun
         );
 
