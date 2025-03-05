@@ -24,15 +24,9 @@ import {
 import bs58 from "bs58";
 import Decimal from "decimal.js";
 import { GetPriorityFeeEstimateResponse, PriorityLevel, UiTransactionEncoding } from "helius-sdk";
-import { explorer, logger, TRANSACTION_CONFIRMATION_TIMEOUT_MS, ZERO_DECIMAL } from "../modules";
+import { explorer, logger, ZERO_DECIMAL } from "../modules";
 import { HeliusClient } from "../modules/helius";
-import {
-    capitalize,
-    formatDecimal,
-    formatInteger,
-    formatMilliseconds,
-    formatSignature,
-} from "./format";
+import { capitalize, formatDecimal, formatInteger, formatSignature } from "./format";
 
 export interface TransactionOptions {
     skipPreflight?: boolean;
@@ -69,9 +63,10 @@ class ResentTransactionError extends Error {
     }
 }
 
+export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
-const TRANSACTION_POLL_INTERVAL_MS = 1_000;
-const TRANSACTION_RESEND_ATTEMPTS = 5;
+const TRANSACTION_POLL_INTERVAL_MS = TRANSACTION_POLL_TIMEOUT_MS / 10;
+const TRANSACTION_RESEND_ATTEMPTS = 3;
 const RECOMMENDED_COMPUTE_UNIT_PRICE = 10_000;
 const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
 const MIN_COMPUTE_UNIT_LIMIT = 1_000;
@@ -327,7 +322,7 @@ async function pollTransactionConfirmation(
                 clearInterval(intervalId);
                 reject(
                     new ResentTransactionError(
-                        `Transaction (${formatSignature(signature)}) timed out after ${formatMilliseconds(elapsed)} sec`
+                        `Transaction (${signature}) failed: Timeout after ${new Decimal(elapsed).div(1_000).toFixed(3)} sec`
                     )
                 );
             }
@@ -342,7 +337,7 @@ async function pollTransactionConfirmation(
                     if (errorDetails && resendErrors[errorDetails.Custom]) {
                         return reject(
                             new ResentTransactionError(
-                                `Transaction (${formatSignature(signature)}) failed. Reason: ${resendErrors[errorDetails.Custom].message}`
+                                `Transaction (${signature}) failed: ${resendErrors[errorDetails.Custom].message}`
                             )
                         );
                     }
@@ -350,7 +345,7 @@ async function pollTransactionConfirmation(
 
                 return reject(
                     new FailedTransactionError(
-                        `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature)}. Reason: ${formatRpcError(result.err)}`
+                        `Transaction (${signature}) failed: ${explorer.generateTransactionUri(signature)}. Reason: ${formatRpcError(result.err)}`
                     )
                 );
             } else if (result?.confirmationStatus === "confirmed") {

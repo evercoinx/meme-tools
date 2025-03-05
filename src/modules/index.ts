@@ -4,6 +4,7 @@ import { Connection } from "@solana/web3.js";
 import BN from "bn.js";
 import chalk from "chalk";
 import Decimal from "decimal.js";
+import { TRANSACTION_CONFIRMATION_TIMEOUT_MS } from "../helpers/network";
 import { Encryption } from "./encryption";
 import { extractEnvironmentVariables } from "./environment";
 import { Explorer } from "./explorer";
@@ -19,7 +20,6 @@ export const OUTPUT_SEPARATOR = chalk.gray("=".repeat(80));
 export const OUTPUT_UNKNOWN_PUBLIC_KEY = chalk.gray("?".repeat(44));
 export const OUTPUT_UNKNOWN_VALUE = chalk.gray("?");
 export const SWAPPER_SLIPPAGE_PERCENT = 1;
-export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 

@@ -159,7 +159,7 @@ async function distributeSwapperFunds(
 
     if (dryRun) {
         logger.info(
-            `Distributing ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedAccounts)} snipers`
+            `Distributing ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
         );
         return Promise.resolve(undefined);
     }

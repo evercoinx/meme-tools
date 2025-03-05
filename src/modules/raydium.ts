@@ -47,12 +47,12 @@ export const RAYDIUM_POOL_ERRORS: ContractErrors = {
     2012: {
         instruction: "SwapBaseInput",
         code: "ContraintAddress",
-        message: "An address constraint was violated",
+        message: "Address constraint violated",
     },
     // 2505: {
     //     instruction: "SwapBaseInput",
     //     code: "RequireGtViolated",
-    //     message: "A require_gt expression was violated",
+    //     message: "Require_gt expression violated",
     // },
     6000: {
         instruction: "SwapBaseInput",
