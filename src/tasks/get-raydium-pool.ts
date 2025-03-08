@@ -5,6 +5,7 @@ import {
     formatCurrency,
     formatDate,
     formatDecimal,
+    formatError,
     formatText,
     formatPercent,
     formatPublicKey,
@@ -25,7 +26,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
         await getPool(new PublicKey(raydiumPoolId));
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

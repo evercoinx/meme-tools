@@ -13,7 +13,13 @@ import {
     importKeypairFromFile,
     KeypairKind,
 } from "../helpers/account";
-import { capitalize, formatDecimal, formatInteger, formatPublicKey } from "../helpers/format";
+import {
+    capitalize,
+    formatDecimal,
+    formatError,
+    formatInteger,
+    formatPublicKey,
+} from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -103,7 +109,7 @@ import { isDryRun } from "../modules/environment";
         ]);
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

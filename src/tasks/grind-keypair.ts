@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 import { Keypair } from "@solana/web3.js";
 import { KEYPAIR_FILE_EXTENSION } from "../helpers/account";
 import { findFileNames } from "../helpers/filesystem";
-import { formatFileName, formatInteger } from "../helpers/format";
+import { formatError, formatFileName, formatInteger } from "../helpers/format";
 import { KEYPAIR_DIR, logger } from "../modules";
 
 const BASE58_CHARACTER_SET = /^[1-9A-HJ-NP-Za-km-z]+$/;
@@ -65,7 +65,7 @@ const BASE58_CHARACTER_SET = /^[1-9A-HJ-NP-Za-km-z]+$/;
         await grindKeypair(KEYPAIR_DIR, prefix, postfix, KEYPAIR_FILE_EXTENSION, parsedAttempts);
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

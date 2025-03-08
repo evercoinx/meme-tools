@@ -10,7 +10,7 @@ import {
     KeypairKind,
 } from "../helpers/account";
 import { fileExists } from "../helpers/filesystem";
-import { formatDecimal, formatPublicKey } from "../helpers/format";
+import { formatDecimal, formatError, formatPublicKey } from "../helpers/format";
 import {
     connectionPool,
     envVars,
@@ -36,7 +36,7 @@ import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
         await getFunds(dev, distributor, snipers, traders, mint);
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

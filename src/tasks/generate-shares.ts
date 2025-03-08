@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { formatDecimal, formatInteger } from "../helpers/format";
+import { formatDecimal, formatError, formatInteger } from "../helpers/format";
 import { generateRandomFloat } from "../helpers/random";
 import { logger } from "../modules";
 
@@ -52,7 +52,7 @@ import { logger } from "../modules";
 
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

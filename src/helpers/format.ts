@@ -58,6 +58,17 @@ export function formatDecimal(value: NumberLike, decimalPlaces = 9): string {
     );
 }
 
+export function formatError(error: unknown): string {
+    let message: string;
+    if (error instanceof Error) {
+        message = error.stack ? error.stack : `${error.name}:${error.message}`;
+    } else {
+        message = String(error);
+    }
+
+    return chalk.red(message);
+}
+
 export function formatFileName(path: string): string {
     return chalk.blue(basename(path));
 }

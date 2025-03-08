@@ -1,7 +1,7 @@
 import { rm } from "fs/promises";
 import pkg from "../../package.json";
 import { fileExists, countFiles } from "../helpers/filesystem";
-import { formatFileName, formatInteger, formatText } from "../helpers/format";
+import { formatError, formatFileName, formatInteger, formatText } from "../helpers/format";
 import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
 
 (async () => {
@@ -21,7 +21,7 @@ import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
 
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

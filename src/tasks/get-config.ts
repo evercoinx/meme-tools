@@ -1,10 +1,11 @@
 import {
     formatDecimal,
+    formatError,
     formatInteger,
+    formatMilliseconds,
     formatText,
     formatPercent,
     formatUri,
-    formatMilliseconds,
 } from "../helpers/format";
 import { envVars, logger, OUTPUT_UNKNOWN_VALUE } from "../modules";
 
@@ -57,7 +58,7 @@ import { envVars, logger, OUTPUT_UNKNOWN_VALUE } from "../modules";
 
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

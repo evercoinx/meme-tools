@@ -14,6 +14,7 @@ import {
 import { fileExists } from "../helpers/filesystem";
 import {
     formatDecimal,
+    formatError,
     formatInteger,
     formatMilliseconds,
     formatPercent,
@@ -116,7 +117,7 @@ import {
 
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

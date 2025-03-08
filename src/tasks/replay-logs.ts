@@ -2,6 +2,7 @@ import { createReadStream } from "node:fs";
 import { access, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
+import { formatError } from "../helpers/format";
 import { envVars, LOG_DIR, logger } from "../modules";
 import { LOG_LEVEL } from "../modules/environment";
 import { LogEntry } from "../modules/logger";
@@ -22,7 +23,7 @@ import { LogEntry } from "../modules/logger";
         await replayLogs(dirPath);
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

@@ -32,7 +32,7 @@ import {
     KeypairKind,
 } from "../helpers/account";
 import { fileExists } from "../helpers/filesystem";
-import { capitalize, formatPublicKey, formatUri } from "../helpers/format";
+import { capitalize, formatError, formatPublicKey, formatUri } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -124,7 +124,7 @@ const generatePinataUri = (ipfsHash: string): string =>
         await Promise.all([sendCreateMintTransaction]);
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

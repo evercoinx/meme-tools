@@ -7,7 +7,7 @@ import {
     KeypairKind,
 } from "../helpers/account";
 import { fileExists } from "../helpers/filesystem";
-import { formatPublicKey } from "../helpers/format";
+import { formatError, formatPublicKey } from "../helpers/format";
 import { logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage } from "../modules";
 
 (async () => {
@@ -23,7 +23,7 @@ import { logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage } from "../modules";
         getAccounts(dev, distributor, snipers, traders, mint);
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

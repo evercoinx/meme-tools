@@ -3,7 +3,13 @@ import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { importMintKeypair } from "../helpers/account";
 import { fileExists } from "../helpers/filesystem";
-import { formatDecimal, formatInteger, formatText, formatPublicKey } from "../helpers/format";
+import {
+    formatDecimal,
+    formatError,
+    formatInteger,
+    formatText,
+    formatPublicKey,
+} from "../helpers/format";
 import { connectionPool, envVars, explorer, logger, OUTPUT_NOT_ALLOWED, storage } from "../modules";
 
 (async () => {
@@ -18,7 +24,7 @@ import { connectionPool, envVars, explorer, logger, OUTPUT_NOT_ALLOWED, storage 
         await getMint(mint);
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();

@@ -11,7 +11,7 @@ import {
     KeypairKind,
 } from "../helpers/account";
 import { fileExists } from "../helpers/filesystem";
-import { capitalize, formatDecimal, formatPublicKey } from "../helpers/format";
+import { capitalize, formatDecimal, formatError, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -116,7 +116,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
         ]);
         process.exit(0);
     } catch (error: unknown) {
-        logger.fatal(error);
+        logger.fatal(formatError(error));
         process.exit(1);
     }
 })();
