@@ -43,25 +43,6 @@ const BASE58_CHARACTER_SET = /^[1-9A-HJ-NP-Za-km-z]+$/;
             throw new Error(`Too many attempts: ${parsedAttempts}`);
         }
 
-        const keypairDir = await mkdir(KEYPAIR_DIR, {
-            mode: 0o700,
-            recursive: true,
-        });
-        if (keypairDir) {
-            logger.warn("Key pair directory created: %s", formatFileName(keypairDir));
-        }
-
-        const keypairFileNames = await findFileNames(
-            KEYPAIR_DIR,
-            prefix,
-            postfix,
-            KEYPAIR_FILE_EXTENSION
-        );
-        if (keypairFileNames.length >= 1) {
-            logger.warn("Keypair already ground: %s", formatFileName(keypairFileNames[0]));
-            return;
-        }
-
         await grindKeypair(KEYPAIR_DIR, prefix, postfix, KEYPAIR_FILE_EXTENSION, parsedAttempts);
         process.exit(0);
     } catch (error: unknown) {
@@ -77,6 +58,25 @@ async function grindKeypair(
     extension: string,
     attempts: number
 ) {
+    const keypairDir = await mkdir(KEYPAIR_DIR, {
+        mode: 0o700,
+        recursive: true,
+    });
+    if (keypairDir) {
+        logger.warn("Key pair directory created: %s", formatFileName(keypairDir));
+    }
+
+    const keypairFileNames = await findFileNames(
+        KEYPAIR_DIR,
+        prefix,
+        postfix,
+        KEYPAIR_FILE_EXTENSION
+    );
+    if (keypairFileNames.length >= 1) {
+        logger.warn("Keypair already ground: %s", formatFileName(keypairFileNames[0]));
+        return;
+    }
+
     for (let i = 0; i < attempts; i++) {
         const keypair = Keypair.generate();
         const publicKey = keypair.publicKey.toBase58();
@@ -92,7 +92,7 @@ async function grindKeypair(
         await writeFile(join(dirPath, fileName), JSON.stringify(Array.from(keypair.secretKey)), {
             mode: 0o400,
         });
-        logger.info("Keypair grined: %s", formatFileName(fileName));
+        logger.info("Keypair ground: %s", formatFileName(fileName));
         return;
     }
 
