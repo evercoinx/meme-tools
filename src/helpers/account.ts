@@ -11,7 +11,7 @@ import {
     STORAGE_TRADER_COUNT,
 } from "../modules/storage";
 import { findFileNames } from "./filesystem";
-import { capitalize, formatInteger, formatPublicKey } from "./format";
+import { capitalize, formatInteger, formatPublicKey, formatText } from "./format";
 
 export const KEYPAIR_FILE_EXTENSION = ".json";
 
@@ -45,7 +45,7 @@ export async function importKeypairFromFile(keypairKind: KeypairKind): Promise<K
         throw new Error(`${capitalize(keypairKind)} key pair file not found`);
     }
     if (fileNames.length >= 2) {
-        throw new Error(`Multiple key pair files found: ${fileNames.length}`);
+        throw new Error(`Multiple key pair files found: ${formatInteger(fileNames.length)}`);
     }
 
     const filePath = join(KEYPAIR_DIR, fileNames[0]);
@@ -101,7 +101,7 @@ export function generateOrImportSwapperKeypairs(
     dryRun = false
 ): Keypair[] {
     if (![KeypairKind.Sniper, KeypairKind.Trader].includes(keypairKind)) {
-        throw new Error(`Unexpected key pair kind: ${keypairKind}`);
+        throw new Error(`Unexpected key pair kind: ${formatText(keypairKind)}`);
     }
 
     const swappers: Keypair[] = [];
@@ -167,7 +167,7 @@ export function generateOrImportSwapperKeypairs(
 
 export function importSwapperKeypairs(keypairKind: KeypairKind): Keypair[] {
     if (![KeypairKind.Sniper, KeypairKind.Trader].includes(keypairKind)) {
-        throw new Error(`Unexpected key pair kind: ${keypairKind}`);
+        throw new Error(`Unexpected key pair kind: ${formatText(keypairKind)}`);
     }
 
     const storageCountKey =
@@ -184,7 +184,9 @@ export function importSwapperKeypairs(keypairKind: KeypairKind): Keypair[] {
     for (let i = 0; i < count; i++) {
         const encryptedSecretKey = storage.get<string>(storageKeys[i]);
         if (!encryptedSecretKey) {
-            throw new Error(`${capitalize(keypairKind)} secret key ${i} not loaded from storage`);
+            throw new Error(
+                `${capitalize(keypairKind)} secret key ${formatInteger(i)} not loaded from storage`
+            );
         }
 
         const secretKey = encryption.decrypt(encryptedSecretKey);

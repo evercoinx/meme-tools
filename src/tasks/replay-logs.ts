@@ -2,7 +2,7 @@ import { createReadStream } from "node:fs";
 import { access, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { formatError } from "../helpers/format";
+import { formatError, formatText } from "../helpers/format";
 import { envVars, LOG_DIR, logger } from "../modules";
 import { LOG_LEVEL } from "../modules/environment";
 import { LogEntry } from "../modules/logger";
@@ -17,7 +17,7 @@ import { LogEntry } from "../modules/logger";
         try {
             await access(dirPath);
         } catch {
-            throw new Error(`Task logs not found: ${envVars.LOGGER_NAME}`);
+            throw new Error(`Task logs not found: ${formatText(envVars.LOGGER_NAME)}`);
         }
 
         await replayLogs(dirPath);
@@ -42,7 +42,7 @@ async function replayLogs(dirPath: string): Promise<void> {
 
             const methodName = logLevelLabels[level] as LOG_LEVEL;
             if (typeof logger[methodName] !== "function") {
-                throw new Error(`Logger method not callable: ${methodName}`);
+                throw new Error(`Logger method not callable: ${formatText(methodName)}`);
             }
             logger[methodName]({ time }, msg);
         }

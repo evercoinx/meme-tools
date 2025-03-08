@@ -40,7 +40,7 @@ const BASE58_CHARACTER_SET = /^[1-9A-HJ-NP-Za-km-z]+$/;
 
         const parsedAttempts = parseInt(attempts);
         if (parsedAttempts > 500_000) {
-            throw new Error(`Too many attempts: ${parsedAttempts}`);
+            throw new Error(`Too many attempts: ${formatInteger(parsedAttempts)}`);
         }
 
         await grindKeypair(KEYPAIR_DIR, prefix, postfix, KEYPAIR_FILE_EXTENSION, parsedAttempts);

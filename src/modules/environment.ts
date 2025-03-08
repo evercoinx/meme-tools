@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import Decimal from "decimal.js";
 import Joi from "joi";
+import { formatUri } from "../helpers/format";
 
 export type NODE_ENV = "development" | "test" | "production";
 
@@ -110,7 +111,9 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                             } else if (/devnet/i.test(rpcUri)) {
                                 counters.devnet++;
                             } else {
-                                throw new Error(`Unknown RPC cluster for URI: ${rpcUri}`);
+                                throw new Error(
+                                    `Unknown RPC cluster for URI: ${formatUri(rpcUri)}`
+                                );
                             }
                         }
 
@@ -176,11 +179,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .trim()
                 .allow("")
                 .uri()
-                .custom((value: string) => {
-                    if (value && !value.startsWith("https://x.com")) {
-                        throw new Error(`Invalid Twitter URI: ${value}`);
+                .custom((uri: string) => {
+                    if (uri && !uri.startsWith("https://x.com")) {
+                        throw new Error(`Invalid Twitter URI: ${formatUri(uri)}`);
                     }
-                    return value;
+                    return uri;
                 })
                 .description("Token Twitter URI"),
             TOKEN_TELEGRAM_URI: Joi.string()
@@ -188,11 +191,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .trim()
                 .allow("")
                 .uri()
-                .custom((value: string) => {
-                    if (value && !value.startsWith("https://t.me")) {
-                        throw new Error(`Invalid Telegram URI: ${value}`);
+                .custom((uri: string) => {
+                    if (uri && !uri.startsWith("https://t.me")) {
+                        throw new Error(`Invalid Telegram URI: ${formatUri(uri)}`);
                     }
-                    return value;
+                    return uri;
                 })
                 .description("Token Telegram URI"),
             TOKEN_TAGS: Joi.array()

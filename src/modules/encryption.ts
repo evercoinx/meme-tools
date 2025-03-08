@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { formatText } from "../helpers/format";
 
 export class Encryption {
     private readonly algorithm;
@@ -32,7 +33,7 @@ export class Encryption {
 
     public decrypt(text: string): Uint8Array {
         if (!text.startsWith(this.prefix)) {
-            throw new Error(`Text has not prefix: ${this.prefix}`);
+            throw new Error(`Text has no prefix: ${formatText(this.prefix)}`);
         }
 
         const decipher = crypto.createDecipheriv(this.algorithm, this.secretKey, this.iv);

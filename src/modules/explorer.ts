@@ -1,4 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
+import { formatUri } from "../helpers/format";
 
 const SOLANA_COM = "explorer.solana.com";
 const SOLANA_FM = "solana.fm";
@@ -31,7 +32,7 @@ export class Explorer {
             }
         }
 
-        throw new Error(`Unknown base URI: ${baseUri}`);
+        throw new Error(`Unknown base URI: ${formatUri(baseUri)}`);
     }
 
     generateTransactionUri(signature: string): string {

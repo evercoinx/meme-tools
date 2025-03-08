@@ -22,7 +22,7 @@ import {
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";
-import { formatDecimal, formatPublicKey } from "../helpers/format";
+import { formatDecimal, formatPublicKey, formatText, formatUri } from "../helpers/format";
 import {
     ContractErrors,
     getComputeBudgetInstructions,
@@ -63,7 +63,7 @@ export const RAYDIUM_POOL_ERRORS: ContractErrors = {
 
 export async function createRaydium(connection: Connection, owner?: Keypair): Promise<Raydium> {
     if (connection.rpcEndpoint === clusterApiUrl("mainnet-beta")) {
-        throw new Error(`Public mainnet RPC not allowed: ${connection.rpcEndpoint}`);
+        throw new Error(`Public mainnet RPC not allowed: ${formatUri(connection.rpcEndpoint)}`);
     }
 
     return Raydium.load({
@@ -104,10 +104,12 @@ export async function loadRaydiumCpmmPool(
     }
 
     if (programId !== poolInfo.programId) {
-        throw new Error(`Invalid program id for Raydium CPMM pool: ${poolInfo.programId}`);
+        throw new Error(
+            `Invalid program id for Raydium CPMM pool: ${formatText(poolInfo.programId)}`
+        );
     }
     if (!rpcData.configInfo) {
-        throw new Error("Missing config for Raydium CPMM pool");
+        throw new Error("CPMM fee config not found");
     }
 
     return {

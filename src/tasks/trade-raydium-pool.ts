@@ -72,7 +72,9 @@ import {
 
         const traderCount = storage.get<number | undefined>(STORAGE_TRADER_COUNT);
         if (traderCount && envVars.TRADER_COUNT > traderCount) {
-            throw new Error(`${envVars.TRADER_COUNT - traderCount} traders have no funds`);
+            throw new Error(
+                `${formatInteger(envVars.TRADER_COUNT - traderCount)} traders have no funds`
+            );
         }
 
         const traders = importSwapperKeypairs(KeypairKind.Trader);

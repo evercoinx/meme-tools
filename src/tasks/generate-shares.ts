@@ -42,7 +42,7 @@ import { logger } from "../modules";
 
         const parsedAttempts = parseInt(attempts);
         if (parsedAttempts > 100_000) {
-            throw new Error("Too many attempts");
+            throw new Error(`Too many attempts: ${formatInteger(parsedAttempts)}`);
         }
 
         const shares = generateShares(parsedCount, parsedSum, parsedDeviation, parsedAttempts);

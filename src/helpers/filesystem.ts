@@ -1,6 +1,7 @@
 import { access, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { format, resolveConfig } from "prettier";
+import { formatFileName } from "./format";
 
 export async function countFiles(dirPath: string, extensions: string[]): Promise<number> {
     try {
@@ -60,7 +61,7 @@ export async function fileExists(filePath: string): Promise<void> {
     try {
         await access(filePath);
     } catch {
-        throw new Error(`File not found: ${basename(filePath)}`);
+        throw new Error(`File not found: ${formatFileName(filePath)}`);
     }
 }
 
