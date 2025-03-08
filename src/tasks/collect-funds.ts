@@ -32,13 +32,14 @@ import {
     envVars,
     heliusClientPool,
     logger,
-    MIN_REMAINING_BALANCE_LAMPORTS,
     MINT_DUST_UNITS,
     storage,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
 } from "../modules";
 import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
+
+const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
 
 (async () => {
     try {

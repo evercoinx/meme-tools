@@ -6,8 +6,9 @@ import {
     formatText,
     formatPercent,
     formatUri,
+    OUTPUT_UNKNOWN_VALUE,
 } from "../helpers/format";
-import { envVars, logger, OUTPUT_UNKNOWN_VALUE } from "../modules";
+import { envVars, logger } from "../modules";
 
 (async () => {
     try {

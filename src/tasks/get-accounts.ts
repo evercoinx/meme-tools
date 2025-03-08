@@ -7,8 +7,8 @@ import {
     KeypairKind,
 } from "../helpers/account";
 import { fileExists } from "../helpers/filesystem";
-import { formatError, formatPublicKey } from "../helpers/format";
-import { logger, OUTPUT_UNKNOWN_PUBLIC_KEY, storage } from "../modules";
+import { formatError, formatPublicKey, OUTPUT_UNKNOWN_PUBLIC_KEY } from "../helpers/format";
+import { logger, storage } from "../modules";
 
 (async () => {
     try {

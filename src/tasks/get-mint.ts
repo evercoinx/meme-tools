@@ -9,8 +9,9 @@ import {
     formatInteger,
     formatText,
     formatPublicKey,
+    OUTPUT_NOT_ALLOWED,
 } from "../helpers/format";
-import { connectionPool, envVars, explorer, logger, OUTPUT_NOT_ALLOWED, storage } from "../modules";
+import { connectionPool, envVars, explorer, logger, storage } from "../modules";
 
 (async () => {
     try {

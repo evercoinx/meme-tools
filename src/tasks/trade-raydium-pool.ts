@@ -19,6 +19,7 @@ import {
     formatMilliseconds,
     formatPercent,
     formatPublicKey,
+    OUTPUT_SEPARATOR,
 } from "../helpers/format";
 import {
     generateRandomBoolean,
@@ -31,7 +32,6 @@ import {
     envVars,
     heliusClientPool,
     logger,
-    OUTPUT_SEPARATOR,
     storage,
     SWAPPER_SLIPPAGE_PERCENT,
     UNITS_PER_MINT,

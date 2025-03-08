@@ -2,7 +2,6 @@ import { homedir } from "node:os";
 import { join, parse } from "node:path";
 import { Connection } from "@solana/web3.js";
 import BN from "bn.js";
-import chalk from "chalk";
 import Decimal from "decimal.js";
 import { TRANSACTION_CONFIRMATION_TIMEOUT_MS } from "../helpers/network";
 import { Encryption } from "./encryption";
@@ -14,16 +13,12 @@ import { createPinataClient } from "./pinata";
 import { Pool } from "./pool";
 import { createStorage } from "./storage";
 
-export const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
-export const OUTPUT_NOT_ALLOWED = chalk.red("n/a");
-export const OUTPUT_SEPARATOR = chalk.gray("=".repeat(80));
-export const OUTPUT_UNKNOWN_PUBLIC_KEY = chalk.gray("?".repeat(44));
-export const OUTPUT_UNKNOWN_VALUE = chalk.gray("?");
 export const SWAPPER_SLIPPAGE_PERCENT = 1;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
 export const envVars = extractEnvironmentVariables();
+export const TOKEN_IMAGE_FILE_NAME = `${envVars.TOKEN_SYMBOL.toLowerCase()}.webp`;
 export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
 export const MINT_DUST_UNITS = new Decimal(100).mul(UNITS_PER_MINT);
 
@@ -47,6 +42,7 @@ export const logger = createLogger(
     envVars.LOG_LEVEL,
     LOG_DIR
 );
+
 export const connectionPool = new Pool(
     Array.from(envVars.RPC_URIS).map(
         (rpcUri) =>
@@ -57,9 +53,11 @@ export const connectionPool = new Pool(
             })
     )
 );
+
 export const heliusClientPool = new Pool(
     Array.from(envVars.RPC_URIS).map((rpcUri) => createHeliusClient(rpcUri, envVars.RPC_CLUSTER))
 );
+
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY_URI);
 
 export const encryption = new Encryption(
@@ -67,5 +65,7 @@ export const encryption = new Encryption(
     envVars.KEYPAIR_ENCRYPTION_SECRET,
     "encrypted"
 );
+
 export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
+
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);

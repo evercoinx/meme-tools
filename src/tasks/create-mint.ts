@@ -45,6 +45,7 @@ import {
     logger,
     pinataClient,
     storage,
+    TOKEN_IMAGE_FILE_NAME,
     UNITS_PER_MINT,
 } from "../modules";
 import { STORAGE_MINT_IMAGE_URI, STORAGE_MINT_METADATA } from "../modules/storage";
@@ -111,7 +112,7 @@ const generatePinataUri = (ipfsHash: string): string =>
 
 (async () => {
     try {
-        await fileExists(join(IMAGE_DIR, `${envVars.TOKEN_SYMBOL.toLowerCase()}.webp`));
+        await fileExists(join(IMAGE_DIR, TOKEN_IMAGE_FILE_NAME));
 
         const mint = generateOrImportMintKeypair();
         const dev = await importKeypairFromFile(KeypairKind.Dev);
@@ -150,17 +151,16 @@ async function uploadImage(groupId: string): Promise<string> {
         return imageUri;
     }
 
-    const imageFileName = `${envVars.TOKEN_SYMBOL.toLowerCase()}.webp`;
-    const pinnedFiles = await pinataClient.listFiles().group(groupId).name(imageFileName);
+    const pinnedFiles = await pinataClient.listFiles().group(groupId).name(TOKEN_IMAGE_FILE_NAME);
 
-    if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === imageFileName) {
+    if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === TOKEN_IMAGE_FILE_NAME) {
         imageUri = generatePinataUri(pinnedFiles[0].ipfs_pin_hash);
         logger.warn("Mint image file already uploaded to IPFS: %s", formatUri(imageUri));
     } else {
         logger.debug("Uploading mint image file to IPFS");
-        const imageBlob = new Blob([await readFile(join(IMAGE_DIR, imageFileName))]);
+        const imageBlob = new Blob([await readFile(join(IMAGE_DIR, TOKEN_IMAGE_FILE_NAME))]);
 
-        const imageFile = new File([imageBlob], imageFileName, { type: "image/webp" });
+        const imageFile = new File([imageBlob], TOKEN_IMAGE_FILE_NAME, { type: "image/webp" });
         const upload = await pinataClient.upload.file(imageFile).group(groupId);
 
         imageUri = generatePinataUri(upload.IpfsHash);

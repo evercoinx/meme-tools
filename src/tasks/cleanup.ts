@@ -2,7 +2,7 @@ import { rm } from "fs/promises";
 import pkg from "../../package.json";
 import { fileExists, countFiles } from "../helpers/filesystem";
 import { formatError, formatFileName, formatInteger, formatText } from "../helpers/format";
-import { envVars, LOG_DIR, logger, pinataClient, storage } from "../modules";
+import { envVars, LOG_DIR, logger, pinataClient, storage, TOKEN_IMAGE_FILE_NAME } from "../modules";
 
 (async () => {
     try {
@@ -60,15 +60,14 @@ async function getGroupId(groupName: string): Promise<string | undefined> {
 async function unpinIpfsFiles(groupId: string): Promise<void> {
     const filesToUnpin: { cid: string; name: string }[] = [];
 
-    const imageFileName = `${envVars.TOKEN_SYMBOL.toLowerCase()}.webp`;
-    const imageFileCid = await findFileCidToUnpin(groupId, imageFileName);
+    const imageFileCid = await findFileCidToUnpin(groupId, TOKEN_IMAGE_FILE_NAME);
     if (imageFileCid) {
         filesToUnpin.push({
             cid: imageFileCid,
-            name: imageFileName,
+            name: TOKEN_IMAGE_FILE_NAME,
         });
     } else {
-        logger.warn("Mint image file not found: %s", formatFileName(imageFileName));
+        logger.warn("Mint image file not found: %s", formatFileName(TOKEN_IMAGE_FILE_NAME));
     }
 
     const metadataFileName = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
