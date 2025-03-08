@@ -32,7 +32,7 @@ export function createLogger(
         },
     ];
 
-    if (name && !/^(cleanup|generate|get|replay)/i.test(name) && !isDryRun()) {
+    if (name && !/^(cleanup|generate|get|grind|replay)/i.test(name) && !isDryRun()) {
         targets.push({
             target: "pino/file",
             level: "info",

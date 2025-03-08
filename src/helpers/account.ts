@@ -13,6 +13,8 @@ import {
 import { findFileNames } from "./filesystem";
 import { capitalize, formatInteger, formatPublicKey } from "./format";
 
+export const KEYPAIR_FILE_EXTENSION = ".json";
+
 export enum KeypairKind {
     Dev = "dev",
     Distributor = "distributor",
@@ -33,7 +35,12 @@ export async function importKeypairFromFile(keypairKind: KeypairKind): Promise<K
         throw new Error(`${capitalize(keypairKind)} key pair mask not defined`);
     }
 
-    const fileNames = await findFileNames(KEYPAIR_DIR, keypairMask[0], keypairMask[1]);
+    const fileNames = await findFileNames(
+        KEYPAIR_DIR,
+        keypairMask[0],
+        keypairMask[1],
+        KEYPAIR_FILE_EXTENSION
+    );
     if (fileNames.length === 0) {
         throw new Error(`${capitalize(keypairKind)} key pair file not found`);
     }

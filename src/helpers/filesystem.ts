@@ -9,11 +9,11 @@ export async function countFiles(dirPath: string, extensions: string[]): Promise
         return 0;
     }
 
-    let count = 0;
     const entries = await readdir(dirPath, {
         withFileTypes: true,
         encoding: "utf8",
     });
+    let count = 0;
 
     for (const entry of entries) {
         const fullPath = join(dirPath, entry.name);
@@ -31,7 +31,8 @@ export async function countFiles(dirPath: string, extensions: string[]): Promise
 export async function findFileNames(
     dirPath: string,
     prefix: string,
-    postfix: string
+    postfix: string,
+    extension: string
 ): Promise<string[]> {
     try {
         await access(dirPath);
@@ -46,7 +47,7 @@ export async function findFileNames(
     const matchedFileNames: string[] = [];
 
     for (const fileName of fileNames) {
-        const name = basename(fileName, ".json");
+        const name = basename(fileName, extension);
         if (name.startsWith(prefix) && name.endsWith(postfix)) {
             matchedFileNames.push(fileName);
         }

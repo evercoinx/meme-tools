@@ -13,7 +13,7 @@
 
 3. Run `yarn setenv:prod` to set the production environment.
 
-4. Run `yarn generate-keypairs` to generate _dev_ and _distributor_ keypairs.
+4. Run `yarn grind-keypairs` to grind _dev_ and _distributor_ keypairs.
 
 5. Run `yarn distribute-funds:dry-run` to estimate amount of funds from _distributor_ wallet to snipers and traders.
 
