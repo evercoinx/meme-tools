@@ -81,7 +81,7 @@ export async function getComputeBudgetInstructions(
     instructions: TransactionInstruction[],
     signers: Keypair[]
 ): Promise<TransactionInstruction[]> {
-    const computeUnitPrice = await getComputeUnitPrice(
+    const sendGetcomputeUnitPrice = getComputeUnitPrice(
         connection,
         cluster,
         heliusClient,
@@ -89,8 +89,12 @@ export async function getComputeBudgetInstructions(
         signers,
         priorityLevel
     );
+    const sendComputeUnitLimit = getComputeUnitLimit(connection, instructions, signers);
 
-    const computeUnitLimit = await getComputeUnitLimit(connection, instructions, signers);
+    const [computeUnitPrice, computeUnitLimit] = await Promise.all([
+        sendGetcomputeUnitPrice,
+        sendComputeUnitLimit,
+    ]);
 
     return [
         ComputeBudgetProgram.setComputeUnitPrice({ microLamports: computeUnitPrice }),
