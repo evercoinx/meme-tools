@@ -212,9 +212,10 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .cast("set")
                 .description("Token tags"),
             POOL_SIZE_PERCENT: Joi.number()
-                .required()
+                .optional()
                 .min(10)
                 .max(100)
+                .default(100)
                 .custom(convertToFractionalPercent)
                 .description("Pool size (in percent)"),
             POOL_LIQUIDITY_SOL: Joi.number()
@@ -223,10 +224,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(20)
                 .description("Pool liquidity (in SOL)"),
             POOL_TRADING_CYCLE_COUNT: Joi.number()
-                .required()
+                .optional()
                 .integer()
                 .min(1)
                 .max(100)
+                .default(1)
                 .description("Pool trading cycle count"),
             POOL_TRADING_PUMP_BIAS_PERCENT: Joi.number()
                 .optional()
