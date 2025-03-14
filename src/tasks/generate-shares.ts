@@ -3,6 +3,8 @@ import { formatDecimal, formatError, formatInteger } from "../helpers/format";
 import { generateRandomFloat } from "../helpers/random";
 import { logger } from "../modules";
 
+const MAX_ATTEMPTS = 500_000;
+
 (async () => {
     try {
         const {
@@ -20,7 +22,7 @@ import { logger } from "../modules";
                 },
                 attempts: {
                     type: "string",
-                    default: "100000",
+                    default: String(MAX_ATTEMPTS),
                 },
             },
         });
@@ -41,7 +43,7 @@ import { logger } from "../modules";
         const parsedDeviation = parseInt(deviation) / 100;
 
         const parsedAttempts = parseInt(attempts);
-        if (parsedAttempts > 100_000) {
+        if (parsedAttempts > MAX_ATTEMPTS) {
             throw new Error(`Too many attempts: ${formatInteger(parsedAttempts)}`);
         }
 
@@ -82,11 +84,15 @@ function generateShares(
                 return values;
             }
         }
+
+        if (i > 0 && i % 25_000 === 0) {
+            console.log(`Attempts made: ${formatInteger(i)}`);
+        }
     }
 
     throw new Error(`Failed to generate shares. Attempts: ${formatInteger(attempts)}`);
 }
 
-function sumNumbers(numbers: number[]) {
+function sumNumbers(numbers: number[]): number {
     return numbers.reduce((a, b) => a + b, 0);
 }
