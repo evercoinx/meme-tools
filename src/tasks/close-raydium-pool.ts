@@ -65,13 +65,13 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
         const sniperUnitsToSell = await findUnitsToSell(snipers, mint, KeypairKind.Sniper);
         const traderUnitsToSell = await findUnitsToSell(traders, mint, KeypairKind.Trader);
 
-        const sendRemoveRaydiumLiquidityPoolTransaction = await removeRaydiumPoolLiquidity(
+        const sendRemoveRaydiumPoolLiquidityTransaction = await removeRaydiumPoolLiquidity(
             raydium,
             raydiumCpmmPool,
             dev,
             new PublicKey(raydiumLpMint)
         );
-        await Promise.all([sendRemoveRaydiumLiquidityPoolTransaction]);
+        await Promise.all([sendRemoveRaydiumPoolLiquidityTransaction]);
 
         const devUnitsToSell = await findUnitsToSell([dev], mint, KeypairKind.Dev);
 

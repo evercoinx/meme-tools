@@ -12,6 +12,7 @@ import { getTokenAccountInfo, importKeypairFromFile, KeypairKind } from "../help
 import { fileExists } from "../helpers/filesystem";
 import { formatDecimal, formatError, formatPublicKey, formatSignature } from "../helpers/format";
 import { connectionPool, envVars, explorer, logger, storage } from "../modules";
+import { suppressLogs } from "../modules/logger";
 import { createRaydium, loadRaydiumCpmmPool, RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
 import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
 
@@ -100,7 +101,7 @@ async function lockRaydiumPoolLiquidity(
               }),
     });
 
-    const { txId: signature } = await execute({ sendAndConfirm: true });
+    const { txId: signature } = await suppressLogs(execute.bind(null, { sendAndConfirm: true }));
 
     logger.info(
         "Transaction (%s) sent to lock liquidity in pool id (%s)",

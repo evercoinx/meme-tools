@@ -52,3 +52,14 @@ export function createLogger(
         transport: { targets },
     });
 }
+
+export async function suppressLogs<T>(fn: () => Promise<T>): Promise<T> {
+    const { write } = process.stdout;
+    process.stdout.write = () => true;
+
+    try {
+        return await fn();
+    } finally {
+        process.stdout.write = write;
+    }
+}
