@@ -1,4 +1,10 @@
-import { DEV_LOCK_CPMM_AUTH, DEV_LOCK_CPMM_PROGRAM, TxVersion } from "@raydium-io/raydium-sdk-v2";
+import {
+    DEV_LOCK_CPMM_AUTH,
+    DEV_LOCK_CPMM_PROGRAM,
+    LOCK_CPMM_AUTH,
+    LOCK_CPMM_PROGRAM,
+    TxVersion,
+} from "@raydium-io/raydium-sdk-v2";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
@@ -80,21 +86,21 @@ async function lockRaydiumPoolLiquidity(
 
     const { execute } = await raydium.cpmm.lockLp<TxVersion.LEGACY>({
         poolInfo,
+        poolKeys,
         lpAmount: new BN(lpMintTokenBalance.toFixed(0)),
         withMetadata: true,
         ...(raydium.cluster === "devnet"
             ? {
-                  poolKeys,
                   programId: DEV_LOCK_CPMM_PROGRAM,
                   authProgram: DEV_LOCK_CPMM_AUTH,
               }
-            : {}),
+            : {
+                  programId: LOCK_CPMM_PROGRAM,
+                  authProgram: LOCK_CPMM_AUTH,
+              }),
     });
 
-    const { txId: signature } = await execute({
-        sendAndConfirm: true,
-        skipPreflight: true,
-    });
+    const { txId: signature } = await execute({ sendAndConfirm: true });
 
     logger.info(
         "Transaction (%s) sent to lock liquidity in pool id (%s)",

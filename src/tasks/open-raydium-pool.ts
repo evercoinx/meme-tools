@@ -4,7 +4,8 @@ import {
     CpmmKeys,
     CREATE_CPMM_POOL_FEE_ACC,
     CREATE_CPMM_POOL_PROGRAM,
-    DEVNET_PROGRAM_ID,
+    DEV_CREATE_CPMM_POOL_FEE_ACC,
+    DEV_CREATE_CPMM_POOL_PROGRAM,
     getCpmmPdaAmmConfigId,
     Raydium,
     TxVersion,
@@ -156,17 +157,12 @@ async function createPool(
 
     const feeConfig = feeConfigs[0];
     if (raydium.cluster === "devnet") {
-        const id = getCpmmPdaAmmConfigId(
-            DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
-            feeConfig.index
-        );
+        const id = getCpmmPdaAmmConfigId(DEV_CREATE_CPMM_POOL_PROGRAM, feeConfig.index);
         feeConfig.id = id.publicKey.toBase58();
     }
 
     const programId =
-        raydium.cluster === "devnet"
-            ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM
-            : CREATE_CPMM_POOL_PROGRAM;
+        raydium.cluster === "devnet" ? DEV_CREATE_CPMM_POOL_PROGRAM : CREATE_CPMM_POOL_PROGRAM;
 
     const mintA = {
         address: NATIVE_MINT.toBase58(),
@@ -208,9 +204,7 @@ async function createPool(
     } = await raydium.cpmm.createPool<TxVersion.LEGACY>({
         programId,
         poolFeeAccount:
-            raydium.cluster === "devnet"
-                ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC
-                : CREATE_CPMM_POOL_FEE_ACC,
+            raydium.cluster === "devnet" ? DEV_CREATE_CPMM_POOL_FEE_ACC : CREATE_CPMM_POOL_FEE_ACC,
         mintA,
         mintB,
         mintAAmount,

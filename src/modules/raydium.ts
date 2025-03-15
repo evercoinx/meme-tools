@@ -83,23 +83,24 @@ export async function loadRaydiumCpmmPool(
     poolId: PublicKey
 ): Promise<RaydiumCpmmPool> {
     let poolInfo: ApiV3PoolInfoStandardItemCpmm;
-    let poolKeys: CpmmKeys | undefined;
+    let poolKeys: CpmmKeys;
     let rpcData: CpmmRpcData;
     let programId: string;
 
+    const poolIdKey = poolId.toBase58();
     if (raydium.cluster === "devnet") {
-        const data = await raydium.cpmm.getPoolInfoFromRpc(poolId.toBase58());
-        poolInfo = data.poolInfo;
-        poolKeys = data.poolKeys;
-        rpcData = data.rpcData;
+        ({ poolInfo, poolKeys, rpcData } = await raydium.cpmm.getPoolInfoFromRpc(poolIdKey));
         programId = DEV_CREATE_CPMM_POOL_PROGRAM.toBase58();
     } else {
         const results = await Promise.all([
-            raydium.api.fetchPoolById({ ids: poolId.toBase58() }),
-            raydium.cpmm.getRpcPoolInfo(poolId.toBase58(), true),
+            raydium.api.fetchPoolById({ ids: poolIdKey }),
+            raydium.cpmm.getCpmmPoolKeys(poolIdKey),
+            raydium.cpmm.getRpcPoolInfo(poolIdKey, true),
         ]);
+
         poolInfo = results[0][0] as ApiV3PoolInfoStandardItemCpmm;
-        rpcData = results[1];
+        poolKeys = results[1];
+        rpcData = results[2];
         programId = CREATE_CPMM_POOL_PROGRAM.toBase58();
     }
 
