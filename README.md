@@ -37,11 +37,13 @@
 
 6. Run `yarn get-accounts:main` to get addresses of _dev_ and _distributor_ keypairs.
 
-7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` from the _main_ wallet to the _dev_ wallet.
+7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` to the _dev_ wallet.
 
-8. Run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders. Then transfer `estimated SOL + 0.01 SOL (gas fees)` from the _main_ wallet to the _distributor_ wallet.
+8. Run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders. Then transfer `estimated SOL + 0.01 SOL (gas fees)` to the _distributor_ wallet.
 
 9. Run `yarn distribute-funds` to distribute funds from the _distributor_ wallet to the snipers and traders.
+
+10. Run `yarn get-funds:main` to get funds of the _dev_ and _distributor_ keypairs.
 
 # Token Launch Plan
 
@@ -76,7 +78,7 @@
 
 2. If `$TRADER_COUNT` is adjusted up, run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders.
 
-3. If `$TRADER_COUNT` is adjusted up, transfer `estimated SOL + 0.01 SOL (gas fees)` from the _main_ wallet to the _distributor_ wallet.
+3. If `$TRADER_COUNT` is adjusted up, transfer `estimated SOL + 0.01 SOL (gas fees)` to the _distributor_ wallet.
 
 4. Run `yarn distribute-funds` to distribute funds from the _distributor_ wallet to the snipers and traders.
 

@@ -1,3 +1,4 @@
+import { parseArgs } from "node:util";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -21,17 +22,45 @@ import { connectionPool, envVars, logger, storage, UNITS_PER_MINT } from "../mod
 import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
 
+enum Mode {
+    ALL = "all",
+    MAIN = "main",
+    SWAPPER = "swapper",
+}
+
 (async () => {
     try {
-        await fileExists(storage.cacheDirPath);
+        const {
+            values: { mode },
+        } = parseArgs({
+            options: {
+                mode: {
+                    type: "string",
+                    default: Mode.ALL,
+                },
+            },
+        });
 
-        const dev = await importKeypairFromFile(KeypairKind.Dev);
-        const distributor = await importKeypairFromFile(KeypairKind.Distributor);
-        const snipers = importSwapperKeypairs(KeypairKind.Sniper);
-        const traders = importSwapperKeypairs(KeypairKind.Trader);
+        if (![Mode.ALL, Mode.MAIN, Mode.SWAPPER].includes(mode as Mode)) {
+            throw new Error(`Invalid mode: ${mode}`);
+        }
+
         const mint = importMintKeypair();
 
-        await getFunds(dev, distributor, snipers, traders, mint);
+        if ([Mode.ALL, Mode.MAIN].includes(mode as Mode)) {
+            const dev = await importKeypairFromFile(KeypairKind.Dev);
+            const distributor = await importKeypairFromFile(KeypairKind.Distributor);
+            await getMainFunds(dev, distributor, mint);
+        }
+
+        if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
+            await fileExists(storage.cacheDirPath);
+
+            const snipers = importSwapperKeypairs(KeypairKind.Sniper);
+            const traders = importSwapperKeypairs(KeypairKind.Trader);
+            await getSwapperFunds(snipers, traders, mint);
+        }
+
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -39,17 +68,9 @@ import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
     }
 })();
 
-async function getFunds(
-    dev: Keypair,
-    distributor: Keypair,
-    snipers: Keypair[],
-    traders: Keypair[],
-    mint?: Keypair
-): Promise<void> {
-    for (const [i, account] of [dev, distributor, ...snipers, ...traders].entries()) {
+async function getMainFunds(dev: Keypair, distributor: Keypair, mint?: Keypair): Promise<void> {
+    for (const [i, account] of [dev, distributor].entries()) {
         const isDev = i === 0;
-        const isDistributor = i === 1;
-        const isSniper = i >= 2 && i < 2 + snipers.length;
 
         const solBalance = await getSolBalance(connectionPool, account);
 
@@ -105,15 +126,44 @@ async function getFunds(
                 envVars.TOKEN_SYMBOL
             );
         } else {
-            logger.info(
-                "%s funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n",
-                isDistributor
-                    ? "Distributor"
-                    : isSniper
-                      ? `Sniper #${i - 2}`
-                      : `Trader #${i - 2 - snipers.length}`,
-                ...logParams
+            logger.info("Distributor funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n", ...logParams);
+        }
+    }
+}
+
+async function getSwapperFunds(
+    snipers: Keypair[],
+    traders: Keypair[],
+    mint?: Keypair
+): Promise<void> {
+    for (const [i, account] of [...snipers, ...traders].entries()) {
+        const isSniper = i < snipers.length;
+
+        const solBalance = await getSolBalance(connectionPool, account);
+
+        let mintTokenAccount: PublicKey | undefined;
+        let mintTokenBalance: Decimal | undefined;
+        if (mint) {
+            [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+                connectionPool,
+                account,
+                mint.publicKey,
+                TOKEN_2022_PROGRAM_ID
             );
         }
+
+        logger.info(
+            "%s funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n",
+            isSniper ? `Sniper #${i}` : `Trader #${i - snipers.length}`,
+            formatPublicKey(account.publicKey, "long"),
+            formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
+            mintTokenAccount
+                ? formatPublicKey(mintTokenAccount, "long")
+                : OUTPUT_UNKNOWN_PUBLIC_KEY,
+            mintTokenBalance
+                ? formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS)
+                : OUTPUT_UNKNOWN_VALUE,
+            envVars.TOKEN_SYMBOL
+        );
     }
 }
