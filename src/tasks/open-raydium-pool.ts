@@ -26,7 +26,6 @@ import { fileExists } from "../helpers/filesystem";
 import { formatDecimal, formatError, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
-    getWrapSolInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
 import {
@@ -72,8 +71,6 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
                 )
         );
 
-        const sendWrapSolTransaction = await wrapSol(dev);
-
         const raydium = await createRaydium(connectionPool.current(), dev);
         const [sendCreatePoolTransaction, raydiumCpmmPool] = await createPool(raydium, dev, mint);
 
@@ -92,11 +89,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
             }
         );
 
-        await Promise.all([
-            sendWrapSolTransaction,
-            sendCreatePoolTransaction,
-            ...sendSwapSolToMintTransactions,
-        ]);
+        await Promise.all([sendCreatePoolTransaction, ...sendSwapSolToMintTransactions]);
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -131,36 +124,6 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
     }
 
     return snipersToBuy;
-}
-
-async function wrapSol(dev: Keypair): Promise<Promise<TransactionSignature | undefined>> {
-    const connection = connectionPool.current();
-    const heliusClient = heliusClientPool.current();
-
-    const instructions = await getWrapSolInstructions(
-        connection,
-        dev,
-        dev,
-        new Decimal(envVars.POOL_LIQUIDITY_SOL).mul(LAMPORTS_PER_SOL)
-    );
-
-    const computeBudgetInstructions = await getComputeBudgetInstructions(
-        connection,
-        envVars.RPC_CLUSTER,
-        heliusClient,
-        PriorityLevel.DEFAULT,
-        instructions,
-        [dev]
-    );
-
-    const sendTransaction = sendAndConfirmVersionedTransaction(
-        connection,
-        [...computeBudgetInstructions, ...instructions],
-        [dev],
-        `to wrap SOL for (${formatPublicKey(dev.publicKey)})`
-    );
-
-    return sendTransaction;
 }
 
 async function createPool(
@@ -240,9 +203,9 @@ async function createPool(
         mintBAmount,
         startTime: ZERO_BN,
         feeConfig,
-        associatedOnly: true,
+        associatedOnly: false,
         ownerInfo: {
-            useSOLBalance: false,
+            useSOLBalance: true,
         },
     });
 

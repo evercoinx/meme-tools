@@ -37,7 +37,7 @@
 
 6. Run `yarn get-accounts:main` to get addresses of _dev_ and _distributor_ wallets.
 
-7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 1 SOL (wrapped SOL) + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` to the _dev_ wallet.
+7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` to the _dev_ wallet.
 
 8. Run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders.
 
