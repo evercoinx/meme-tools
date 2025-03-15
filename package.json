@@ -13,7 +13,7 @@
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
         "test": "yarn setenv:test && yarn get-config && yarn start && yarn add-raydium-pool-liquidity && yarn trade-raydium-pool && yarn finish && yarn setenv:dev",
-        "start": "yarn cleanup && yarn distribute-funds && yarn create-mint && yarn open-raydium-pool && yarn burn-raydium-pool-liquidity:view",
+        "start": "yarn cleanup && yarn distribute-funds && yarn create-mint && yarn open-raydium-pool && yarn lock-raydium-pool-liquidity:view",
         "start:prod": "yarn distribute-funds && yarn create-mint && yarn open-raydium-pool && yarn burn-raydium-pool-liquidity:view",
         "finish": "yarn close-raydium-pool && yarn collect-funds:view",
         "cleanup": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/cleanup.ts",
