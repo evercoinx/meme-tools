@@ -33,6 +33,9 @@ enum Mode {
         if (![Mode.ALL, Mode.MAIN, Mode.SWAPPER].includes(mode as Mode)) {
             throw new Error(`Invalid mode: ${mode}`);
         }
+        if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
+            await fileExists(storage.cacheFilePath);
+        }
 
         if ([Mode.ALL, Mode.MAIN].includes(mode as Mode)) {
             const dev = await importKeypairFromFile(KeypairKind.Dev);
@@ -42,8 +45,6 @@ enum Mode {
         }
 
         if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
-            await fileExists(storage.cacheFilePath);
-
             const snipers = importSwapperKeypairs(KeypairKind.Sniper);
             const traders = importSwapperKeypairs(KeypairKind.Trader);
             getSwapperAccounts(snipers, traders);
