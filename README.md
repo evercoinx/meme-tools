@@ -35,15 +35,19 @@
 
 5. Run `yarn grind-keypairs` to grind the _dev_ and _distributor_ keypairs.
 
-6. Run `yarn get-accounts:main` to get addresses of _dev_ and _distributor_ keypairs.
+6. Run `yarn get-accounts:main` to get addresses of _dev_ and _distributor_ wallets.
 
-7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` to the _dev_ wallet.
+7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 1 SOL (wrapped SOL) + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` to the _dev_ wallet.
 
-8. Run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders. Then transfer `estimated SOL + 0.01 SOL (gas fees)` to the _distributor_ wallet.
+8. Run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders.
 
-9. Run `yarn distribute-funds` to distribute funds from the _distributor_ wallet to the snipers and traders.
+9. Transfer `estimated SOL + 0.02 SOL (gas fees)` to the _distributor_ wallet.
 
-10. Run `yarn get-funds:main` to get funds of the _dev_ and _distributor_ keypairs.
+10. Run `yarn get-funds:main` to get funds of the _distributor_ wallet.
+
+11. Run `yarn distribute-funds` to distribute funds from the _distributor_ wallet to the ones of snipers and traders.
+
+12. Run `yarn get-funds` to get funds of all the wallets.
 
 # Token Launch Plan
 
@@ -63,11 +67,17 @@
 
 4. Run `mv -iv ~/.config/solana/production/token ~/.config/solana/prodcution/$TOKEN_SYMBOL`.
 
-5. Run `yarn start:prod` to create the token, to open a Raydium CPMM pool and to lock liqudity for it.
+5. Rename the `storages/production/token.json` file to `storages/production/$TOKEN_SYMBOL`.
 
-6. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on that pool.
+6. Run `yarn get-funds:main` to get funds of the _dev_ and _distributor_ wallets.
 
-7. Check token trending on [Dexscreener](https://dexscreener.com/?rankBy=trendingScoreM5&order=desc) and [Dextools](https://www.dextools.io/app/en/solana/pairs).
+7. Run `yarn create-mint:view && yarn get-funds:main` to create the token.
+
+8. Run `yarn open-raydium-pool && yarn lock-raydium-pool-liquidity` to open a Raydium CPMM pool and to lock liquidity in it.
+
+9. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
+
+10. Check how the token trends on [Dexscreener](https://dexscreener.com/?rankBy=trendingScoreM5&order=desc) and [Dextools](https://www.dextools.io/app/en/solana/pairs).
 
 # Token Post Launch Plan
 
@@ -83,3 +93,7 @@
 4. Run `yarn distribute-funds` to distribute funds from the _distributor_ wallet to the snipers and traders.
 
 5. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on that pool.
+
+# Token Exit Plan
+
+1. Run `yarn close-raydium-pool && yarn collect-funds:view` to close the Raydium pool and to collect all funds from the snipers and traders.

@@ -204,7 +204,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                     Joi.string()
                         .required()
                         .trim()
-                        .allow("ai", "celebrity", "gaming", "meme", "sports")
+                        .allow("ai", "celebrity", "gaming", "meme", "sports", "token")
                 )
                 .min(1)
                 .max(3)

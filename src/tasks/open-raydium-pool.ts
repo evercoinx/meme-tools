@@ -72,9 +72,11 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
                 )
         );
 
-        const raydium = await createRaydium(connectionPool.current(), dev);
+        const sendWrapSolTransaction = await wrapSol(dev);
 
+        const raydium = await createRaydium(connectionPool.current(), dev);
         const [sendCreatePoolTransaction, raydiumCpmmPool] = await createPool(raydium, dev, mint);
+
         const sendSwapSolToMintTransactions = await swapSolToMint(
             connectionPool,
             heliusClientPool,
@@ -90,7 +92,11 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
             }
         );
 
-        await Promise.all([sendCreatePoolTransaction, ...sendSwapSolToMintTransactions]);
+        await Promise.all([
+            sendWrapSolTransaction,
+            sendCreatePoolTransaction,
+            ...sendSwapSolToMintTransactions,
+        ]);
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -125,6 +131,36 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
     }
 
     return snipersToBuy;
+}
+
+async function wrapSol(dev: Keypair): Promise<Promise<TransactionSignature | undefined>> {
+    const connection = connectionPool.current();
+    const heliusClient = heliusClientPool.current();
+
+    const instructions = await getWrapSolInstructions(
+        connection,
+        dev,
+        dev,
+        new Decimal(envVars.POOL_LIQUIDITY_SOL).mul(LAMPORTS_PER_SOL)
+    );
+
+    const computeBudgetInstructions = await getComputeBudgetInstructions(
+        connection,
+        envVars.RPC_CLUSTER,
+        heliusClient,
+        PriorityLevel.DEFAULT,
+        instructions,
+        [dev]
+    );
+
+    const sendTransaction = sendAndConfirmVersionedTransaction(
+        connection,
+        [...computeBudgetInstructions, ...instructions],
+        [dev],
+        `to wrap SOL for (${formatPublicKey(dev.publicKey)})`
+    );
+
+    return sendTransaction;
 }
 
 async function createPool(
@@ -189,15 +225,8 @@ async function createPool(
             .toFixed(0)
     );
 
-    const wrapSolInstructions = await getWrapSolInstructions(
-        connection,
-        dev,
-        dev,
-        new Decimal(envVars.POOL_LIQUIDITY_SOL).mul(LAMPORTS_PER_SOL)
-    );
-
     const {
-        transaction: { instructions: createPoolInstructions },
+        transaction: { instructions },
         extInfo: {
             address: { poolId, lpMint, authority, vaultA, vaultB },
         },
@@ -217,7 +246,6 @@ async function createPool(
         },
     });
 
-    const instructions = [...wrapSolInstructions, ...createPoolInstructions];
     const computeBudgetInstructions = await getComputeBudgetInstructions(
         connection,
         envVars.RPC_CLUSTER,
