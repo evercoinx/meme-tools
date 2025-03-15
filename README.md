@@ -2,9 +2,15 @@
 
 # Token Pre Launch Plan
 
-1. Run `yarn generate-shares` to generate pool shares for the snipers.
+1. Run `yarn setenv:prod` to set the _production_ environment.
 
-2. Set the environment variables below in the _.env.production_ file:
+2. Temporarily, set this environment variable in the _.env.production_ file like:
+
+    - `TOKEN_SYMBOL=TOKEN`
+
+3. If needed, run `yarn generate-shares` to generate pool shares for the snipers.
+
+4. Set these environment variables in the _.env.production_ file:
 
     - `LOG_LEVEL`
     - `PINATA_JWT`
@@ -27,13 +33,25 @@
     - `TRADER_SELL_AMOUNT_RANGE_PERCENT`
     - `TRADER_SWAP_DELAY_RANGE_SEC`
 
+5. Run `yarn grind-keypairs` to grind the _dev_ and _distributor_ keypairs.
+
+6. Run `yarn get-accounts:main` to get addresses of _dev_ and _distributor_ keypairs.
+
+7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` from the _main_ wallet to the _dev_ wallet.
+
+8. Run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders. Then transfer `estimated SOL + 0.01 SOL (gas fees)` from the _main_ wallet to the _distributor_ wallet.
+
+9. Run `yarn distribute-funds` to distribute funds from the _distributor_ wallet to the snipers and traders.
+
 # Token Launch Plan
 
-1. Create a meme image, convert it to the webp format, and save it under the _{token}.wepb_ name in the _images/production_ folder.
+1. Run `yarn setenv:prod` to set the _production_ environment.
 
-2. Set the environment variables below in the _.env.production_ file:
+2. Create a meme image, convert it to the webp format, and save it under the _{token}.wepb_ name in the _images/production_ folder.
 
-    - `TOKEN_SYMBOL`
+3. Set these environment variables in the _.env.production_ file:
+
+    - `TOKEN_SYMBOL` (Replace the _TOKEN_ name with the actual one)
     - `TOKEN_NAME` (Defaults to _"Official $TOKEN_NAME $TOKEN_TAGS0"_)
     - `TOKEN_DESCRIPTION` (Defaults to _"$TOKEN_NAME" on Solana"_)
     - `TOKEN_WEBSITE_URI` (Defaults to _""_)
@@ -41,25 +59,17 @@
     - `TOKEN_TELEGRAM_URI` (Defaults to _""_)
     - `TOKEN_TAGS` (Defaults to _"meme"_)
 
-3. Run `yarn setenv:prod` to set the _production_ environment.
+4. Run `mv -iv ~/.config/solana/production/token ~/.config/solana/prodcution/$TOKEN_SYMBOL`.
 
-4. Run `yarn get-config` to check the current environment configuration.
+5. Run `yarn start:prod` to create the token, to open a Raydium CPMM pool and to lock liqudity for it.
 
-5. Run `yarn grind-keypairs` to grind the _dev_ and _distributor_ keypairs.
+6. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on that pool.
 
-6. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` from the _main_ wallet to the _dev_ wallet.
-
-7. Run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders. Then transfer `estimated SOL + 0.01 SOL (gas fees)` from the _main_ wallet to the _distributor_ wallet.
-
-8. Run `yarn start:prod` to distribute funds from the _distributor_ wallet to the snipers and traders, to create the token, to open a Raydium CPMM pool and to burn liqudity in it.
-
-9. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on that pool.
-
-10. Check token trending on [Dexscreener](https://dexscreener.com/?rankBy=trendingScoreM5&order=desc) and [Dextools](https://www.dextools.io/app/en/solana/pairs).
+7. Check token trending on [Dexscreener](https://dexscreener.com/?rankBy=trendingScoreM5&order=desc) and [Dextools](https://www.dextools.io/app/en/solana/pairs).
 
 # Token Post Launch Plan
 
-1. Adjust environment variables below in the _.env.production_ file.
+1. Adjust these environment variables in the _.env.production_ file.
 
     - `TRADER_COUNT`
     - `POOL_TRADING_PUMP_BIAS_PERCENT`

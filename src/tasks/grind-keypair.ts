@@ -8,6 +8,7 @@ import { formatError, formatFileName, formatInteger } from "../helpers/format";
 import { KEYPAIR_DIR, logger } from "../modules";
 
 const BASE58_CHARACTER_SET = /^[1-9A-HJ-NP-Za-km-z]+$/;
+const MAX_ATTEMPTS = 500_000;
 
 (async () => {
     try {
@@ -25,7 +26,7 @@ const BASE58_CHARACTER_SET = /^[1-9A-HJ-NP-Za-km-z]+$/;
                 },
                 attempts: {
                     type: "string",
-                    default: "200000",
+                    default: String(MAX_ATTEMPTS),
                 },
             },
         });
@@ -39,7 +40,7 @@ const BASE58_CHARACTER_SET = /^[1-9A-HJ-NP-Za-km-z]+$/;
         }
 
         const parsedAttempts = parseInt(attempts);
-        if (parsedAttempts > 500_000) {
+        if (parsedAttempts > MAX_ATTEMPTS) {
             throw new Error(`Too many attempts: ${formatInteger(parsedAttempts)}`);
         }
 
@@ -58,20 +59,15 @@ async function grindKeypair(
     extension: string,
     attempts: number
 ) {
-    const keypairDir = await mkdir(KEYPAIR_DIR, {
+    const keypairDirName = await mkdir(dirPath, {
         mode: 0o700,
         recursive: true,
     });
-    if (keypairDir) {
-        logger.warn("Key pair directory created: %s", formatFileName(keypairDir));
+    if (keypairDirName) {
+        logger.warn("Key pair directory created: %s", formatFileName(keypairDirName));
     }
 
-    const keypairFileNames = await findFileNames(
-        KEYPAIR_DIR,
-        prefix,
-        postfix,
-        KEYPAIR_FILE_EXTENSION
-    );
+    const keypairFileNames = await findFileNames(dirPath, prefix, postfix, KEYPAIR_FILE_EXTENSION);
     if (keypairFileNames.length >= 1) {
         logger.warn("Keypair already ground: %s", formatFileName(keypairFileNames[0]));
         return;
@@ -85,6 +81,9 @@ async function grindKeypair(
             (prefix && !publicKey.startsWith(prefix)) ||
             (postfix && !publicKey.endsWith(postfix))
         ) {
+            if (i > 0 && i % 25_000 === 0) {
+                console.log(`Attempts made: ${formatInteger(i)}`);
+            }
             continue;
         }
 

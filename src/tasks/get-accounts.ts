@@ -1,3 +1,4 @@
+import { parseArgs } from "node:util";
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 import {
@@ -10,17 +11,44 @@ import { fileExists } from "../helpers/filesystem";
 import { formatError, formatPublicKey, OUTPUT_UNKNOWN_PUBLIC_KEY } from "../helpers/format";
 import { logger, storage } from "../modules";
 
+enum Mode {
+    ALL = "all",
+    MAIN = "main",
+    SWAPPER = "swapper",
+}
+
 (async () => {
     try {
-        await fileExists(storage.cacheFilePath);
+        const {
+            values: { mode },
+        } = parseArgs({
+            options: {
+                mode: {
+                    type: "string",
+                    default: Mode.ALL,
+                },
+            },
+        });
 
-        const dev = await importKeypairFromFile(KeypairKind.Dev);
-        const distributor = await importKeypairFromFile(KeypairKind.Distributor);
-        const snipers = importSwapperKeypairs(KeypairKind.Sniper);
-        const traders = importSwapperKeypairs(KeypairKind.Trader);
-        const mint = importMintKeypair();
+        if (![Mode.ALL, Mode.MAIN, Mode.SWAPPER].includes(mode as Mode)) {
+            throw new Error(`Invalid mode: ${mode}`);
+        }
 
-        getAccounts(dev, distributor, snipers, traders, mint);
+        if ([Mode.ALL, Mode.MAIN].includes(mode as Mode)) {
+            const dev = await importKeypairFromFile(KeypairKind.Dev);
+            const distributor = await importKeypairFromFile(KeypairKind.Distributor);
+            const mint = importMintKeypair();
+            getMainAccounts(dev, distributor, mint);
+        }
+
+        if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
+            await fileExists(storage.cacheFilePath);
+
+            const snipers = importSwapperKeypairs(KeypairKind.Sniper);
+            const traders = importSwapperKeypairs(KeypairKind.Trader);
+            getSwapperAccounts(snipers, traders);
+        }
+
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -28,13 +56,7 @@ import { logger, storage } from "../modules";
     }
 })();
 
-function getAccounts(
-    dev: Keypair,
-    distributor: Keypair,
-    snipers: Keypair[],
-    traders: Keypair[],
-    mint?: Keypair
-): void {
+function getMainAccounts(dev: Keypair, distributor: Keypair, mint?: Keypair): void {
     logger.info(
         "Dev keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         formatPublicKey(dev.publicKey, "long"),
@@ -52,7 +74,9 @@ function getAccounts(
         mint ? formatPublicKey(mint.publicKey, "long") : OUTPUT_UNKNOWN_PUBLIC_KEY,
         mint ? bs58.encode(mint.secretKey) : OUTPUT_UNKNOWN_PUBLIC_KEY
     );
+}
 
+function getSwapperAccounts(snipers: Keypair[], traders: Keypair[]): void {
     for (const [i, sniper] of snipers.entries()) {
         logger.info(
             "Sniper #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
