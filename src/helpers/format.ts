@@ -129,5 +129,9 @@ export function formatText(text: string, highlighted = false): string {
 }
 
 export function formatUri(uri: string): string {
-    return chalk.blue(uri);
+    return chalk.blue(generateLink(uri, uri));
+}
+
+export function generateLink(href: string, tag: string): string {
+    return `\x1b]8;;${href}\x1b\\${tag}\x1b]8;;\x1b\\`;
 }

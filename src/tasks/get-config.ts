@@ -22,27 +22,31 @@ import { envVars, logger } from "../modules";
 
 function getConfig(): void {
     logger.info(
-        "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s\n\t\tExplorer URI: %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken supply: %s\n\t\tToken tags: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\t\tPool trading pump bias: %s\n\n\t\tSniper shares in pool: %s\n\t\tSniper balance: %s SOL\n\n\t\tTrader count: %s\n\t\tTrader group size: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\t\tTrader swap delay: %s sec",
+        "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s (Total: %s)\n\t\tExplorer URI: %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken decimals: %s\n\t\tToken supply: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\t\tToken Telegram URI: %s\n\t\tToken tags: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\t\tPool trading pump bias: %s\n\n\t\tSniper shares in pool: %s (Total: %s)\n\t\tSniper balance: %s SOL\n\n\t\tTrader count: %s\n\t\tTrader group size: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\t\tTrader swap delay: %s sec",
         formatText(envVars.NODE_ENV, true),
         formatUri(envVars.IPFS_GATEWAY_URI),
         Array.from(envVars.RPC_URIS)
             .map((rpcUri) => formatUri(new URL(rpcUri).origin))
             .join(" "),
+        formatInteger(envVars.RPC_URIS.size),
         formatUri(envVars.EXPLORER_URI),
         formatText(envVars.TOKEN_SYMBOL),
         formatText(envVars.TOKEN_NAME),
         formatText(envVars.TOKEN_DESCRIPTION),
+        formatInteger(envVars.TOKEN_DECIMALS),
         formatInteger(envVars.TOKEN_SUPPLY),
+        envVars.TOKEN_WEBSITE_URI ? formatUri(envVars.TOKEN_WEBSITE_URI) : OUTPUT_UNKNOWN_VALUE,
+        envVars.TOKEN_TWITTER_URI ? formatUri(envVars.TOKEN_TWITTER_URI) : OUTPUT_UNKNOWN_VALUE,
+        envVars.TOKEN_TELEGRAM_URI ? formatUri(envVars.TOKEN_TELEGRAM_URI) : OUTPUT_UNKNOWN_VALUE,
         Array.from(envVars.TOKEN_TAGS)
             .map((tag) => formatText(tag))
             .join(" "),
-        envVars.TOKEN_WEBSITE_URI ? formatUri(envVars.TOKEN_WEBSITE_URI) : OUTPUT_UNKNOWN_VALUE,
-        envVars.TOKEN_TWITTER_URI ? formatUri(envVars.TOKEN_TWITTER_URI) : OUTPUT_UNKNOWN_VALUE,
         formatPercent(envVars.POOL_SIZE_PERCENT),
         formatDecimal(envVars.POOL_LIQUIDITY_SOL),
         formatInteger(envVars.POOL_TRADING_CYCLE_COUNT),
         formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT),
         envVars.SNIPER_POOL_SHARE_PERCENTS.map((poolShare) => formatPercent(poolShare)).join(" "),
+        formatInteger(envVars.SNIPER_POOL_SHARE_PERCENTS.length),
         formatDecimal(envVars.SNIPER_BALANCE_SOL),
         formatInteger(envVars.TRADER_COUNT),
         formatInteger(envVars.TRADER_GROUP_SIZE),
