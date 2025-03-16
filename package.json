@@ -58,9 +58,10 @@
         "get-raydium-pool": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-raydium-pool.ts",
         "generate-encryption-secret": "hexdump -vn16 -e'4/4 \"%08x\" 1 \"\n\"' /dev/urandom",
         "generate-shares": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/generate-shares.ts --count 42 --sum 50 --deviation 31",
-        "grind-keypairs": "yarn grind-keypair:dev && yarn grind-keypair:dis",
+        "grind-keypairs": "yarn grind-keypair:dev && yarn grind-keypair:dsn && yarn grind-keypair:dtr",
         "grind-keypair:dev": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/grind-keypair.ts --prefix De --postfix V",
-        "grind-keypair:dis": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/grind-keypair.ts --prefix Di --postfix S",
+        "grind-keypair:dsn": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/grind-keypair.ts --prefix Ds --postfix N",
+        "grind-keypair:dtr": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/grind-keypair.ts --prefix Dt --postfix R",
         "rename-token-files": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/rename-token-files.ts"
     },
     "keywords": [],

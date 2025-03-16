@@ -8,7 +8,12 @@ import {
     KeypairKind,
 } from "../helpers/account";
 import { checkFileExists } from "../helpers/filesystem";
-import { formatError, formatPublicKey, OUTPUT_UNKNOWN_PUBLIC_KEY } from "../helpers/format";
+import {
+    formatError,
+    formatPublicKey,
+    formatText,
+    OUTPUT_UNKNOWN_PUBLIC_KEY,
+} from "../helpers/format";
 import { logger, storage } from "../modules";
 
 enum Mode {
@@ -39,9 +44,10 @@ enum Mode {
 
         if ([Mode.ALL, Mode.MAIN].includes(mode as Mode)) {
             const dev = await importKeypairFromFile(KeypairKind.Dev);
-            const distributor = await importKeypairFromFile(KeypairKind.Distributor);
+            const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
+            const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
             const mint = importMintKeypair();
-            getMainAccounts(dev, distributor, mint);
+            getMainAccounts(dev, sniperDistributor, traderDistributor, mint);
         }
 
         if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
@@ -57,7 +63,12 @@ enum Mode {
     }
 })();
 
-function getMainAccounts(dev: Keypair, distributor: Keypair, mint?: Keypair): void {
+function getMainAccounts(
+    dev: Keypair,
+    sniperDistributor: Keypair,
+    traderDistributor: Keypair,
+    mint?: Keypair
+): void {
     logger.info(
         "Dev keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         formatPublicKey(dev.publicKey, "long"),
@@ -65,9 +76,15 @@ function getMainAccounts(dev: Keypair, distributor: Keypair, mint?: Keypair): vo
     );
 
     logger.info(
-        "Distributor keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
-        formatPublicKey(distributor.publicKey, "long"),
-        bs58.encode(distributor.secretKey)
+        "Sniper distributor keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
+        formatPublicKey(sniperDistributor.publicKey, "long"),
+        bs58.encode(sniperDistributor.secretKey)
+    );
+
+    logger.info(
+        "Trader distributor keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
+        formatPublicKey(traderDistributor.publicKey, "long"),
+        bs58.encode(traderDistributor.secretKey)
     );
 
     logger.info(
@@ -83,7 +100,7 @@ function getSwapperAccounts(snipers: Keypair[], traders: Keypair[]): void {
             "Sniper #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
             i,
             formatPublicKey(sniper.publicKey, "long"),
-            bs58.encode(sniper.secretKey)
+            formatText(bs58.encode(sniper.secretKey))
         );
     }
 
@@ -92,7 +109,7 @@ function getSwapperAccounts(snipers: Keypair[], traders: Keypair[]): void {
             "Trader #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
             i,
             formatPublicKey(trader.publicKey, "long"),
-            bs58.encode(trader.secretKey)
+            formatText(bs58.encode(trader.secretKey))
         );
     }
 }

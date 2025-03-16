@@ -40,7 +40,8 @@ import { isDryRun } from "../modules/environment";
             swapperGroupSize = 20;
         }
 
-        const distributor = await importKeypairFromFile(KeypairKind.Distributor);
+        const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
+        const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
 
         const snipers = generateOrImportSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.length,
@@ -78,7 +79,7 @@ import { isDryRun } from "../modules/environment";
 
             sendDistrubuteSniperFundsTransactions.push(
                 await distributeSwapperFunds(
-                    distributor,
+                    sniperDistributor,
                     sniperGroup,
                     sniperGroupLamports,
                     KeypairKind.Sniper,
@@ -94,7 +95,7 @@ import { isDryRun } from "../modules/environment";
 
             sendDistrubuteTraderFundsTransactions.push(
                 await distributeSwapperFunds(
-                    distributor,
+                    traderDistributor,
                     traderGroup,
                     traderGroupLamports,
                     KeypairKind.Trader,
@@ -128,20 +129,20 @@ async function distributeSwapperFunds(
     let connection = connectionPool.current();
     let heliusClient = heliusClientPool.current();
 
-    for (const [i, sniper] of accounts.entries()) {
-        const solBalance = await getSolBalance(connectionPool, sniper);
+    for (const [i, account] of accounts.entries()) {
+        const solBalance = await getSolBalance(connectionPool, account);
         if (solBalance.gt(0)) {
             logger.debug(
                 "%s (%s) has non zero balance on wallet: %s SOL",
                 capitalize(keypairKind),
-                formatPublicKey(sniper.publicKey),
+                formatPublicKey(account.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
         } else {
             instructions.push(
                 SystemProgram.transfer({
                     fromPubkey: distributor.publicKey,
-                    toPubkey: sniper.publicKey,
+                    toPubkey: account.publicKey,
                     lamports: lamports[i].toNumber(),
                 })
             );

@@ -46,7 +46,8 @@ const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
         await checkFileExists(storage.cacheFilePath);
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
-        const distributor = await importKeypairFromFile(KeypairKind.Distributor);
+        const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
+        const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
         const snipers = importSwapperKeypairs(KeypairKind.Sniper);
         const traders = importSwapperKeypairs(KeypairKind.Trader);
 
@@ -64,12 +65,12 @@ const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
 
         const sendCollectSniperFundsTransactions = await collectFunds(
             snipers,
-            distributor,
+            sniperDistributor,
             KeypairKind.Sniper
         );
         const sendCollectTraderFundsTransactions = await collectFunds(
             traders,
-            distributor,
+            traderDistributor,
             KeypairKind.Trader
         );
         await Promise.all([

@@ -17,14 +17,16 @@ export const KEYPAIR_FILE_EXTENSION = ".json";
 
 export enum KeypairKind {
     Dev = "dev",
-    Distributor = "distributor",
+    SniperDistributor = "sniperDistributor",
+    TraderDistributor = "traderDistributor",
     Sniper = "sniper",
     Trader = "trader",
 }
 
 const KEYPAIR_MASKS: Record<KeypairKind, [string, string] | null> = {
     [KeypairKind.Dev]: ["De", "V"],
-    [KeypairKind.Distributor]: ["Di", "S"],
+    [KeypairKind.SniperDistributor]: ["Ds", "N"],
+    [KeypairKind.TraderDistributor]: ["Dt", "R"],
     [KeypairKind.Sniper]: null,
     [KeypairKind.Trader]: null,
 };

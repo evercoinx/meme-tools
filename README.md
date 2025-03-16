@@ -33,17 +33,19 @@
     - `TRADER_SELL_AMOUNT_RANGE_PERCENT`
     - `TRADER_SWAP_DELAY_RANGE_SEC`
 
-5. Run `yarn grind-keypairs && yarn get-accounts:main` to grind and get addresses of the _dev_ and _distributor_ keypairs.
+5. Run `yarn grind-keypairs && yarn get-accounts:main` to grind and get addresses of the _main_ keypairs.
 
-6. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` to the _dev_ wallet.
+6. Run `yarn distribute-funds:dry-run` to estimate funds to distribute to the sniper and trader wallets.
 
-7. Run `yarn distribute-funds:dry-run` to estimate funds to distribute from the _distributor_ wallet to the ones of snipers and traders.
+7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.1 SOL (gas fees)` to the _dev_ wallet.
 
-8. Transfer `$N1 SOL (sniper funds) + $N2 SOL (trader funds) + 0.02 SOL (gas fees)` to the _distributor_ wallet.
+8. Transfer SOL amount equal to `$SNIPER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _sniperDistributor_ wallet.
 
-9. Run `yarn get-funds:main` to get funds of the _distributor_ wallet.
+9. Transfer SOL amount equal to `$TRADER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _traderDistributor_ wallet.
 
-10. Run `yarn distribute-funds && yarn get-funds` to distribute funds from the _distributor_ wallet to the ones of snipers and traders and get funds for them.
+10. Run `yarn get-funds:main` to get funds of the _main_ wallets.
+
+11. Run `yarn distribute-funds:view` to distribute funds to the sniper and trader wallets.
 
 # Token Launch Plan
 
@@ -61,9 +63,9 @@
     - `TOKEN_TELEGRAM_URI` (Defaults to _""_)
     - `TOKEN_TAGS` (Defaults to _"meme"_)
 
-4. Run `yarn rename-token-files && yarn get-funds:main` to rename token key pair and storage files and get funds of the _dev_ and _distributor_ wallets.
+4. Run `yarn rename-token-files && yarn get-funds:main` to rename token key pair and storage files.
 
-5. Run `yarn create-mint:view && yarn get-funds:main` to create the token.
+5. Run `yarn create-mint:view && yarn get-funds:main` to create the token mint.
 
 6. Run `yarn open-raydium-pool && yarn lock-raydium-pool-liquidity` to open a Raydium CPMM pool and to lock liquidity in it.
 

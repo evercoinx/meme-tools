@@ -52,8 +52,9 @@ enum Mode {
 
         if ([Mode.ALL, Mode.MAIN].includes(mode as Mode)) {
             const dev = await importKeypairFromFile(KeypairKind.Dev);
-            const distributor = await importKeypairFromFile(KeypairKind.Distributor);
-            await getMainFunds(dev, distributor, mint);
+            const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
+            const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
+            await getMainFunds(dev, sniperDistributor, traderDistributor, mint);
         }
 
         if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
@@ -69,10 +70,13 @@ enum Mode {
     }
 })();
 
-async function getMainFunds(dev: Keypair, distributor: Keypair, mint?: Keypair): Promise<void> {
-    for (const [i, account] of [dev, distributor].entries()) {
-        const isDev = i === 0;
-
+async function getMainFunds(
+    dev: Keypair,
+    sniperDistributor: Keypair,
+    traderDistributor: Keypair,
+    mint?: Keypair
+): Promise<void> {
+    for (const [i, account] of [dev, sniperDistributor, traderDistributor].entries()) {
         const solBalance = await getSolBalance(connectionPool, account);
 
         let mintTokenAccount: PublicKey | undefined;
@@ -98,7 +102,7 @@ async function getMainFunds(dev: Keypair, distributor: Keypair, mint?: Keypair):
             envVars.TOKEN_SYMBOL,
         ];
 
-        if (isDev) {
+        if (i === 0) {
             let lpMintTokenAccount: PublicKey | undefined;
             let lpMintTokenBalance: Decimal | undefined;
 
@@ -127,7 +131,11 @@ async function getMainFunds(dev: Keypair, distributor: Keypair, mint?: Keypair):
                 envVars.TOKEN_SYMBOL
             );
         } else {
-            logger.info("Distributor funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n", ...logParams);
+            logger.info(
+                "%s distributor funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n",
+                i === 1 ? "Sniper" : "Trader",
+                ...logParams
+            );
         }
     }
 }
