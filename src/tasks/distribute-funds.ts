@@ -28,6 +28,10 @@ import { generateRandomFloat } from "../helpers/random";
 import { connectionPool, envVars, heliusClientPool, logger, ZERO_DECIMAL } from "../modules";
 import { isDryRun } from "../modules/environment";
 
+const DEV_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
+const DEV_GAS_FEE_SOL = 0.1;
+const SWAPPER_GAS_FEE_SOL = 0.01;
+
 (async () => {
     try {
         let swapperGroupSize: number;
@@ -35,6 +39,17 @@ import { isDryRun } from "../modules/environment";
         const dryRun = isDryRun();
         if (dryRun) {
             logger.warn("Dry run mode enabled");
+
+            const dev = await importKeypairFromFile(KeypairKind.Dev);
+            const amount = new Decimal(envVars.POOL_LIQUIDITY_SOL)
+                .plus(DEV_POOL_CREATION_FEE_SOL)
+                .plus(DEV_GAS_FEE_SOL);
+
+            console.log(Decimal.precision);
+            logger.info(
+                `Transfer ${formatDecimal(amount)} SOL to dev (${formatPublicKey(dev.publicKey, "long")})`
+            );
+
             swapperGroupSize = Number.MAX_SAFE_INTEGER;
         } else {
             swapperGroupSize = 20;
@@ -165,8 +180,9 @@ async function distributeSwapperFunds(
     }
 
     if (dryRun) {
+        const amount = totalLamports.div(LAMPORTS_PER_SOL).plus(SWAPPER_GAS_FEE_SOL);
         logger.info(
-            `Distributing ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
+            `Transfer ${formatDecimal(amount)} SOL to ${keypairKind === KeypairKind.Sniper ? "sniper" : "trader"} distributor (${formatPublicKey(distributor.publicKey, "long")}) to distribute among ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
         );
         return Promise.resolve(undefined);
     }

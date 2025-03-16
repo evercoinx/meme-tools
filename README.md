@@ -33,15 +33,15 @@
     - `TRADER_SELL_AMOUNT_RANGE_PERCENT`
     - `TRADER_SWAP_DELAY_RANGE_SEC`
 
-5. Run `yarn grind-keypairs && yarn get-accounts:main` to grind and get addresses of the _main_ keypairs.
+5. Run `yarn grind-keypairs` to grind the _main_ keypairs.
 
-6. Run `yarn distribute-funds:dry-run` to estimate funds to distribute to the sniper and trader wallets.
+6. Run `yarn distribute-funds:dry-run` to estimate funds to transfer to the _main_ wallets.
 
-7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.1 SOL (gas fees)` to the _dev_ wallet.
+7. Transfer amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.1 SOL (gas fees)` to the _dev_ wallet.
 
-8. Transfer SOL amount equal to `$SNIPER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _sniperDistributor_ wallet.
+8. Transfer amount equal to `$SNIPER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _sniperDistributor_ wallet.
 
-9. Transfer SOL amount equal to `$TRADER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _traderDistributor_ wallet.
+9. Transfer amount equal to `$TRADER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _traderDistributor_ wallet.
 
 10. Run `yarn get-funds:main` to get funds of the _main_ wallets.
 
