@@ -39,9 +39,9 @@
 
 7. Transfer amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.1 SOL (gas fees)` to the _dev_ wallet.
 
-8. Transfer amount equal to `$SNIPER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _sniperDistributor_ wallet.
+8. Transfer amount equal to `$SNIPER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _sniper distributor_ wallet.
 
-9. Transfer amount equal to `$TRADER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _traderDistributor_ wallet.
+9. Transfer amount equal to `$TRADER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _trader distributor_ wallet.
 
 10. Run `yarn get-funds:main` to get funds of the _main_ wallets.
 
@@ -77,17 +77,17 @@
 
 1. Adjust these environment variables in the _.env.production_ file.
 
-    - `TRADER_COUNT`
     - `POOL_TRADING_PUMP_BIAS_PERCENT`
+    - `TRADER_COUNT`
 
-2. If `$TRADER_COUNT` is adjusted up, run `yarn distribute-funds:dry-run` to estimate funds to distribute from the _distributor_ wallet to the ones of traders.
+2. If `$TRADER_COUNT` is adjusted up, run `yarn distribute-funds:dry-run` to estimate funds to transfer to the _trader distributor_ wallet.
 
-3. If `$TRADER_COUNT` is adjusted up, transfer `$N SOL (trader funds) + 0.01 SOL (gas fees)` to the _distributor_ wallet.
+3. If `$TRADER_COUNT` is adjusted up, transfer `$TRADER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _trader distributor_ wallet.
 
-4. Run `yarn distribute-funds` to distribute funds from the _distributor_ wallet to the snipers and traders.
+4. Run `yarn distribute-funds` to distribute funds to the sniper and trader wallets.
 
-5. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on that pool.
+5. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
 
 # Token Exit Plan
 
-1. Run `yarn close-raydium-pool && yarn collect-funds:view` to close the Raydium pool and to collect funds from the wallets of dev, snipers and traders.
+1. Run `yarn close-raydium-pool && yarn collect-funds:view` to close the Raydium pool and to collect funds on the _main_ wallets.

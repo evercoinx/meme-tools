@@ -69,6 +69,8 @@ export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
 
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY_URI);
 
-export const randomSeed = new RandomSeed(`${envVars.NODE_ENV}:${envVars.TOKEN_SYMBOL}`);
+export const randomSeed = new RandomSeed(
+    `${envVars.NODE_ENV}:${envVars.TOKEN_SYMBOL}:${envVars.TRADER_COUNT}`
+);
 
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
