@@ -1,4 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
+import chalk from "chalk";
 import { formatUri, generateLink } from "../helpers/format";
 
 const SOLANA_COM = "explorer.solana.com";
@@ -36,26 +37,32 @@ export class Explorer {
     }
 
     public generateTransactionUri(signature: string): string {
-        return generateLink(
-            `${this.baseUri}/tx/${signature}?cluster=${this.cluster}`,
-            "<Transaction link>"
+        return chalk.blue(
+            generateLink(
+                `${this.baseUri}/tx/${signature}?cluster=${this.cluster}`,
+                "<Transaction link>"
+            )
         );
     }
 
     public generateAddressUri(address: string | PublicKey): string {
         const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
-        return generateLink(
-            `${this.baseUri}/address/${normalizedAddress}?cluster=${this.cluster}`,
-            "<Address link>"
+        return chalk.blue(
+            generateLink(
+                `${this.baseUri}/address/${normalizedAddress}?cluster=${this.cluster}`,
+                "<Address link>"
+            )
         );
     }
 
     public generateTokenUri(address: string | PublicKey): string {
         const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
         const tokenPath = this.baseUri.includes(SOLSCAN_IO) ? "token" : "address";
-        return generateLink(
-            `${this.baseUri}/${tokenPath}/${normalizedAddress}?cluster=${this.cluster}`,
-            "<Token link>"
+        return chalk.blue(
+            generateLink(
+                `${this.baseUri}/${tokenPath}/${normalizedAddress}?cluster=${this.cluster}`,
+                "<Token link>"
+            )
         );
     }
 }

@@ -155,7 +155,10 @@ async function uploadImage(groupId: string): Promise<string> {
 
     if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === TOKEN_IMAGE_FILE_NAME) {
         imageUri = generatePinataUri(pinnedFiles[0].ipfs_pin_hash);
-        logger.warn("Mint image file already uploaded to IPFS: %s", formatUri(imageUri));
+        logger.warn(
+            "Mint image file already uploaded to IPFS: %s",
+            formatUri(imageUri, "<File link>")
+        );
     } else {
         logger.debug("Uploading mint image file to IPFS");
         const imageBlob = new Blob([await readFile(join(IMAGE_DIR, TOKEN_IMAGE_FILE_NAME))]);
@@ -164,7 +167,7 @@ async function uploadImage(groupId: string): Promise<string> {
         const upload = await pinataClient.upload.file(imageFile).group(groupId);
 
         imageUri = generatePinataUri(upload.IpfsHash);
-        logger.info("Mint image file uploaded to IPFS: %s", formatUri(imageUri));
+        logger.info("Mint image file uploaded to IPFS: %s", formatUri(imageUri, "<File link>"));
     }
 
     storage.set(STORAGE_MINT_IMAGE_URI, imageUri);
@@ -199,7 +202,10 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<Offcha
 
     if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === metadataFilename) {
         metadataUri = generatePinataUri(pinnedFiles[0].ipfs_pin_hash);
-        logger.warn("Mint metadata file already uploaded to IPFS: %s", formatUri(metadataUri));
+        logger.warn(
+            "Mint metadata file already uploaded to IPFS: %s",
+            formatUri(metadataUri, "<File link>")
+        );
     } else {
         logger.debug("Uploading mint metadata file to IPFS");
         const metadataFile = new File([JSON.stringify(metadata)], metadataFilename, {
@@ -208,7 +214,10 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<Offcha
         const upload = await pinataClient.upload.file(metadataFile).group(groupId);
 
         metadataUri = generatePinataUri(upload.IpfsHash);
-        logger.info("Mint metadata file uploaded to IPFS: %s", formatUri(metadataUri));
+        logger.info(
+            "Mint metadata file uploaded to IPFS: %s",
+            formatUri(metadataUri, "<File link>")
+        );
     }
 
     metadata.uri = metadataUri;

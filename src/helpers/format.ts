@@ -132,8 +132,8 @@ export function formatText(text: string, highlighted = false): string {
     return highlighted ? chalk.bgYellow(text) : chalk.yellow(text);
 }
 
-export function formatUri(uri: string): string {
-    return chalk.blue(generateLink(uri, uri));
+export function formatUri(uri: string, tag?: string): string {
+    return chalk.blue(generateLink(uri, tag || uri));
 }
 
 export function generateLink(href: string, tag: string): string {
