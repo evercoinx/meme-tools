@@ -30,6 +30,7 @@ interface EnvironmentSchema {
     POOL_LIQUIDITY_SOL: number;
     POOL_TRADING_CYCLE_COUNT: number;
     POOL_TRADING_PUMP_BIAS_PERCENT: number;
+    POOL_TRADING_ONLY_NEW_TRADERS: boolean;
     SNIPER_POOL_SHARE_PERCENTS: number[];
     SNIPER_BALANCE_SOL: number;
     TRADER_COUNT: number;
@@ -237,6 +238,10 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .default(50)
                 .custom(convertToFractionalPercent)
                 .description("Pool trading pump bias (in percent)"),
+            POOL_TRADING_ONLY_NEW_TRADERS: Joi.boolean()
+                .optional()
+                .default(false)
+                .description("Pool trading with only new traders"),
             SNIPER_POOL_SHARE_PERCENTS: Joi.array()
                 .required()
                 .items(Joi.number().min(0.5).max(3).custom(convertToFractionalPercent))

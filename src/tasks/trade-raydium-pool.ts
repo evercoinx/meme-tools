@@ -73,8 +73,12 @@ import {
         const traderCount = storage.get<number | undefined>(STORAGE_TRADER_COUNT);
         if (traderCount && envVars.TRADER_COUNT > traderCount) {
             throw new Error(
-                `${formatInteger(envVars.TRADER_COUNT - traderCount)} traders have no funds`
+                `${formatInteger(envVars.TRADER_COUNT - traderCount)} traders have no funds distributed`
             );
+        }
+
+        if (envVars.POOL_TRADING_ONLY_NEW_TRADERS) {
+            logger.warn("Only new traders mode enabled");
         }
 
         const traders = importSwapperKeypairs(KeypairKind.Trader);
@@ -141,6 +145,7 @@ async function executeTradeCycle(
                 raydium,
                 raydiumCpmmPool,
                 traderGroup,
+                mint,
                 poolTradingCycle,
                 i + 1,
                 traders.length
@@ -167,11 +172,12 @@ async function pumpPool(
     raydium: Raydium,
     raydiumCpmmPool: RaydiumCpmmPool,
     traders: Keypair[],
+    mint: Keypair,
     poolTradingCycle: number,
     tradeNumber: number,
     totalTrades: number
 ): Promise<void> {
-    const lamportsToBuy = await findLamportsToBuy(traders);
+    const lamportsToBuy = await findLamportsToBuy(traders, mint);
     const sendSwapSolToMintTransactions = await swapSolToMint(
         connectionPool,
         heliusClientPool,
@@ -208,7 +214,7 @@ async function pumpPool(
     });
 }
 
-async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
+async function findLamportsToBuy(traders: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
     const lamportsToBuy: (BN | null)[] = [];
 
     for (const [i, trader] of traders.entries()) {
@@ -226,6 +232,27 @@ async function findLamportsToBuy(traders: Keypair[]): Promise<(BN | null)[]> {
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
             continue;
+        }
+
+        if (envVars.POOL_TRADING_ONLY_NEW_TRADERS) {
+            const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+                connectionPool,
+                trader,
+                mint.publicKey,
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            if (mintTokenBalance && mintTokenBalance.gt(ZERO_DECIMAL)) {
+                lamportsToBuy[i] = null;
+                logger.warn(
+                    "Trader (%s) has already bought token on ATA (%s): %s %s",
+                    formatPublicKey(trader.publicKey),
+                    formatPublicKey(mintTokenAccount),
+                    formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
+                    envVars.TOKEN_SYMBOL
+                );
+                continue;
+            }
         }
 
         lamportsToBuy[i] = new BN(buyAmount.toFixed(0));
@@ -305,6 +332,17 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
             unitsToSell[i] = null;
             logger.warn(
                 "Trader (%s) has insufficient balance on ATA (%s): %s %s",
+                formatPublicKey(trader.publicKey),
+                formatPublicKey(mintTokenAccount),
+                formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
+                envVars.TOKEN_SYMBOL
+            );
+            continue;
+        }
+        if (envVars.POOL_TRADING_ONLY_NEW_TRADERS && mintTokenBalance.gt(ZERO_DECIMAL)) {
+            unitsToSell[i] = null;
+            logger.warn(
+                "Trader (%s) has already bought token on ATA (%s): %s %s",
                 formatPublicKey(trader.publicKey),
                 formatPublicKey(mintTokenAccount),
                 formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
