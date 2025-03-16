@@ -1,4 +1,4 @@
-import { basename } from "node:path";
+import { basename, normalize } from "node:path";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import chalk from "chalk";
@@ -75,7 +75,11 @@ export function formatError(error: unknown): string {
 }
 
 export function formatFileName(path: string): string {
-    return chalk.blue(basename(path));
+    return chalk.blue(basename(normalize(path)));
+}
+
+export function formatFilePath(path: string): string {
+    return chalk.blue(normalize(path));
 }
 
 export function formatInteger(value: NumberLike): string {

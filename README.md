@@ -33,31 +33,27 @@
     - `TRADER_SELL_AMOUNT_RANGE_PERCENT`
     - `TRADER_SWAP_DELAY_RANGE_SEC`
 
-5. Run `yarn grind-keypairs` to grind the _dev_ and _distributor_ keypairs.
+5. Run `yarn grind-keypairs && yarn get-accounts:main` to grind and get addresses of the _dev_ and _distributor_ keypairs.
 
-6. Run `yarn get-accounts:main` to get addresses of _dev_ and _distributor_ wallets.
+6. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` to the _dev_ wallet.
 
-7. Transfer SOL amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.05 SOL (gas fees)` to the _dev_ wallet.
+7. Run `yarn distribute-funds:dry-run` to estimate funds to distribute from the _distributor_ wallet to the ones of snipers and traders.
 
-8. Run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders.
+8. Transfer `$N1 SOL (sniper funds) + $N2 SOL (trader funds) + 0.02 SOL (gas fees)` to the _distributor_ wallet.
 
-9. Transfer `estimated SOL + 0.02 SOL (gas fees)` to the _distributor_ wallet.
+9. Run `yarn get-funds:main` to get funds of the _distributor_ wallet.
 
-10. Run `yarn get-funds:main` to get funds of the _distributor_ wallet.
-
-11. Run `yarn distribute-funds` to distribute funds from the _distributor_ wallet to the ones of snipers and traders.
-
-12. Run `yarn get-funds` to get funds of all the wallets.
+10. Run `yarn distribute-funds && yarn get-funds` to distribute funds from the _distributor_ wallet to the ones of snipers and traders and get funds for them.
 
 # Token Launch Plan
 
 1. Run `yarn setenv:prod` to set the _production_ environment.
 
-2. Create a meme image, convert it to the webp format, and save it under the _{token}.wepb_ name in the _images/production_ folder.
+2. Create a meme image, convert it to the webp format, and save it under the _$TOKEN_SYMBOL.wepb_ name in the _images/production_ folder.
 
 3. Set these environment variables in the _.env.production_ file:
 
-    - `TOKEN_SYMBOL` (Replace the _TOKEN_ name with the actual one)
+    - `TOKEN_SYMBOL` (Replace the _TOKEN_ value with the actual one)
     - `TOKEN_NAME` (Defaults to _"Official $TOKEN_NAME $TOKEN_TAGS0"_)
     - `TOKEN_DESCRIPTION` (Defaults to _"$TOKEN_NAME" on Solana"_)
     - `TOKEN_WEBSITE_URI` (Defaults to _""_)
@@ -65,19 +61,15 @@
     - `TOKEN_TELEGRAM_URI` (Defaults to _""_)
     - `TOKEN_TAGS` (Defaults to _"meme"_)
 
-4. Run `mv -iv ~/.config/solana/production/token ~/.config/solana/prodcution/$TOKEN_SYMBOL`.
+4. Run `yarn rename-token-files && yarn get-funds:main` to rename token key pair and storage files and get funds of the _dev_ and _distributor_ wallets.
 
-5. Rename the `storages/production/token.json` file to `storages/production/$TOKEN_SYMBOL`.
+5. Run `yarn create-mint:view && yarn get-funds:main` to create the token.
 
-6. Run `yarn get-funds:main` to get funds of the _dev_ and _distributor_ wallets.
+6. Run `yarn open-raydium-pool && yarn lock-raydium-pool-liquidity` to open a Raydium CPMM pool and to lock liquidity in it.
 
-7. Run `yarn create-mint:view && yarn get-funds:main` to create the token.
+7. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
 
-8. Run `yarn open-raydium-pool && yarn lock-raydium-pool-liquidity` to open a Raydium CPMM pool and to lock liquidity in it.
-
-9. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
-
-10. Check how the token trends on [Dexscreener](https://dexscreener.com/?rankBy=trendingScoreM5&order=desc) and [Dextools](https://www.dextools.io/app/en/solana/pairs).
+8. Check how the token trends on [Dexscreener](https://dexscreener.com/?rankBy=trendingScoreM5&order=desc) and [Dextools](https://www.dextools.io/app/en/solana/pairs).
 
 # Token Post Launch Plan
 
@@ -86,9 +78,9 @@
     - `TRADER_COUNT`
     - `POOL_TRADING_PUMP_BIAS_PERCENT`
 
-2. If `$TRADER_COUNT` is adjusted up, run `yarn distribute-funds:dry-run` to estimate SOL amount to distribute from the _distributor_ wallet to the snipers and traders.
+2. If `$TRADER_COUNT` is adjusted up, run `yarn distribute-funds:dry-run` to estimate funds to distribute from the _distributor_ wallet to the ones of traders.
 
-3. If `$TRADER_COUNT` is adjusted up, transfer `estimated SOL + 0.01 SOL (gas fees)` to the _distributor_ wallet.
+3. If `$TRADER_COUNT` is adjusted up, transfer `$N SOL (trader funds) + 0.01 SOL (gas fees)` to the _distributor_ wallet.
 
 4. Run `yarn distribute-funds` to distribute funds from the _distributor_ wallet to the snipers and traders.
 
@@ -96,4 +88,4 @@
 
 # Token Exit Plan
 
-1. Run `yarn close-raydium-pool && yarn collect-funds:view` to close the Raydium pool and to collect all funds from the snipers and traders.
+1. Run `yarn close-raydium-pool && yarn collect-funds:view` to close the Raydium pool and to collect funds from the wallets of dev, snipers and traders.

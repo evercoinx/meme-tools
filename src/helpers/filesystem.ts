@@ -57,12 +57,22 @@ export async function findFileNames(
     return matchedFileNames;
 }
 
-export async function fileExists(filePath: string): Promise<void> {
+export async function fileExists(filePath: string, errorMessage?: string): Promise<void> {
     try {
         await access(filePath);
     } catch {
-        throw new Error(`File not found: ${formatFileName(filePath)}`);
+        throw new Error(errorMessage ?? `File not exists: ${formatFileName(filePath)}`);
     }
+}
+
+export async function fileNotExists(filePath: string, errorMessage?: string): Promise<void> {
+    try {
+        await access(filePath);
+    } catch {
+        return;
+    }
+
+    throw new Error(errorMessage ?? `File already exists: ${formatFileName(filePath)}`);
 }
 
 export async function formatStorageFile(filePath: string): Promise<void> {
