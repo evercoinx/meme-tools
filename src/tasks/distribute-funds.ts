@@ -24,8 +24,14 @@ import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
-import { generateRandomFloat } from "../helpers/random";
-import { connectionPool, envVars, heliusClientPool, logger, ZERO_DECIMAL } from "../modules";
+import {
+    connectionPool,
+    envVars,
+    heliusClientPool,
+    logger,
+    randomSeed,
+    ZERO_DECIMAL,
+} from "../modules";
 import { isDryRun } from "../modules/environment";
 
 const DEV_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
@@ -81,7 +87,7 @@ const SWAPPER_GAS_FEE_SOL = 0.01;
             .map(() =>
                 new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
                     .mul(envVars.POOL_TRADING_CYCLE_COUNT)
-                    .add(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
+                    .add(randomSeed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
                     .add(envVars.TRADER_BALANCE_SOL)
                     .mul(LAMPORTS_PER_SOL)
                     .trunc()
