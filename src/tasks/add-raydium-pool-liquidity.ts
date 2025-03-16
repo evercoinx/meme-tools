@@ -9,7 +9,7 @@ import {
     importMintKeypair,
     KeypairKind,
 } from "../helpers/account";
-import { fileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatError, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -30,7 +30,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
 
 (async () => {
     try {
-        await fileExists(storage.cacheFilePath);
+        await checkFileExists(storage.cacheFilePath);
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
 

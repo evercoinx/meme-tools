@@ -57,7 +57,7 @@ export async function findFileNames(
     return matchedFileNames;
 }
 
-export async function fileExists(filePath: string, errorMessage?: string): Promise<void> {
+export async function checkFileExists(filePath: string, errorMessage?: string): Promise<void> {
     try {
         await access(filePath);
     } catch {
@@ -65,7 +65,7 @@ export async function fileExists(filePath: string, errorMessage?: string): Promi
     }
 }
 
-export async function fileNotExists(filePath: string, errorMessage?: string): Promise<void> {
+export async function checkFileNotExists(filePath: string, errorMessage?: string): Promise<void> {
     try {
         await access(filePath);
     } catch {

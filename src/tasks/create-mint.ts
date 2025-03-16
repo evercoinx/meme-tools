@@ -31,7 +31,7 @@ import {
     importKeypairFromFile,
     KeypairKind,
 } from "../helpers/account";
-import { fileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../helpers/filesystem";
 import { capitalize, formatError, formatPublicKey, formatUri } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -112,7 +112,7 @@ const generatePinataUri = (ipfsHash: string): string =>
 
 (async () => {
     try {
-        await fileExists(join(IMAGE_DIR, TOKEN_IMAGE_FILE_NAME));
+        await checkFileExists(join(IMAGE_DIR, TOKEN_IMAGE_FILE_NAME));
 
         const mint = generateOrImportMintKeypair();
         const dev = await importKeypairFromFile(KeypairKind.Dev);

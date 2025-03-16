@@ -1,6 +1,6 @@
 import { rename } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { fileExists, fileNotExists } from "../helpers/filesystem";
+import { checkFileExists, checkFileNotExists } from "../helpers/filesystem";
 import { formatError, formatFileName, formatFilePath } from "../helpers/format";
 import { KEYPAIR_DIR, logger, storage } from "../modules";
 import { STORAGE_FILE_EXTENSION } from "../modules/storage";
@@ -9,11 +9,11 @@ import { STORAGE_FILE_EXTENSION } from "../modules/storage";
     try {
         const sourceKeypairPath = join(dirname(KEYPAIR_DIR), "token");
         const destinationKeypairPath = KEYPAIR_DIR;
-        await fileExists(
+        await checkFileExists(
             sourceKeypairPath,
             `Source key pair path not exists: ${formatFilePath(sourceKeypairPath)}`
         );
-        await fileNotExists(
+        await checkFileNotExists(
             destinationKeypairPath,
             `Destination key pair path already exists: ${formatFilePath(KEYPAIR_DIR)}`
         );
@@ -23,11 +23,11 @@ import { STORAGE_FILE_EXTENSION } from "../modules/storage";
             `token${STORAGE_FILE_EXTENSION}`
         );
         const destinationStoragePath = storage.cacheFilePath;
-        await fileExists(
+        await checkFileExists(
             sourceStoragePath,
             `Source storage not exists: ${formatFileName(sourceStoragePath)}`
         );
-        await fileNotExists(
+        await checkFileNotExists(
             destinationStoragePath,
             `Destination storage already exists: ${formatFileName(destinationStoragePath)}`
         );

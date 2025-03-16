@@ -1,6 +1,6 @@
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { fileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../helpers/filesystem";
 import {
     formatCurrency,
     formatDate,
@@ -16,7 +16,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
 
 (async () => {
     try {
-        await fileExists(storage.cacheFilePath);
+        await checkFileExists(storage.cacheFilePath);
 
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {

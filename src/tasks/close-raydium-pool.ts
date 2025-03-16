@@ -10,7 +10,7 @@ import {
     importSwapperKeypairs,
     KeypairKind,
 } from "../helpers/account";
-import { fileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatError, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -38,7 +38,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 
 (async () => {
     try {
-        await fileExists(storage.cacheFilePath);
+        await checkFileExists(storage.cacheFilePath);
 
         const mint = importMintKeypair();
         if (!mint) {

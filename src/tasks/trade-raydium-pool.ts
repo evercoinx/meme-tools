@@ -11,7 +11,7 @@ import {
     importSwapperKeypairs,
     KeypairKind,
 } from "../helpers/account";
-import { fileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../helpers/filesystem";
 import {
     formatDecimal,
     formatError,
@@ -53,7 +53,7 @@ import {
 
 (async () => {
     try {
-        await fileExists(storage.cacheFilePath);
+        await checkFileExists(storage.cacheFilePath);
 
         const mint = importMintKeypair();
         if (!mint) {

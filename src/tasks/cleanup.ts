@@ -1,6 +1,6 @@
 import { rm } from "fs/promises";
 import pkg from "../../package.json";
-import { fileExists, countFiles } from "../helpers/filesystem";
+import { checkFileExists, countFiles } from "../helpers/filesystem";
 import { formatError, formatFileName, formatInteger, formatText } from "../helpers/format";
 import { envVars, LOG_DIR, logger, pinataClient, storage, TOKEN_IMAGE_FILE_NAME } from "../modules";
 
@@ -38,7 +38,7 @@ async function purgeLogFiles(): Promise<void> {
 
 async function clearStorageFile(): Promise<void> {
     try {
-        await fileExists(storage.cacheFilePath);
+        await checkFileExists(storage.cacheFilePath);
 
         storage.clear();
         logger.info("Storage cleared. Total keys: %s", formatInteger(storage.keys().length));

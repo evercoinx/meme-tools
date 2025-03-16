@@ -10,7 +10,7 @@ import {
     importSwapperKeypairs,
     KeypairKind,
 } from "../helpers/account";
-import { fileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../helpers/filesystem";
 import {
     formatDecimal,
     formatError,
@@ -45,7 +45,7 @@ enum Mode {
             throw new Error(`Invalid mode: ${mode}`);
         }
         if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
-            await fileExists(storage.cacheFilePath);
+            await checkFileExists(storage.cacheFilePath);
         }
 
         const mint = importMintKeypair();

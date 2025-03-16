@@ -4,7 +4,7 @@ import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import BN from "bn.js";
 import { PriorityLevel } from "helius-sdk";
 import { getTokenAccountInfo, importKeypairFromFile, KeypairKind } from "../helpers/account";
-import { fileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatError, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -16,7 +16,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 
 (async () => {
     try {
-        await fileExists(storage.cacheFilePath);
+        await checkFileExists(storage.cacheFilePath);
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
 

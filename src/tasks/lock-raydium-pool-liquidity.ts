@@ -9,7 +9,7 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { getTokenAccountInfo, importKeypairFromFile, KeypairKind } from "../helpers/account";
-import { fileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatError, formatPublicKey, formatSignature } from "../helpers/format";
 import { connectionPool, envVars, explorer, logger, storage } from "../modules";
 import { suppressLogs } from "../modules/logger";
@@ -18,7 +18,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 
 (async () => {
     try {
-        await fileExists(storage.cacheFilePath);
+        await checkFileExists(storage.cacheFilePath);
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
 

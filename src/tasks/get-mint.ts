@@ -2,7 +2,7 @@ import { getMint as getMintInfo, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token
 import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { importMintKeypair } from "../helpers/account";
-import { fileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../helpers/filesystem";
 import {
     formatDecimal,
     formatError,
@@ -15,7 +15,7 @@ import { connectionPool, envVars, explorer, logger, storage } from "../modules";
 
 (async () => {
     try {
-        await fileExists(storage.cacheFilePath);
+        await checkFileExists(storage.cacheFilePath);
 
         const mint = importMintKeypair();
         if (!mint) {
