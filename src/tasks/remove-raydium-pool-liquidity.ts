@@ -1,4 +1,4 @@
-import { Percent, TxVersion } from "@raydium-io/raydium-sdk-v2";
+import { Percent, Raydium, TxVersion } from "@raydium-io/raydium-sdk-v2";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import BN from "bn.js";
@@ -10,8 +10,21 @@ import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
-import { connectionPool, envVars, heliusClientPool, logger, storage, ZERO_BN } from "../modules";
-import { createRaydium, loadRaydiumCpmmPool, RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
+import {
+    connectionPool,
+    envVars,
+    heliusClientPool,
+    logger,
+    storage,
+    ZERO_BN,
+    ZERO_DECIMAL,
+} from "../modules";
+import {
+    createRaydium,
+    loadRaydiumCpmmPool,
+    RAYDIUM_LP_MINT_DECIMALS,
+    RaydiumCpmmPool,
+} from "../modules/raydium";
 import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
 
 (async () => {
@@ -20,18 +33,22 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
 
-        const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
-        if (!raydiumLpMint) {
-            throw new Error("Raydium LP mint not loaded from storage");
-        }
-
         const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
         if (!raydiumPoolId) {
             throw new Error("Raydium pool id not loaded from storage");
         }
 
+        const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
+        if (!raydiumLpMint) {
+            throw new Error("Raydium LP mint not loaded from storage");
+        }
+
+        const raydium = await createRaydium(connectionPool.current(), dev);
+        const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
+
         const sendRemoveRaydiumPoolLiquidityTransaction = await removeRaydiumPoolLiquidity(
-            new PublicKey(raydiumPoolId),
+            raydium,
+            raydiumCpmmPool,
             dev,
             new PublicKey(raydiumLpMint)
         );
@@ -45,15 +62,13 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 })();
 
 async function removeRaydiumPoolLiquidity(
-    raydiumPoolId: PublicKey,
+    raydium: Raydium,
+    { poolInfo, poolKeys }: RaydiumCpmmPool,
     dev: Keypair,
     lpMint: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>> {
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
-
-    const raydium = await createRaydium(connection, dev);
-    const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
 
     const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
         connectionPool,
@@ -61,6 +76,7 @@ async function removeRaydiumPoolLiquidity(
         lpMint,
         TOKEN_PROGRAM_ID
     );
+
     if (!lpMintTokenBalance) {
         logger.warn(
             "Dev (%s) has uninitialized %s ATA (%s)",
@@ -68,9 +84,9 @@ async function removeRaydiumPoolLiquidity(
             envVars.TOKEN_SYMBOL,
             formatPublicKey(lpMintTokenAccount)
         );
-        return;
+        return Promise.resolve(undefined);
     }
-    if (lpMintTokenBalance.lte(0)) {
+    if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
         logger.warn(
             "Dev (%s) has insufficient balance on ATA (%s): %s LP-%s",
             formatPublicKey(dev.publicKey),
@@ -81,7 +97,7 @@ async function removeRaydiumPoolLiquidity(
             ),
             envVars.TOKEN_SYMBOL
         );
-        return;
+        return Promise.resolve(undefined);
     }
 
     const {
@@ -97,7 +113,7 @@ async function removeRaydiumPoolLiquidity(
         connection,
         envVars.RPC_CLUSTER,
         heliusClient,
-        PriorityLevel.DEFAULT,
+        PriorityLevel.HIGH,
         instructions,
         [dev]
     );
@@ -106,6 +122,6 @@ async function removeRaydiumPoolLiquidity(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [dev],
-        `to remove liquidity to pool id (${formatPublicKey(raydiumPoolId)})`
+        `to remove liquidity from pool id (${formatPublicKey(poolInfo.id)})`
     );
 }
