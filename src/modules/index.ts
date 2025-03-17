@@ -19,18 +19,18 @@ export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
 export const envVars = extractEnvironmentVariables();
-export const TOKEN_IMAGE_FILE_NAME = `${envVars.TOKEN_SYMBOL.toLowerCase()}.webp`;
 export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
 export const MINT_DUST_UNITS = new Decimal(100).mul(UNITS_PER_MINT);
+export const MINT_IMAGE_TYPE = "webp";
+export const MINT_IMAGE_FILE_NAME = `${envVars.TOKEN_SYMBOL.toLowerCase()}.${MINT_IMAGE_TYPE}`;
 
 const currentWorkingDir = process.cwd();
 export const IMAGE_DIR = join(currentWorkingDir, "images", envVars.NODE_ENV);
 export const LOG_DIR = join(currentWorkingDir, "logs", envVars.NODE_ENV);
 export const STORAGE_DIR = join(currentWorkingDir, "storages", envVars.NODE_ENV);
 
-const homeDir = homedir();
 export const KEYPAIR_DIR = join(
-    homeDir,
+    homedir(),
     ".config",
     "solana",
     envVars.NODE_ENV,

@@ -85,6 +85,7 @@
         "flat-cache": "^6.1.5",
         "got": "^11.8.6",
         "helius-sdk": "^1.4.2",
+        "image-size": "^2.0.1",
         "pinata-web3": "^0.5.4",
         "pino": "^9.6.0",
         "pino-pretty": "^13.0.0"

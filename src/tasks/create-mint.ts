@@ -25,6 +25,7 @@ import {
 } from "@solana/spl-token-metadata";
 import { Keypair, PublicKey, SystemProgram, TransactionSignature } from "@solana/web3.js";
 import { PriorityLevel } from "helius-sdk";
+import { imageSize } from "image-size";
 import pkg from "../../package.json";
 import {
     generateOrImportMintKeypair,
@@ -32,7 +33,15 @@ import {
     KeypairKind,
 } from "../helpers/account";
 import { checkFileExists } from "../helpers/filesystem";
-import { capitalize, formatError, formatPublicKey, formatUri } from "../helpers/format";
+import {
+    capitalize,
+    formatDecimal,
+    formatError,
+    formatInteger,
+    formatPublicKey,
+    formatText,
+    formatUri,
+} from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -43,9 +52,10 @@ import {
     heliusClientPool,
     IMAGE_DIR,
     logger,
+    MINT_IMAGE_FILE_NAME,
+    MINT_IMAGE_TYPE,
     pinataClient,
     storage,
-    TOKEN_IMAGE_FILE_NAME,
     UNITS_PER_MINT,
 } from "../modules";
 import { STORAGE_MINT_IMAGE_URI, STORAGE_MINT_METADATA } from "../modules/storage";
@@ -62,6 +72,10 @@ interface OffchainTokenMetadata {
     tags?: string[];
     attributes?: Record<string, { trait_type: string; value: string }>[];
 }
+
+const MIN_MINT_IMAGE_DIMENSION = 100;
+const MAX_MINT_IMAGE_DIMENSION = 500;
+const MAX_FILE_SIZE = 4_500_000;
 
 const generateOffchainTokenMetadata = (
     symbol: string,
@@ -112,13 +126,13 @@ const generatePinataUri = (ipfsHash: string): string =>
 
 (async () => {
     try {
-        await checkFileExists(join(IMAGE_DIR, TOKEN_IMAGE_FILE_NAME));
+        await checkFileExists(join(IMAGE_DIR, MINT_IMAGE_FILE_NAME));
 
         const mint = generateOrImportMintKeypair();
         const dev = await importKeypairFromFile(KeypairKind.Dev);
 
         const groupId = await getOrCreateGroupId(`${pkg.name}-${envVars.NODE_ENV}`);
-        const imageUri = await uploadImage(groupId);
+        const imageUri = await uploadMintImage(groupId);
         const metadata = await uploadMetadata(groupId, imageUri);
 
         const sendCreateMintTransaction = await createMint(metadata, dev, mint);
@@ -144,16 +158,16 @@ async function getOrCreateGroupId(groupName: string): Promise<string> {
     return groupId;
 }
 
-async function uploadImage(groupId: string): Promise<string> {
+async function uploadMintImage(groupId: string): Promise<string> {
     let imageUri = storage.get<string | undefined>(STORAGE_MINT_IMAGE_URI);
     if (imageUri) {
         logger.debug("Mint image URI loaded from storage");
         return imageUri;
     }
 
-    const pinnedFiles = await pinataClient.listFiles().group(groupId).name(TOKEN_IMAGE_FILE_NAME);
+    const pinnedFiles = await pinataClient.listFiles().group(groupId).name(MINT_IMAGE_FILE_NAME);
 
-    if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === TOKEN_IMAGE_FILE_NAME) {
+    if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === MINT_IMAGE_FILE_NAME) {
         imageUri = generatePinataUri(pinnedFiles[0].ipfs_pin_hash);
         logger.warn(
             "Mint image file already uploaded to IPFS: %s",
@@ -161,11 +175,15 @@ async function uploadImage(groupId: string): Promise<string> {
         );
     } else {
         logger.debug("Uploading mint image file to IPFS");
-        const imageBlob = new Blob([await readFile(join(IMAGE_DIR, TOKEN_IMAGE_FILE_NAME))]);
+        const imageContents = await readFile(join(IMAGE_DIR, MINT_IMAGE_FILE_NAME));
+        checkMintImage(imageContents);
 
-        const imageFile = new File([imageBlob], TOKEN_IMAGE_FILE_NAME, { type: "image/webp" });
+        const imageBlob = new Blob([imageContents]);
+        const imageFile = new File([imageBlob], MINT_IMAGE_FILE_NAME, {
+            type: `image/${MINT_IMAGE_TYPE}`,
+        });
+
         const upload = await pinataClient.upload.file(imageFile).group(groupId);
-
         imageUri = generatePinataUri(upload.IpfsHash);
         logger.info("Mint image file uploaded to IPFS: %s", formatUri(imageUri, "<File link>"));
     }
@@ -175,6 +193,30 @@ async function uploadImage(groupId: string): Promise<string> {
     logger.debug("Mint image URI saved to storage");
 
     return imageUri;
+}
+
+function checkMintImage(imageContents: Buffer<ArrayBufferLike>): void {
+    if (imageContents.byteLength > MAX_FILE_SIZE) {
+        throw new Error(`Too large mint image size: ${formatInteger(imageContents.byteLength)}`);
+    }
+
+    const { width, height, type } = imageSize(imageContents);
+    if (width !== height) {
+        throw new Error(`Invalid mint image aspect ratio: 1:${formatDecimal(width / height, 2)}`);
+    }
+    if (
+        width < MIN_MINT_IMAGE_DIMENSION ||
+        width > MAX_MINT_IMAGE_DIMENSION ||
+        height < MIN_MINT_IMAGE_DIMENSION ||
+        height > MAX_MINT_IMAGE_DIMENSION
+    ) {
+        throw new Error(
+            `Invalid mint image dimensions: ${formatInteger(width)}x${formatInteger(height)}`
+        );
+    }
+    if (type !== MINT_IMAGE_TYPE) {
+        throw new Error(`Invalid mint image type: ${formatText(type ?? "unknown")}`);
+    }
 }
 
 async function uploadMetadata(groupId: string, imageUri: string): Promise<OffchainTokenMetadata> {
@@ -208,11 +250,17 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<Offcha
         );
     } else {
         logger.debug("Uploading mint metadata file to IPFS");
-        const metadataFile = new File([JSON.stringify(metadata)], metadataFilename, {
+        const metadataFileContents = JSON.stringify(metadata);
+        const metadataFileSize = Buffer.from(metadataFileContents, "utf8").byteLength;
+        if (metadataFileSize > MAX_FILE_SIZE) {
+            throw new Error(`Too large metadata file size: ${formatInteger(metadataFileSize)}`);
+        }
+
+        const metadataFile = new File([metadataFileContents], metadataFilename, {
             type: "text/plain",
         });
-        const upload = await pinataClient.upload.file(metadataFile).group(groupId);
 
+        const upload = await pinataClient.upload.file(metadataFile).group(groupId);
         metadataUri = generatePinataUri(upload.IpfsHash);
         logger.info(
             "Mint metadata file uploaded to IPFS: %s",
