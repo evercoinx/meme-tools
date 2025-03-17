@@ -13,7 +13,14 @@ import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
-import { connectionPool, envVars, heliusClientPool, logger, storage } from "../modules";
+import {
+    connectionPool,
+    envVars,
+    heliusClientPool,
+    logger,
+    storage,
+    ZERO_DECIMAL,
+} from "../modules";
 import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
 import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 
@@ -68,7 +75,7 @@ async function burnRaydiumPoolLiquidity(
         );
         return;
     }
-    if (lpMintTokenBalance.lte(0)) {
+    if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
         logger.warn(
             "Dev (%s) has insufficient balance on ATA (%s): %s LP-%s",
             formatPublicKey(dev.publicKey),

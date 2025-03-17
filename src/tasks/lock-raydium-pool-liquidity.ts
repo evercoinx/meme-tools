@@ -11,7 +11,7 @@ import BN from "bn.js";
 import { getTokenAccountInfo, importKeypairFromFile, KeypairKind } from "../helpers/account";
 import { checkFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatError, formatPublicKey, formatSignature } from "../helpers/format";
-import { connectionPool, envVars, explorer, logger, storage } from "../modules";
+import { connectionPool, envVars, explorer, logger, storage, ZERO_DECIMAL } from "../modules";
 import { suppressLogs } from "../modules/logger";
 import { createRaydium, loadRaydiumCpmmPool, RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
 import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
@@ -71,7 +71,7 @@ async function lockRaydiumPoolLiquidity(
         );
         return;
     }
-    if (lpMintTokenBalance.lte(0)) {
+    if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
         logger.warn(
             "Dev (%s) has insufficient balance on ATA (%s): %s LP-%s",
             formatPublicKey(dev.publicKey),

@@ -47,14 +47,17 @@ const SWAPPER_GAS_FEE_SOL = 0.01;
             logger.warn("Dry run mode enabled");
 
             const dev = await importKeypairFromFile(KeypairKind.Dev);
-            const amount = new Decimal(envVars.POOL_LIQUIDITY_SOL)
-                .plus(DEV_POOL_CREATION_FEE_SOL)
-                .plus(DEV_GAS_FEE_SOL);
+            const solBalance = await getSolBalance(connectionPool, dev);
 
-            console.log(Decimal.precision);
-            logger.info(
-                `Transfer ${formatDecimal(amount)} SOL to dev (${formatPublicKey(dev.publicKey, "long")})`
-            );
+            if (solBalance.lte(ZERO_DECIMAL)) {
+                const amount = new Decimal(envVars.POOL_LIQUIDITY_SOL)
+                    .plus(DEV_POOL_CREATION_FEE_SOL)
+                    .plus(DEV_GAS_FEE_SOL);
+
+                logger.info(
+                    `Transfer ${formatDecimal(amount)} SOL to dev (${formatPublicKey(dev.publicKey, "long")})`
+                );
+            }
 
             swapperGroupSize = Number.MAX_SAFE_INTEGER;
         } else {
@@ -153,9 +156,9 @@ async function distributeSwapperFunds(
 
     for (const [i, account] of accounts.entries()) {
         const solBalance = await getSolBalance(connectionPool, account);
-        if (solBalance.gt(0)) {
+        if (solBalance.gt(ZERO_DECIMAL)) {
             logger.debug(
-                "%s (%s) has non zero balance on wallet: %s SOL",
+                "%s (%s) has positive balance on wallet: %s SOL",
                 capitalize(keypairKind),
                 formatPublicKey(account.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
@@ -186,10 +189,11 @@ async function distributeSwapperFunds(
         return Promise.resolve(undefined);
     }
 
+    const distributorKind = keypairKind === KeypairKind.Sniper ? "sniper" : "trader";
     if (dryRun) {
         const amount = totalLamports.div(LAMPORTS_PER_SOL).plus(SWAPPER_GAS_FEE_SOL);
         logger.info(
-            `Transfer ${formatDecimal(amount)} SOL to ${keypairKind === KeypairKind.Sniper ? "sniper" : "trader"} distributor (${formatPublicKey(distributor.publicKey, "long")}) to distribute among ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
+            `Transfer ${formatDecimal(amount)} SOL to ${distributorKind} distributor (${formatPublicKey(distributor.publicKey, "long")}) to distribute among ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
         );
         return Promise.resolve(undefined);
     }
@@ -207,6 +211,6 @@ async function distributeSwapperFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
+        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from ${distributorKind} distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
     );
 }
