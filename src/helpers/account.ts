@@ -153,7 +153,7 @@ export function generateOrImportSwapperKeypairs(
             keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
         const savedCount = storage.get<number | undefined>(storageCountKey);
 
-        if (!savedCount || count > savedCount) {
+        if (savedCount === undefined || count > savedCount) {
             storage.set(storageCountKey, count);
             storage.save();
             logger.debug(
@@ -176,7 +176,7 @@ export function importSwapperKeypairs(keypairKind: KeypairKind): Keypair[] {
         keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
 
     const count = storage.get<number | undefined>(storageCountKey);
-    if (!count) {
+    if (count === undefined) {
         throw new Error(`${capitalize(keypairKind)} count not loaded from storage`);
     }
 

@@ -61,7 +61,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 
         const snipersToBuy = await findSnipersToBuy(snipers, mint);
 
-        const lamportsToBuy = envVars.SNIPER_POOL_SHARE_PERCENTS.map(
+        const lamportsToBuy = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
             (poolSharePercent) =>
                 new BN(
                     new Decimal(envVars.POOL_LIQUIDITY_SOL)

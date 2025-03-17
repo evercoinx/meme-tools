@@ -31,7 +31,7 @@ interface EnvironmentSchema {
     POOL_TRADING_CYCLE_COUNT: number;
     POOL_TRADING_PUMP_BIAS_PERCENT: number;
     POOL_TRADING_ONLY_NEW_TRADERS: boolean;
-    SNIPER_POOL_SHARE_PERCENTS: number[];
+    SNIPER_POOL_SHARE_PERCENTS: Set<number>;
     SNIPER_BALANCE_SOL: number;
     TRADER_COUNT: number;
     TRADER_GROUP_SIZE: number;
@@ -243,11 +243,13 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .default(false)
                 .description("Pool trading with only new traders"),
             SNIPER_POOL_SHARE_PERCENTS: Joi.array()
-                .required()
+                .optional()
                 .items(Joi.number().min(0.5).max(3).custom(convertToFractionalPercent))
                 .unique()
-                .min(1)
-                .max(100)
+                .min(0)
+                .max(200)
+                .default([])
+                .cast("set")
                 .description("Sniper share pool (in percents)"),
             SNIPER_BALANCE_SOL: Joi.number()
                 .required()
@@ -255,10 +257,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(0.1)
                 .description("Sniper balance (in SOL)"),
             TRADER_COUNT: Joi.number()
-                .required()
+                .optional()
                 .integer()
-                .min(1)
+                .min(0)
                 .max(1_000)
+                .default(0)
                 .description("Trader count"),
             TRADER_GROUP_SIZE: Joi.number()
                 .optional()
@@ -305,10 +308,9 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             ...process.env,
             RPC_URIS: process.env.RPC_URIS?.split(ARRAY_SEPARATOR),
             TOKEN_TAGS: process.env.TOKEN_TAGS?.split(ARRAY_SEPARATOR),
-            SNIPER_POOL_SHARE_PERCENTS:
-                process.env.SNIPER_POOL_SHARE_PERCENTS?.split(ARRAY_SEPARATOR),
-            PRIORITIZATION_FEE_MULTIPLIERS:
-                process.env.PRIORITIZATION_FEE_MULTIPLIERS?.split(ARRAY_SEPARATOR),
+            SNIPER_POOL_SHARE_PERCENTS: process.env.SNIPER_POOL_SHARE_PERCENTS
+                ? process.env.SNIPER_POOL_SHARE_PERCENTS.split(ARRAY_SEPARATOR)
+                : [],
             TRADER_BUY_AMOUNT_RANGE_SOL:
                 process.env.TRADER_BUY_AMOUNT_RANGE_SOL?.split(ARRAY_SEPARATOR),
             TRADER_SELL_AMOUNT_RANGE_PERCENT:

@@ -65,7 +65,7 @@ const SWAPPER_GAS_FEE_SOL = 0.01;
         const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
 
         const snipers = generateOrImportSwapperKeypairs(
-            envVars.SNIPER_POOL_SHARE_PERCENTS.length,
+            envVars.SNIPER_POOL_SHARE_PERCENTS.size,
             KeypairKind.Sniper,
             dryRun
         );
@@ -75,12 +75,13 @@ const SWAPPER_GAS_FEE_SOL = 0.01;
             dryRun
         );
 
-        const sniperLamports = envVars.SNIPER_POOL_SHARE_PERCENTS.map((poolSharePercent) =>
-            new Decimal(envVars.POOL_LIQUIDITY_SOL)
-                .mul(poolSharePercent)
-                .add(envVars.SNIPER_BALANCE_SOL)
-                .mul(LAMPORTS_PER_SOL)
-                .trunc()
+        const sniperLamports = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
+            (poolSharePercent) =>
+                new Decimal(envVars.POOL_LIQUIDITY_SOL)
+                    .mul(poolSharePercent)
+                    .add(envVars.SNIPER_BALANCE_SOL)
+                    .mul(LAMPORTS_PER_SOL)
+                    .trunc()
         );
         const traderLamports = new Array(envVars.TRADER_COUNT)
             .fill(0)

@@ -71,10 +71,13 @@ import {
         }
 
         const traderCount = storage.get<number | undefined>(STORAGE_TRADER_COUNT);
-        if (traderCount && envVars.TRADER_COUNT > traderCount) {
+        if (traderCount !== undefined && envVars.TRADER_COUNT > traderCount) {
             throw new Error(
-                `${formatInteger(envVars.TRADER_COUNT - traderCount)} traders have no funds distributed`
+                `${formatInteger(envVars.TRADER_COUNT - traderCount)} traders have undistributed funds`
             );
+        }
+        if (traderCount === 0) {
+            throw new Error("No traders assigned to trade on this pool");
         }
 
         if (envVars.POOL_TRADING_ONLY_NEW_TRADERS) {

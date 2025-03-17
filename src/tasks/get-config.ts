@@ -45,8 +45,10 @@ function getConfig(): void {
         formatDecimal(envVars.POOL_LIQUIDITY_SOL),
         formatInteger(envVars.POOL_TRADING_CYCLE_COUNT),
         formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT),
-        envVars.SNIPER_POOL_SHARE_PERCENTS.map((poolShare) => formatPercent(poolShare)).join(" "),
-        formatInteger(envVars.SNIPER_POOL_SHARE_PERCENTS.length),
+        Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS)
+            .map((poolShare) => formatPercent(poolShare))
+            .join(" "),
+        formatInteger(envVars.SNIPER_POOL_SHARE_PERCENTS.size),
         formatDecimal(envVars.SNIPER_BALANCE_SOL),
         formatInteger(envVars.TRADER_COUNT),
         formatInteger(envVars.TRADER_GROUP_SIZE),
