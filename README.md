@@ -49,9 +49,9 @@
 
 # Token Launch Plan
 
-1. Run `yarn setenv:prod` to set the _production_ environment.
+1. Run `yarn getenv` to make sure that the _production_ environment is set.
 
-2. Create a meme image, convert it to the webp format, and save it under the _$TOKEN_SYMBOL.wepb_ name in the _images/production_ folder.
+2. Create a meme image with a 1:1 aspect ratio and a size between 100x100 and 500x500 in the webp format, and save it under the _$TOKEN_SYMBOL.wepb_ name in the _images/production_ folder.
 
 3. Set these environment variables in the _.env.production_ file:
 
@@ -71,7 +71,11 @@
 
 7. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
 
-8. Check how the token trends on [Dexscreener](https://dexscreener.com/?rankBy=trendingScoreM5&order=desc) and [Dextools](https://www.dextools.io/app/en/solana/pairs).
+8. Create a header image with a 3:1 aspect ratio and a size between 600x200px and 1500x500px in the webp format, and save it under _$TOKEN_SYMBOL_header.webp_ name in the _images/production_ folder.
+
+9. Fill in the form to update token information and pay 299 USD on [Dexscreener](https://marketplace.dexscreener.com/product/token-info/order)
+
+10. Check token trends on [Dexscreener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana) and [Defined](https://www.defined.fi/tokens/discover?network=sol&createdAt=hour12&rankingBy=volume&rankingDirection=DESC).
 
 # Token Post Launch Plan
 
@@ -84,9 +88,11 @@
 
 3. If `$TRADER_COUNT` is adjusted up, transfer `$TRADER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _trader distributor_ wallet.
 
-4. Run `yarn distribute-funds` to distribute funds to the sniper and trader wallets.
+4. Run `yarn distribute-funds` to distribute funds to the trader wallets.
 
-5. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
+5. If needed, set `$POOL_TRADING_ONLY_NEW_TRADERS` to `true`.
+
+6. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
 
 # Token Exit Plan
 
