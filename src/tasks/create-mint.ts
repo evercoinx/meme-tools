@@ -74,8 +74,8 @@ interface OffchainTokenMetadata {
 }
 
 const MIN_MINT_IMAGE_DIMENSION = 100;
-const MAX_MINT_IMAGE_DIMENSION = 500;
-const MAX_FILE_SIZE = 4_500_000;
+const MAX_MINT_IMAGE_DIMENSION = 512;
+const MAX_FILE_SIZE = 250_000;
 
 const generateOffchainTokenMetadata = (
     symbol: string,
