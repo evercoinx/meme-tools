@@ -1,9 +1,9 @@
+import { Agent } from "node:https";
 import { homedir } from "node:os";
 import { join, parse } from "node:path";
 import { Connection } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { TRANSACTION_CONFIRMATION_TIMEOUT_MS } from "../helpers/network";
 import { Encryption } from "./encryption";
 import { extractEnvironmentVariables } from "./environment";
 import { Explorer } from "./explorer";
@@ -23,6 +23,7 @@ export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
 export const MINT_DUST_UNITS = new Decimal(100).mul(UNITS_PER_MINT);
 export const MINT_IMAGE_TYPE = "webp";
 export const MINT_IMAGE_FILE_NAME = `${envVars.TOKEN_SYMBOL.toLowerCase()}.${MINT_IMAGE_TYPE}`;
+export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 
 const currentWorkingDir = process.cwd();
 export const IMAGE_DIR = join(currentWorkingDir, "images", envVars.NODE_ENV);
@@ -48,9 +49,33 @@ export const connectionPool = new Pool(
     Array.from(envVars.RPC_URIS).map(
         (rpcUri) =>
             new Connection(rpcUri, {
+                httpAgent: new Agent({
+                    keepAlive: true,
+                    keepAliveMsecs: TRANSACTION_CONFIRMATION_TIMEOUT_MS,
+                    maxSockets: 256,
+                    maxFreeSockets: 32,
+                }),
                 commitment: "confirmed",
                 confirmTransactionInitialTimeout: TRANSACTION_CONFIRMATION_TIMEOUT_MS,
-                disableRetryOnRateLimit: true,
+                disableRetryOnRateLimit: false,
+                fetch: async (
+                    url: string | URL | Request,
+                    options?: RequestInit,
+                    timeout = TRANSACTION_CONFIRMATION_TIMEOUT_MS
+                ): Promise<Response> => {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+                    try {
+                        const response = await fetch(url, {
+                            ...options,
+                            signal: controller.signal,
+                        });
+                        return response;
+                    } finally {
+                        clearTimeout(timeoutId);
+                    }
+                },
             })
     )
 );
