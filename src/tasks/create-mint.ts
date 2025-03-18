@@ -74,7 +74,7 @@ interface OffchainTokenMetadata {
 }
 
 const MIN_MINT_IMAGE_DIMENSION = 100;
-const MAX_MINT_IMAGE_DIMENSION = 512;
+const MAX_MINT_IMAGE_DIMENSION = 500;
 const MAX_FILE_SIZE = 250_000;
 
 const generateOffchainTokenMetadata = (
@@ -202,7 +202,9 @@ function checkMintImage(imageContents: Buffer<ArrayBufferLike>): void {
 
     const { width, height, type } = imageSize(imageContents);
     if (width !== height) {
-        throw new Error(`Invalid mint image aspect ratio: 1:${formatDecimal(width / height, 2)}`);
+        throw new Error(
+            `Invalid mint image aspect ratio: ${formatDecimal(1)}x${formatDecimal(width / height, 4)}`
+        );
     }
     if (
         width < MIN_MINT_IMAGE_DIMENSION ||

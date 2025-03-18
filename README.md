@@ -51,7 +51,7 @@
 
 1. Run `yarn getenv` to make sure that the _production_ environment is set.
 
-2. Create a meme image with a 1:1 aspect ratio and a size between 100x100 and 512x512 in the webp format, and save it under the _$TOKEN_SYMBOL.wepb_ name in the _images/production_ folder.
+2. Create a meme image with a 1:1 aspect ratio and a size between 100x100 and 500x500 in the webp format, and save it under the _$TOKEN_SYMBOL.wepb_ name in the _images/production_ folder.
 
 3. Set these environment variables in the _.env.production_ file:
 
