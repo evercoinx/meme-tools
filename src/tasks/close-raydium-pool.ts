@@ -79,7 +79,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
             traders,
             traderUnitsToSell,
             SWAPPER_SLIPPAGE_PERCENT,
-            PriorityLevel.HIGH,
+            PriorityLevel.VERY_HIGH,
             { skipPreflight: true }
         );
 

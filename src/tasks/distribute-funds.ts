@@ -47,15 +47,25 @@ const SWAPPER_GAS_FEE_SOL = 0.01;
             logger.warn("Dry run mode enabled");
 
             const dev = await importKeypairFromFile(KeypairKind.Dev);
+            const amount = new Decimal(envVars.POOL_LIQUIDITY_SOL)
+                .plus(DEV_POOL_CREATION_FEE_SOL)
+                .plus(DEV_GAS_FEE_SOL)
+                .mul(LAMPORTS_PER_SOL)
+                .trunc();
+
             const solBalance = await getSolBalance(connectionPool, dev);
-
-            if (solBalance.lte(ZERO_DECIMAL)) {
-                const amount = new Decimal(envVars.POOL_LIQUIDITY_SOL)
-                    .plus(DEV_POOL_CREATION_FEE_SOL)
-                    .plus(DEV_GAS_FEE_SOL);
-
+            if (solBalance.lt(amount)) {
+                const residualAmount = amount.sub(solBalance);
                 logger.info(
-                    `Transfer ${formatDecimal(amount)} SOL to dev (${formatPublicKey(dev.publicKey, "long")})`
+                    "Transfer %s SOL to dev (%s)",
+                    formatDecimal(residualAmount.div(LAMPORTS_PER_SOL)),
+                    formatPublicKey(dev.publicKey, "long")
+                );
+            } else {
+                logger.info(
+                    "Dev (%s) has sufficient balance: %s SOL",
+                    formatPublicKey(dev.publicKey, "long"),
+                    formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
                 );
             }
 
@@ -191,10 +201,30 @@ async function distributeSwapperFunds(
 
     const distributorKind = keypairKind === KeypairKind.Sniper ? "sniper" : "trader";
     if (dryRun) {
-        const amount = totalLamports.div(LAMPORTS_PER_SOL).plus(SWAPPER_GAS_FEE_SOL);
-        logger.info(
-            `Transfer ${formatDecimal(amount)} SOL to ${distributorKind} distributor (${formatPublicKey(distributor.publicKey, "long")}) to distribute among ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
-        );
+        const amount = totalLamports
+            .div(LAMPORTS_PER_SOL)
+            .plus(SWAPPER_GAS_FEE_SOL)
+            .mul(LAMPORTS_PER_SOL);
+
+        const solBalance = await getSolBalance(connectionPool, distributor);
+        if (solBalance.lt(amount)) {
+            const residualAmount = amount.sub(solBalance);
+            logger.info(
+                "Transfer %s SOL to %s distributor (%s) to distribute among %s %ss",
+                formatDecimal(residualAmount.div(LAMPORTS_PER_SOL)),
+                distributorKind,
+                formatPublicKey(distributor.publicKey, "long"),
+                formatInteger(totalFundedAccounts),
+                keypairKind
+            );
+        } else {
+            logger.info(
+                "%s distributor (%s) has sufficient balance: %s SOL",
+                capitalize(distributorKind),
+                formatPublicKey(distributor.publicKey, "long"),
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
+            );
+        }
         return Promise.resolve(undefined);
     }
 

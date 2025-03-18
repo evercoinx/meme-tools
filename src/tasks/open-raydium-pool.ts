@@ -83,7 +83,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
             snipersToBuy,
             lamportsToBuy,
             SWAPPER_SLIPPAGE_PERCENT,
-            PriorityLevel.VERY_HIGH,
+            PriorityLevel.HIGH,
             {
                 skipPreflight: true,
                 resendErrors: RAYDIUM_POOL_ERRORS,
