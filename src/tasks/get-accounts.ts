@@ -9,6 +9,7 @@ import {
 } from "../helpers/account";
 import { checkFileExists } from "../helpers/filesystem";
 import {
+    capitalize,
     formatError,
     formatPublicKey,
     formatText,
@@ -19,7 +20,8 @@ import { logger, storage } from "../modules";
 enum Mode {
     ALL = "all",
     MAIN = "main",
-    SWAPPER = "swapper",
+    SNIPER = "sniper",
+    TRADER = "trader",
 }
 
 (async () => {
@@ -35,10 +37,11 @@ enum Mode {
             },
         });
 
-        if (![Mode.ALL, Mode.MAIN, Mode.SWAPPER].includes(mode as Mode)) {
+        if (![Mode.ALL, Mode.MAIN, Mode.SNIPER, Mode.TRADER].includes(mode as Mode)) {
             throw new Error(`Invalid mode: ${mode}`);
         }
-        if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
+
+        if ([Mode.ALL, Mode.SNIPER, Mode.TRADER].includes(mode as Mode)) {
             await checkFileExists(storage.cacheFilePath);
         }
 
@@ -50,10 +53,14 @@ enum Mode {
             getMainAccounts(dev, sniperDistributor, traderDistributor, mint);
         }
 
-        if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
+        if ([Mode.ALL, Mode.SNIPER].includes(mode as Mode)) {
             const snipers = importSwapperKeypairs(KeypairKind.Sniper);
+            getSwapperAccounts(snipers, KeypairKind.Sniper);
+        }
+
+        if ([Mode.ALL, Mode.TRADER].includes(mode as Mode)) {
             const traders = importSwapperKeypairs(KeypairKind.Trader);
-            getSwapperAccounts(snipers, traders);
+            getSwapperAccounts(traders, KeypairKind.Trader);
         }
 
         process.exit(0);
@@ -94,22 +101,14 @@ function getMainAccounts(
     );
 }
 
-function getSwapperAccounts(snipers: Keypair[], traders: Keypair[]): void {
-    for (const [i, sniper] of snipers.entries()) {
+function getSwapperAccounts(accounts: Keypair[], keypairKind: KeypairKind): void {
+    for (const [i, account] of accounts.entries()) {
         logger.info(
-            "Sniper #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
+            "%s #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
+            capitalize(keypairKind),
             i,
-            formatPublicKey(sniper.publicKey, "long"),
-            formatText(bs58.encode(sniper.secretKey))
-        );
-    }
-
-    for (const [i, trader] of traders.entries()) {
-        logger.info(
-            "Trader #%d keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
-            i,
-            formatPublicKey(trader.publicKey, "long"),
-            formatText(bs58.encode(trader.secretKey))
+            formatPublicKey(account.publicKey, "long"),
+            formatText(bs58.encode(account.secretKey))
         );
     }
 }

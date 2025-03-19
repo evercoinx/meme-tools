@@ -37,15 +37,11 @@
 
 6. Run `yarn distribute-funds:dry-run` to estimate funds to transfer to the _main_ wallets.
 
-7. Transfer amount equal to `$POOL_LIQUIDITY_SOL + 0.15 SOL (pool creation fee) + 0.1 SOL (gas fees)` to the _dev_ wallet.
+7. Transfer the reported amounts from  to the _main_ wallets.
 
-8. Transfer amount equal to `$SNIPER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _sniper distributor_ wallet.
+8. Run `yarn distribute-funds:dry-run` again to make sure that all the _main_ wallets have sufficient balances.
 
-9. Transfer amount equal to `$TRADER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _trader distributor_ wallet.
-
-10. Run `yarn get-funds:main` to get funds of the _main_ wallets.
-
-11. Run `yarn distribute-funds:view` to distribute funds to the sniper and trader wallets.
+9. Run `yarn distribute-funds:view` to distribute funds to the sniper and trader wallets.
 
 # Token Launch Plan
 
@@ -71,7 +67,7 @@
 
 7. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
 
-8. Create a header image with a 3:1 aspect ratio and a size between 600x200px and 1500x500px in the webp format, and save it under _$TOKEN_SYMBOL_header.webp_ name in the _images/production_ folder.
+8. Create a banner image with a 3:1 aspect ratio and a size between 600x200 and 1500x500 in the webp format, and save it under _$TOKEN_SYMBOL_banner.webp_ name in the _images/production_ folder.
 
 9. Fill in the form to update token information and pay 299 USD on [Dexscreener](https://marketplace.dexscreener.com/product/token-info/order)
 
