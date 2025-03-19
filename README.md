@@ -37,11 +37,11 @@
 
 6. Run `yarn distribute-funds:dry-run` to estimate funds to transfer to the _main_ wallets.
 
-7. Transfer the reported amounts from  to the _main_ wallets.
+7. Transfer the reported funds from to the _main_ wallets.
 
 8. Run `yarn distribute-funds:dry-run` again to make sure that all the _main_ wallets have sufficient balances.
 
-9. Run `yarn distribute-funds:view` to distribute funds to the sniper and trader wallets.
+9. Run `yarn distribute-funds && yarn get-funds` to distribute funds to the sniper and trader wallets.
 
 # Token Launch Plan
 
@@ -61,9 +61,9 @@
 
 4. Run `yarn rename-token-files && yarn get-funds:main` to rename token key pair and storage files.
 
-5. Run `yarn create-mint:view && yarn get-funds:main` to create the token mint.
+5. Run `yarn create-mint && yarn get-mint && yarn get-funds:main` to create the token mint.
 
-6. Run `yarn open-raydium-pool && yarn lock-raydium-pool-liquidity` to open a Raydium CPMM pool and to lock liquidity in it.
+6. Run `yarn open-raydium-pool && yarn lock-raydium-pool-liquidity && yarn get-raydium-pool && yarn get-funds:main` to open a Raydium CPMM pool and to lock liquidity in it.
 
 7. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
 
@@ -82,14 +82,16 @@
 
 2. If `$TRADER_COUNT` is adjusted up, run `yarn distribute-funds:dry-run` to estimate funds to transfer to the _trader distributor_ wallet.
 
-3. If `$TRADER_COUNT` is adjusted up, transfer `$TRADER_AMOUNT_SOL + 0.01 SOL (gas fees)` to the _trader distributor_ wallet.
+    - Transfer the reported funds to the _trader distributor_ wallet.
 
-4. Run `yarn distribute-funds` to distribute funds to the trader wallets.
+    - Run `yarn distribute-funds:dry-run` again to make sure that the _trader distributor_ wallet has sufficient balances.
 
-5. If needed, set `$POOL_TRADING_ONLY_NEW_TRADERS` to `true`.
+    - Run `yarn distribute-funds` to distribute funds to the trader wallets.
 
-6. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
+    - If needed, set `$POOL_TRADING_ONLY_NEW_TRADERS` to `true`.
+
+3. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
 
 # Token Exit Plan
 
-1. Run `yarn close-raydium-pool && yarn collect-funds:view` to close the Raydium pool and to collect funds on the _main_ wallets.
+1. Run `yarn close-raydium-pool && yarn collect-funds && yarn get-funds` to close the Raydium pool and to collect funds with the _main_ wallets.
