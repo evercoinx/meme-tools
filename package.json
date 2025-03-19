@@ -54,7 +54,8 @@
         "get-accounts:trader": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-accounts.ts --mode trader",
         "get-funds": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-funds.ts",
         "get-funds:main": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode main",
-        "get-funds:swapper": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode swapper",
+        "get-funds:sniper": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode sniper",
+        "get-funds:trader": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode trader",
         "get-mint": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-mint.ts",
         "get-raydium-pool": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-raydium-pool.ts",
         "generate-encryption-secret": "hexdump -vn16 -e'4/4 \"%08x\" 1 \"\n\"' /dev/urandom",
@@ -74,7 +75,7 @@
         "node": ">=22"
     },
     "dependencies": {
-        "@raydium-io/raydium-sdk-v2": "^0.1.117-alpha",
+        "@raydium-io/raydium-sdk-v2": "^0.1.118-alpha",
         "@solana/spl-token": "^0.4.9",
         "@solana/web3.js": "^1.98.0",
         "arweave": "^1.15.5",

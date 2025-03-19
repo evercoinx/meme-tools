@@ -12,6 +12,7 @@ import {
 } from "../helpers/account";
 import { checkFileExists } from "../helpers/filesystem";
 import {
+    capitalize,
     formatDecimal,
     formatError,
     formatPublicKey,
@@ -25,7 +26,8 @@ import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
 enum Mode {
     ALL = "all",
     MAIN = "main",
-    SWAPPER = "swapper",
+    SNIPER = "sniper",
+    TRADER = "trader",
 }
 
 (async () => {
@@ -41,10 +43,11 @@ enum Mode {
             },
         });
 
-        if (![Mode.ALL, Mode.MAIN, Mode.SWAPPER].includes(mode as Mode)) {
+        if (![Mode.ALL, Mode.MAIN, Mode.SNIPER, Mode.TRADER].includes(mode as Mode)) {
             throw new Error(`Invalid mode: ${mode}`);
         }
-        if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
+
+        if ([Mode.ALL, Mode.SNIPER, Mode.TRADER].includes(mode as Mode)) {
             await checkFileExists(storage.cacheFilePath);
         }
 
@@ -57,10 +60,14 @@ enum Mode {
             await getMainFunds(dev, sniperDistributor, traderDistributor, mint);
         }
 
-        if ([Mode.ALL, Mode.SWAPPER].includes(mode as Mode)) {
+        if ([Mode.ALL, Mode.SNIPER].includes(mode as Mode)) {
             const snipers = importSwapperKeypairs(KeypairKind.Sniper);
+            await getSwapperFunds(snipers, KeypairKind.Sniper, mint);
+        }
+
+        if ([Mode.ALL, Mode.TRADER].includes(mode as Mode)) {
             const traders = importSwapperKeypairs(KeypairKind.Trader);
-            await getSwapperFunds(snipers, traders, mint);
+            await getSwapperFunds(traders, KeypairKind.Trader, mint);
         }
 
         process.exit(0);
@@ -141,13 +148,11 @@ async function getMainFunds(
 }
 
 async function getSwapperFunds(
-    snipers: Keypair[],
-    traders: Keypair[],
+    accounts: Keypair[],
+    keypairKind: KeypairKind,
     mint?: Keypair
 ): Promise<void> {
-    for (const [i, account] of [...snipers, ...traders].entries()) {
-        const isSniper = i < snipers.length;
-
+    for (const [i, account] of accounts.entries()) {
         const solBalance = await getSolBalance(connectionPool, account);
 
         let mintTokenAccount: PublicKey | undefined;
@@ -162,8 +167,9 @@ async function getSwapperFunds(
         }
 
         logger.info(
-            "%s funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n",
-            isSniper ? `Sniper #${i}` : `Trader #${i - snipers.length}`,
+            "%s #%d funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n",
+            capitalize(keypairKind),
+            i,
             formatPublicKey(account.publicKey, "long"),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
             mintTokenAccount
