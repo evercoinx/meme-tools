@@ -36,32 +36,29 @@ export class Explorer {
         throw new Error(`Unknown base URI: ${formatUri(baseUri)}`);
     }
 
-    public generateTransactionUri(signature: string): string {
+    public generateTransactionUri(signature: string, tag = "<Transaction link>"): string {
         return chalk.blue(
-            generateLink(
-                `${this.baseUri}/tx/${signature}?cluster=${this.cluster}`,
-                "<Transaction link>"
-            )
+            generateLink(`${this.baseUri}/tx/${signature}?cluster=${this.cluster}`, tag)
         );
     }
 
-    public generateAddressUri(address: string | PublicKey): string {
+    public generateAddressUri(address: string | PublicKey, tag = "<Address link>"): string {
         const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
         return chalk.blue(
             generateLink(
                 `${this.baseUri}/address/${normalizedAddress}?cluster=${this.cluster}`,
-                "<Address link>"
+                tag
             )
         );
     }
 
-    public generateTokenUri(address: string | PublicKey): string {
+    public generateTokenUri(address: string | PublicKey, tag = "<Token link>"): string {
         const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
         const tokenPath = this.baseUri.includes(SOLSCAN_IO) ? "token" : "address";
         return chalk.blue(
             generateLink(
                 `${this.baseUri}/${tokenPath}/${normalizedAddress}?cluster=${this.cluster}`,
-                "<Token link>"
+                tag
             )
         );
     }

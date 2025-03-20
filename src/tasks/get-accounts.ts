@@ -79,25 +79,25 @@ function getMainAccounts(
     logger.info(
         "Dev keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         formatPublicKey(dev.publicKey, "long"),
-        bs58.encode(dev.secretKey)
+        formatText(bs58.encode(dev.secretKey))
     );
 
     logger.info(
         "Sniper distributor keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         formatPublicKey(sniperDistributor.publicKey, "long"),
-        bs58.encode(sniperDistributor.secretKey)
+        formatText(bs58.encode(sniperDistributor.secretKey))
     );
 
     logger.info(
         "Trader distributor keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         formatPublicKey(traderDistributor.publicKey, "long"),
-        bs58.encode(traderDistributor.secretKey)
+        formatText(bs58.encode(traderDistributor.secretKey))
     );
 
     logger.info(
         "Mint keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         mint ? formatPublicKey(mint.publicKey, "long") : OUTPUT_UNKNOWN_PUBLIC_KEY,
-        mint ? bs58.encode(mint.secretKey) : OUTPUT_UNKNOWN_PUBLIC_KEY
+        mint ? formatText(bs58.encode(mint.secretKey)) : OUTPUT_UNKNOWN_PUBLIC_KEY
     );
 }
 

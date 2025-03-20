@@ -8,9 +8,8 @@ import {
     formatError,
     formatText,
     formatPercent,
-    formatPublicKey,
 } from "../helpers/format";
-import { connectionPool, envVars, logger, storage } from "../modules";
+import { connectionPool, envVars, explorer, logger, storage } from "../modules";
 import { createRaydium, loadRaydiumCpmmPool, RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
 import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
 
@@ -36,7 +35,7 @@ async function getPool(raydiumPoolId: PublicKey): Promise<void> {
     const { poolInfo } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
 
     const {
-        id,
+        id: poolId,
         mintAmountA,
         mintAmountB,
         lpMint,
@@ -75,12 +74,12 @@ async function getPool(raydiumPoolId: PublicKey): Promise<void> {
     logger.info(
         "Raydium pool (%s)\n\t\tPool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\tPool type: %s\n\t\tPrice: %s %s ≈ %s %s\n\t\tFee tier: %s\n\t\tOpen time: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s",
         raydium.cluster,
-        formatPublicKey(id, "long"),
+        explorer.generateAddressUri(poolId, poolId),
         mintA.symbol,
-        formatPublicKey(mintA.address, "long"),
+        explorer.generateTokenUri(mintA.address, mintA.address),
         mintB.symbol,
-        formatPublicKey(mintB.address, "long"),
-        formatPublicKey(lpMint.address, "long"),
+        explorer.generateTokenUri(mintB.address, mintB.address),
+        explorer.generateTokenUri(lpMint.address, lpMint.address),
         formatText(type),
         formatDecimal(1, 0),
         ...(NATIVE_MINT.toBase58() === mintA.address
