@@ -92,6 +92,7 @@ const SWAPPER_GAS_FEE_SOL = 0.01;
             (poolSharePercent) =>
                 new Decimal(envVars.POOL_LIQUIDITY_SOL)
                     .mul(poolSharePercent)
+                    .add(randomSeed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
                     .add(envVars.SNIPER_BALANCE_SOL)
                     .mul(LAMPORTS_PER_SOL)
                     .trunc()

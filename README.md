@@ -84,7 +84,7 @@
 
     - Transfer the reported funds to the _trader distributor_ wallet.
 
-    - Run `yarn distribute-funds:dry-run` again to make sure that the _trader distributor_ wallet has sufficient balances.
+    - Run `yarn distribute-funds:dry-run` again to make sure that the _trader distributor_ wallet has sufficient balance.
 
     - Run `yarn distribute-funds` to distribute funds to the trader wallets.
 

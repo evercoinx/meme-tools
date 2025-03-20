@@ -26,7 +26,13 @@ import Decimal from "decimal.js";
 import { GetPriorityFeeEstimateResponse, PriorityLevel, UiTransactionEncoding } from "helius-sdk";
 import { explorer, logger, TRANSACTION_CONFIRMATION_TIMEOUT_MS, ZERO_DECIMAL } from "../modules";
 import { HeliusClient } from "../modules/helius";
-import { capitalize, formatDecimal, formatInteger, formatSignature } from "./format";
+import {
+    capitalize,
+    formatDecimal,
+    formatInteger,
+    formatMilliseconds,
+    formatSignature,
+} from "./format";
 
 export interface TransactionOptions {
     skipPreflight?: boolean;
@@ -310,7 +316,7 @@ async function pollTransactionConfirmation(
                 clearInterval(intervalId);
                 reject(
                     new ResentTransactionError(
-                        `Transaction (${signature}) failed: Timeout after ${new Decimal(elapsed).div(1_000).toFixed(3)} sec`
+                        `Transaction (${signature}) failed: Timeout after ${formatMilliseconds(elapsed)} sec`
                     )
                 );
             }
