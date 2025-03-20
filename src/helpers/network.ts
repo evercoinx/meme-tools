@@ -31,17 +31,7 @@ import { capitalize, formatDecimal, formatInteger, formatSignature } from "./for
 export interface TransactionOptions {
     skipPreflight?: boolean;
     preflightCommitment?: Commitment;
-    resendErrors?: ContractErrors;
 }
-
-export type ContractErrors = Record<
-    number,
-    {
-        instruction: string;
-        code: string;
-        message: string;
-    }
->;
 
 type InstructionError = [number, InstructionErrorDetails];
 
@@ -285,11 +275,7 @@ export async function sendAndConfirmVersionedTransaction(
             });
             logger.info("Transaction (%s) sent %s", formatSignature(signature), logMessage);
 
-            return await pollTransactionConfirmation(
-                connection,
-                signature,
-                transactionOptions?.resendErrors
-            );
+            return await pollTransactionConfirmation(connection, signature);
         } catch (error: unknown) {
             if (
                 error instanceof ResentTransactionError &&
@@ -312,8 +298,7 @@ export async function sendAndConfirmVersionedTransaction(
 
 async function pollTransactionConfirmation(
     connection: Connection,
-    signature: TransactionSignature,
-    resendErrors?: ContractErrors
+    signature: TransactionSignature
 ): Promise<TransactionSignature> {
     let elapsed = 0;
 
@@ -335,17 +320,6 @@ async function pollTransactionConfirmation(
             if (result?.err) {
                 clearInterval(intervalId);
 
-                if (resendErrors) {
-                    const errorDetails = parseRpcError(result.err);
-                    if (errorDetails && resendErrors[errorDetails.Custom]) {
-                        return reject(
-                            new ResentTransactionError(
-                                `Transaction (${signature}) failed: ${resendErrors[errorDetails.Custom].message}`
-                            )
-                        );
-                    }
-                }
-
                 return reject(
                     new FailedTransactionError(
                         `Transaction (${signature}) failed: ${explorer.generateTransactionUri(signature)}. Reason: ${formatRpcError(result.err)}`
@@ -363,15 +337,6 @@ async function pollTransactionConfirmation(
             }
         }, TRANSACTION_POLL_INTERVAL_MS);
     });
-}
-
-function parseRpcError(error: TransactionError | null): InstructionErrorDetails | null {
-    if (typeof error === "object" && error !== null && "InstructionError" in error) {
-        const [, errorDetails] = error.InstructionError as InstructionError;
-        return errorDetails;
-    }
-
-    return null;
 }
 
 function formatRpcError(error: TransactionError | null): string {

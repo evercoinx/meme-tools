@@ -24,7 +24,6 @@ import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";
 import { formatDecimal, formatPublicKey, formatText, formatUri } from "../helpers/format";
 import {
-    ContractErrors,
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
     TransactionOptions,
@@ -42,23 +41,6 @@ export interface RaydiumCpmmPool {
 }
 
 export const RAYDIUM_LP_MINT_DECIMALS = 9;
-export const RAYDIUM_POOL_ERRORS: ContractErrors = {
-    2012: {
-        instruction: "SwapBaseInput",
-        code: "ContraintAddress",
-        message: "Address constraint violated",
-    },
-    // 2505: {
-    //     instruction: "SwapBaseInput",
-    //     code: "RequireGtViolated",
-    //     message: "Require_gt expression violated",
-    // },
-    6000: {
-        instruction: "SwapBaseInput",
-        code: "NotApproved",
-        message: "Not approved",
-    },
-};
 
 export async function createRaydium(connection: Connection, owner?: Keypair): Promise<Raydium> {
     if (connection.rpcEndpoint === clusterApiUrl("mainnet-beta")) {

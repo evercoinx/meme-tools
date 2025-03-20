@@ -43,7 +43,6 @@ import {
     createRaydium,
     loadRaydiumCpmmPool,
     RaydiumCpmmPool,
-    RAYDIUM_POOL_ERRORS,
     swapSolToMint,
 } from "../modules/raydium";
 import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
@@ -74,6 +73,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
 
         const raydium = await createRaydium(connectionPool.current(), dev);
         const [sendCreatePoolTransaction, raydiumCpmmPool] = await createPool(raydium, dev, mint);
+        await Promise.all([sendCreatePoolTransaction]);
 
         const sendSwapSolToMintTransactions = await swapSolToMint(
             connectionPool,
@@ -84,13 +84,10 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
             lamportsToBuy,
             SWAPPER_SLIPPAGE_PERCENT,
             PriorityLevel.HIGH,
-            {
-                skipPreflight: true,
-                resendErrors: RAYDIUM_POOL_ERRORS,
-            }
+            { skipPreflight: true }
         );
+        await Promise.all(sendSwapSolToMintTransactions);
 
-        await Promise.all([sendCreatePoolTransaction, ...sendSwapSolToMintTransactions]);
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
