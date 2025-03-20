@@ -96,12 +96,11 @@ async function closeTokenAccounts(
     let heliusClient = heliusClientPool.current();
 
     for (const [i, account] of [dev, ...snipers, ...traders].entries()) {
-        const isDev = i === 0;
-
         const instructions: TransactionInstruction[] = [];
         const computeBudgetInstructions: TransactionInstruction[] = [];
+        const isDev = i === 0;
 
-        if (mint) {
+        if (mint && !isDev) {
             const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
                 connectionPool,
                 account,
@@ -150,31 +149,29 @@ async function closeTokenAccounts(
             }
         }
 
-        if (isDev) {
-            if (lpMint) {
-                const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
-                    connectionPool,
-                    dev,
-                    lpMint,
-                    TOKEN_PROGRAM_ID
+        if (lpMint && isDev) {
+            const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
+                connectionPool,
+                dev,
+                lpMint,
+                TOKEN_PROGRAM_ID
+            );
+            if (!lpMintTokenBalance) {
+                logger.warn(
+                    "Dev (%s) has uninitialized LP mint ATA (%s)",
+                    formatPublicKey(dev.publicKey),
+                    formatPublicKey(lpMintTokenAccount)
                 );
-                if (!lpMintTokenBalance) {
-                    logger.warn(
-                        "Dev (%s) has uninitialized LP mint ATA (%s)",
-                        formatPublicKey(dev.publicKey),
-                        formatPublicKey(lpMintTokenAccount)
-                    );
-                } else if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
-                    instructions.push(
-                        createCloseAccountInstruction(
-                            lpMintTokenAccount,
-                            dev.publicKey,
-                            dev.publicKey,
-                            [],
-                            TOKEN_PROGRAM_ID
-                        )
-                    );
-                }
+            } else if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
+                instructions.push(
+                    createCloseAccountInstruction(
+                        lpMintTokenAccount,
+                        dev.publicKey,
+                        dev.publicKey,
+                        [],
+                        TOKEN_PROGRAM_ID
+                    )
+                );
             }
         }
 
