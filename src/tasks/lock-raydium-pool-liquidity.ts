@@ -14,7 +14,11 @@ import { formatDecimal, formatError, formatPublicKey, formatSignature } from "..
 import { connectionPool, envVars, explorer, logger, storage, ZERO_DECIMAL } from "../modules";
 import { suppressLogs } from "../modules/logger";
 import { createRaydium, loadRaydiumCpmmPool, RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
-import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
+import {
+    STORAGE_RAYDIUM_LP_MINT,
+    STORAGE_RAYDIUM_NFT_MINT,
+    STORAGE_RAYDIUM_POOL_ID,
+} from "../modules/storage";
 
 (async () => {
     try {
@@ -85,7 +89,10 @@ async function lockRaydiumPoolLiquidity(
         return;
     }
 
-    const { execute } = await raydium.cpmm.lockLp<TxVersion.LEGACY>({
+    const {
+        execute,
+        extInfo: { nftMint },
+    } = await raydium.cpmm.lockLp<TxVersion.LEGACY>({
         poolInfo,
         poolKeys,
         lpAmount: new BN(lpMintTokenBalance.toFixed(0)),
@@ -113,6 +120,10 @@ async function lockRaydiumPoolLiquidity(
         formatSignature(signature),
         explorer.generateTransactionUri(signature)
     );
+
+    storage.set(STORAGE_RAYDIUM_NFT_MINT, nftMint);
+    storage.save();
+    logger.debug("Raydium NFT mint (%s) saved to storage", formatPublicKey(nftMint));
 
     // TODO Use network helpers below when Raydium SDK makes it available
     // const instructions = (transaction as unknown as Transaction).instructions;

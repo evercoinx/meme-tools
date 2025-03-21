@@ -35,6 +35,8 @@
         "trade-raydium-pool:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=trade-raydium-pool ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
         "close-raydium-pool": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/close-raydium-pool.ts",
         "close-raydium-pool:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=close-raydium-pool ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
+        "collect-raydium-pool-fees": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/collect-raydium-pool-fees.ts",
+        "collect-raydium-pool-fees:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=collect-raydium-pool-fees ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
         "collect-funds": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/collect-funds.ts",
         "collect-funds:replay": "NODE_ENV=$(yarn config get meme-tools:env) LOGGER_NAME=collect-funds ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
         "get-config": "NODE_ENV=$(yarn config get meme-tools:env) ts-node -r ./src/init.ts src/tasks/get-config.ts",
