@@ -7,6 +7,8 @@ export type NODE_ENV = "development" | "test" | "production";
 
 export type LOG_LEVEL = "silent" | "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
+export type RPC_CLUSTER = "devnet" | "mainnet-beta";
+
 interface EnvironmentSchema {
     NODE_ENV: NODE_ENV;
     LOG_LEVEL: LOG_LEVEL;
@@ -14,7 +16,7 @@ interface EnvironmentSchema {
     PINATA_JWT: string;
     IPFS_GATEWAY_URI: string;
     RPC_URIS: Set<string>;
-    RPC_CLUSTER: "devnet" | "mainnet-beta";
+    RPC_CLUSTER: RPC_CLUSTER;
     EXPLORER_URI: string;
     KEYPAIR_ENCRYPTION_SECRET: string;
     TOKEN_SYMBOL: string;
@@ -182,7 +184,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .custom((uri: string) => {
                     if (uri && !uri.startsWith("https://x.com")) {
-                        throw new Error(`Invalid Twitter URI: ${formatUri(uri)}`);
+                        throw new Error(`Invalid Twitter URI: ${formatUri(uri, uri)}`);
                     }
                     return uri;
                 })
@@ -194,7 +196,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .custom((uri: string) => {
                     if (uri && !uri.startsWith("https://t.me")) {
-                        throw new Error(`Invalid Telegram URI: ${formatUri(uri)}`);
+                        throw new Error(`Invalid Telegram URI: ${formatUri(uri, uri)}`);
                     }
                     return uri;
                 })
@@ -205,7 +207,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                     Joi.string()
                         .required()
                         .trim()
-                        .allow("ai", "celebrity", "gaming", "meme", "sports", "token")
+                        .allow("ai", "celebrity", "gaming", "meme", "sports")
                 )
                 .min(1)
                 .max(3)
@@ -222,7 +224,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             POOL_LIQUIDITY_SOL: Joi.number()
                 .required()
                 .min(0.01)
-                .max(20)
+                .max(100)
                 .description("Pool liquidity (in SOL)"),
             POOL_TRADING_CYCLE_COUNT: Joi.number()
                 .optional()

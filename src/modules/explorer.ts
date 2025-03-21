@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import chalk from "chalk";
 import { formatUri, generateLink } from "../helpers/format";
+import { RPC_CLUSTER } from "./environment";
 
 const SOLANA_COM = "explorer.solana.com";
 const SOLANA_FM = "solana.fm";
@@ -10,7 +11,7 @@ export class Explorer {
     private readonly baseUri;
     private readonly cluster;
 
-    constructor(baseUri: string, cluster: "mainnet-beta" | "devnet") {
+    constructor(baseUri: string, cluster: RPC_CLUSTER) {
         this.baseUri = baseUri;
 
         if (baseUri.includes(SOLANA_COM) || baseUri.includes(SOLSCAN_IO)) {
