@@ -25,7 +25,7 @@ import bs58 from "bs58";
 import Decimal from "decimal.js";
 import { GetPriorityFeeEstimateResponse, PriorityLevel, UiTransactionEncoding } from "helius-sdk";
 import { explorer, logger, TRANSACTION_CONFIRMATION_TIMEOUT_MS, ZERO_DECIMAL } from "../modules";
-import { RPC_CLUSTER } from "../modules/environment";
+import { RpcCluster } from "../modules/environment";
 import { HeliusClient } from "../modules/helius";
 import {
     capitalize,
@@ -71,7 +71,7 @@ const COMPUTE_UNIT_LIMIT_MULTIPLIER = 1.2;
 
 export async function getComputeBudgetInstructions(
     connection: Connection,
-    cluster: RPC_CLUSTER,
+    cluster: RpcCluster,
     heliusClient: HeliusClient,
     priorityLevel: PriorityLevel,
     instructions: TransactionInstruction[],
@@ -166,7 +166,7 @@ async function createTransaction(
 
 async function getComputeUnitPrice(
     connection: Connection,
-    cluster: RPC_CLUSTER,
+    cluster: RpcCluster,
     heliusClient: HeliusClient,
     instructions: TransactionInstruction[],
     signers: Signer[],

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { formatError, formatText } from "../helpers/format";
 import { envVars, LOG_DIR, logger } from "../modules";
-import { LOG_LEVEL } from "../modules/environment";
+import { LogLevel } from "../modules/environment";
 import { LogEntry } from "../modules/logger";
 
 (async () => {
@@ -40,7 +40,7 @@ async function replayLogs(dirPath: string): Promise<void> {
         for await (const line of lines) {
             const { level, time, msg }: LogEntry = JSON.parse(line);
 
-            const methodName = logLevelLabels[level] as LOG_LEVEL;
+            const methodName = logLevelLabels[level] as LogLevel;
             if (typeof logger[methodName] !== "function") {
                 throw new Error(`Logger method not callable: ${formatText(methodName)}`);
             }

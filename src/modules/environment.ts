@@ -3,20 +3,20 @@ import Decimal from "decimal.js";
 import Joi from "joi";
 import { formatUri } from "../helpers/format";
 
-export type NODE_ENV = "development" | "test" | "production";
+export type NodeEnv = "development" | "test" | "production";
 
-export type LOG_LEVEL = "silent" | "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+export type LogLevel = "silent" | "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
-export type RPC_CLUSTER = "devnet" | "mainnet-beta";
+export type RpcCluster = "devnet" | "mainnet-beta";
 
 interface EnvironmentSchema {
-    NODE_ENV: NODE_ENV;
-    LOG_LEVEL: LOG_LEVEL;
+    NODE_ENV: NodeEnv;
+    LOG_LEVEL: LogLevel;
     LOGGER_NAME: string;
     PINATA_JWT: string;
     IPFS_GATEWAY_URI: string;
     RPC_URIS: Set<string>;
-    RPC_CLUSTER: RPC_CLUSTER;
+    RPC_CLUSTER: RpcCluster;
     EXPLORER_URI: string;
     KEYPAIR_ENCRYPTION_SECRET: string;
     TOKEN_SYMBOL: string;
