@@ -71,7 +71,11 @@
 
 9. Fill in the form to update token information and pay 299 USD on [Dexscreener](https://marketplace.dexscreener.com/product/token-info/order)
 
-10. Check token trends on [Dexscreener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana) and [Defined](https://www.defined.fi/tokens/discover?network=sol&createdAt=hour12&rankingBy=volume&rankingDirection=DESC).
+10. Check token trending on the platforms below:
+
+- [DexScreener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana)
+- [DexTools](https://www.dextools.io/app/en/solana/trending)
+- [Defined](https://www.defined.fi/tokens/discover?network=sol&createdAt=hour12&rankingBy=volume&rankingDirection=DESC)
 
 # Token Post Launch Plan
 
