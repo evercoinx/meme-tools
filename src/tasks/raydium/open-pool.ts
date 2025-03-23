@@ -21,13 +21,13 @@ import {
     importMintKeypair,
     getTokenAccountInfo,
     KeypairKind,
-} from "../helpers/account";
-import { checkFileExists } from "../helpers/filesystem";
-import { formatDecimal, formatError, formatPublicKey } from "../helpers/format";
+} from "../../helpers/account";
+import { checkFileExists } from "../../helpers/filesystem";
+import { formatDecimal, formatError, formatPublicKey } from "../../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
-} from "../helpers/network";
+} from "../../helpers/network";
 import {
     connectionPool,
     envVars,
@@ -38,14 +38,14 @@ import {
     UNITS_PER_MINT,
     ZERO_BN,
     ZERO_DECIMAL,
-} from "../modules";
+} from "../../modules";
 import {
     createRaydium,
     loadRaydiumCpmmPool,
     RaydiumCpmmPool,
     swapSolToMint,
-} from "../modules/raydium";
-import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
+} from "../../modules/raydium";
+import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
 
 (async () => {
     try {
@@ -72,14 +72,14 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/sto
         );
 
         const raydium = await createRaydium(connectionPool.current(), dev);
-        const [sendCreatePoolTransaction, raydiumCpmmPool] = await createPool(raydium, dev, mint);
+        const [sendCreatePoolTransaction, cpmmPool] = await createPool(raydium, dev, mint);
         await Promise.all([sendCreatePoolTransaction]);
 
         const sendSwapSolToMintTransactions = await swapSolToMint(
             connectionPool,
             heliusClientPool,
             raydium,
-            raydiumCpmmPool,
+            cpmmPool,
             snipersToBuy,
             lamportsToBuy,
             SWAPPER_SLIPPAGE_PERCENT,
@@ -132,18 +132,18 @@ async function createPool(
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
 
-    const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
-    if (raydiumPoolId) {
-        logger.debug("Raydium pool id (%s) loaded from storage", formatPublicKey(raydiumPoolId));
+    const savedPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
+    if (savedPoolId) {
+        logger.debug("Raydium pool id (%s) loaded from storage", formatPublicKey(savedPoolId));
 
-        const raydimLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
-        if (!raydimLpMint) {
+        const lpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
+        if (!lpMint) {
             throw new Error("Raydium LP mint not loaded from storage");
         }
-        logger.debug("Raydium LP mint (%s) loaded from storage", formatPublicKey(raydimLpMint));
+        logger.debug("Raydium LP mint (%s) loaded from storage", formatPublicKey(lpMint));
 
-        const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
-        return [Promise.resolve(undefined), raydiumCpmmPool];
+        const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(savedPoolId));
+        return [Promise.resolve(undefined), cpmmPool];
     }
 
     const feeConfigs = await raydium.api.getCpmmConfigs();

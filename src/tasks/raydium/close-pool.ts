@@ -8,9 +8,9 @@ import {
     importMintKeypair,
     importSwapperKeypairs,
     KeypairKind,
-} from "../helpers/account";
-import { checkFileExists } from "../helpers/filesystem";
-import { capitalize, formatDecimal, formatError, formatPublicKey } from "../helpers/format";
+} from "../../helpers/account";
+import { checkFileExists } from "../../helpers/filesystem";
+import { capitalize, formatDecimal, formatError, formatPublicKey } from "../../helpers/format";
 import {
     connectionPool,
     envVars,
@@ -20,9 +20,9 @@ import {
     SWAPPER_SLIPPAGE_PERCENT,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
-} from "../modules";
-import { createRaydium, loadRaydiumCpmmPool, swapMintToSol } from "../modules/raydium";
-import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
+} from "../../modules";
+import { createRaydium, loadRaydiumCpmmPool, swapMintToSol } from "../../modules/raydium";
+import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
 
 (async () => {
     try {
@@ -33,8 +33,8 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
             throw new Error("Mint not loaded from storage");
         }
 
-        const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
-        if (!raydiumPoolId) {
+        const poolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
+        if (!poolId) {
             throw new Error("Raydium pool id not loaded from storage");
         }
 
@@ -43,7 +43,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
         const traders = importSwapperKeypairs(KeypairKind.Trader);
 
         const raydium = await createRaydium(connectionPool.current(), dev);
-        const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
+        const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
         const sniperUnitsToSell = await findUnitsToSell(snipers, mint, KeypairKind.Sniper);
         const devUnitsToSell = await findUnitsToSell([dev], mint, KeypairKind.Dev);
@@ -53,7 +53,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
             connectionPool,
             heliusClientPool,
             raydium,
-            raydiumCpmmPool,
+            cpmmPool,
             snipers,
             sniperUnitsToSell,
             SWAPPER_SLIPPAGE_PERCENT,
@@ -64,7 +64,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
             connectionPool,
             heliusClientPool,
             raydium,
-            raydiumCpmmPool,
+            cpmmPool,
             [dev],
             devUnitsToSell,
             SWAPPER_SLIPPAGE_PERCENT,
@@ -75,7 +75,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
             connectionPool,
             heliusClientPool,
             raydium,
-            raydiumCpmmPool,
+            cpmmPool,
             traders,
             traderUnitsToSell,
             SWAPPER_SLIPPAGE_PERCENT,

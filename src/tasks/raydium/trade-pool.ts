@@ -10,8 +10,8 @@ import {
     importMintKeypair,
     importSwapperKeypairs,
     KeypairKind,
-} from "../helpers/account";
-import { checkFileExists } from "../helpers/filesystem";
+} from "../../helpers/account";
+import { checkFileExists } from "../../helpers/filesystem";
 import {
     formatDecimal,
     formatError,
@@ -20,13 +20,13 @@ import {
     formatPercent,
     formatPublicKey,
     OUTPUT_SEPARATOR,
-} from "../helpers/format";
+} from "../../helpers/format";
 import {
     generateRandomBoolean,
     generateRandomFloat,
     generateRandomInteger,
     shuffle,
-} from "../helpers/random";
+} from "../../helpers/random";
 import {
     connectionPool,
     envVars,
@@ -36,20 +36,20 @@ import {
     SWAPPER_SLIPPAGE_PERCENT,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
-} from "../modules";
+} from "../../modules";
 import {
     createRaydium,
     loadRaydiumCpmmPool,
     RaydiumCpmmPool,
     swapMintToSol,
     swapSolToMint,
-} from "../modules/raydium";
+} from "../../modules/raydium";
 import {
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_POOL_ID,
     STORAGE_RAYDIUM_POOL_TRADING_CYCLE,
     STORAGE_TRADER_COUNT,
-} from "../modules/storage";
+} from "../../modules/storage";
 
 (async () => {
     try {
@@ -60,13 +60,13 @@ import {
             throw new Error("Mint not loaded from storage");
         }
 
-        const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
-        if (!raydiumPoolId) {
+        const poolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
+        if (!poolId) {
             throw new Error("Raydium pool id not loaded from storage");
         }
 
-        const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
-        if (!raydiumLpMint) {
+        const lpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
+        if (!lpMint) {
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
@@ -86,7 +86,7 @@ import {
 
         const traders = importSwapperKeypairs(KeypairKind.Trader);
         const raydium = await createRaydium(connectionPool.current());
-        const raydiumCpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(raydiumPoolId));
+        const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
         let poolTradingCycle = storage.get<number | undefined>(STORAGE_RAYDIUM_POOL_TRADING_CYCLE);
         poolTradingCycle = poolTradingCycle ? poolTradingCycle + 1 : 0;
@@ -115,7 +115,7 @@ import {
 
             await executeTradeCycle(
                 raydium,
-                raydiumCpmmPool,
+                cpmmPool,
                 activeTraders,
                 mint,
                 envVars.TRADER_GROUP_SIZE,
@@ -133,7 +133,7 @@ import {
 
 async function executeTradeCycle(
     raydium: Raydium,
-    raydiumCpmmPool: RaydiumCpmmPool,
+    cpmmPool: RaydiumCpmmPool,
     traders: Keypair[],
     mint: Keypair,
     traderGroupSize: number,
@@ -146,7 +146,7 @@ async function executeTradeCycle(
         if (poolTradingCycle === 0 || generateRandomBoolean(poolTradingPumpBiasPercent)) {
             await pumpPool(
                 raydium,
-                raydiumCpmmPool,
+                cpmmPool,
                 traderGroup,
                 mint,
                 poolTradingCycle,
@@ -156,7 +156,7 @@ async function executeTradeCycle(
         } else {
             await dumpPool(
                 raydium,
-                raydiumCpmmPool,
+                cpmmPool,
                 traderGroup,
                 mint,
                 poolTradingCycle,
@@ -173,7 +173,7 @@ async function executeTradeCycle(
 
 async function pumpPool(
     raydium: Raydium,
-    raydiumCpmmPool: RaydiumCpmmPool,
+    cpmmPool: RaydiumCpmmPool,
     traders: Keypair[],
     mint: Keypair,
     poolTradingCycle: number,
@@ -185,7 +185,7 @@ async function pumpPool(
         connectionPool,
         heliusClientPool,
         raydium,
-        raydiumCpmmPool,
+        cpmmPool,
         traders,
         lamportsToBuy,
         SWAPPER_SLIPPAGE_PERCENT,
@@ -266,7 +266,7 @@ async function findLamportsToBuy(traders: Keypair[], mint: Keypair): Promise<(BN
 
 async function dumpPool(
     raydium: Raydium,
-    raydiumCpmmPool: RaydiumCpmmPool,
+    cpmmPool: RaydiumCpmmPool,
     traders: Keypair[],
     mint: Keypair,
     poolTradingCycle: number,
@@ -278,7 +278,7 @@ async function dumpPool(
         connectionPool,
         heliusClientPool,
         raydium,
-        raydiumCpmmPool,
+        cpmmPool,
         traders,
         unitsToSell,
         SWAPPER_SLIPPAGE_PERCENT,

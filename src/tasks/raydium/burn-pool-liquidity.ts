@@ -6,13 +6,13 @@ import {
     importKeypairFromFile,
     importMintKeypair,
     KeypairKind,
-} from "../helpers/account";
-import { checkFileExists } from "../helpers/filesystem";
-import { formatDecimal, formatError, formatPublicKey } from "../helpers/format";
+} from "../../helpers/account";
+import { checkFileExists } from "../../helpers/filesystem";
+import { formatDecimal, formatError, formatPublicKey } from "../../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
-} from "../helpers/network";
+} from "../../helpers/network";
 import {
     connectionPool,
     envVars,
@@ -20,9 +20,9 @@ import {
     logger,
     storage,
     ZERO_DECIMAL,
-} from "../modules";
-import { RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
-import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
+} from "../../modules";
+import { RAYDIUM_LP_MINT_DECIMALS } from "../../modules/raydium";
+import { STORAGE_RAYDIUM_LP_MINT } from "../../modules/storage";
 
 (async () => {
     try {
@@ -35,17 +35,17 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
             throw new Error("Mint not loaded from storage");
         }
 
-        const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
-        if (!raydiumLpMint) {
+        const lpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
+        if (!lpMint) {
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const sendBurnRaydiumPoolLiquidityTransaction = await burnRaydiumPoolLiquidity(
+        const sendBurnPoolLiquidityTransaction = await burnPoolLiquidity(
             dev,
-            new PublicKey(raydiumLpMint)
+            new PublicKey(lpMint)
         );
 
-        await Promise.all([sendBurnRaydiumPoolLiquidityTransaction]);
+        await Promise.all([sendBurnPoolLiquidityTransaction]);
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -53,7 +53,7 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
     }
 })();
 
-async function burnRaydiumPoolLiquidity(
+async function burnPoolLiquidity(
     dev: Keypair,
     lpMint: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>> {

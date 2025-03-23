@@ -84,7 +84,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             LOGGER_NAME: Joi.string()
                 .optional()
                 .trim()
-                .pattern(/^[a-z0-9-_]+$/)
+                .pattern(/^[a-z0-9-]+$/)
                 .description("Logger name"),
             PINATA_JWT: Joi.string()
                 .required()

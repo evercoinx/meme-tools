@@ -8,16 +8,16 @@ import {
 import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import BN from "bn.js";
 import { PriorityLevel } from "helius-sdk";
-import { importKeypairFromFile, KeypairKind } from "../helpers/account";
-import { checkFileExists } from "../helpers/filesystem";
-import { formatError, formatPublicKey } from "../helpers/format";
+import { importKeypairFromFile, KeypairKind } from "../../helpers/account";
+import { checkFileExists } from "../../helpers/filesystem";
+import { formatError, formatPublicKey } from "../../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
-} from "../helpers/network";
-import { connectionPool, envVars, heliusClientPool, logger, storage } from "../modules";
-import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
-import { STORAGE_RAYDIUM_NFT_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
+} from "../../helpers/network";
+import { connectionPool, envVars, heliusClientPool, logger, storage } from "../../modules";
+import { createRaydium, loadRaydiumCpmmPool } from "../../modules/raydium";
+import { STORAGE_RAYDIUM_NFT_MINT, STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
 
 (async () => {
     try {
@@ -25,23 +25,23 @@ import { STORAGE_RAYDIUM_NFT_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/st
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
 
-        const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
-        if (!raydiumPoolId) {
+        const poolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
+        if (!poolId) {
             throw new Error("Raydium pool id not loaded from storage");
         }
 
-        const raydiumNftMint = storage.get<string | undefined>(STORAGE_RAYDIUM_NFT_MINT);
-        if (!raydiumNftMint) {
+        const nftMint = storage.get<string | undefined>(STORAGE_RAYDIUM_NFT_MINT);
+        if (!nftMint) {
             throw new Error("Raydium NFT mint not loaded from storage");
         }
 
-        const sendCollectRaydiumPoolFeesTransaction = await collectRaydiumPoolFees(
-            new PublicKey(raydiumPoolId),
+        const sendCollectPoolFeesTransaction = await collectPoolFees(
+            new PublicKey(poolId),
             dev,
-            new PublicKey(raydiumNftMint)
+            new PublicKey(nftMint)
         );
 
-        await Promise.all([sendCollectRaydiumPoolFeesTransaction]);
+        await Promise.all([sendCollectPoolFeesTransaction]);
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -49,8 +49,8 @@ import { STORAGE_RAYDIUM_NFT_MINT, STORAGE_RAYDIUM_POOL_ID } from "../modules/st
     }
 })();
 
-async function collectRaydiumPoolFees(
-    raydiumPoolId: PublicKey,
+async function collectPoolFees(
+    poolId: PublicKey,
     dev: Keypair,
     nftMint: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>> {
@@ -58,7 +58,7 @@ async function collectRaydiumPoolFees(
     const heliusClient = heliusClientPool.current();
 
     const raydium = await createRaydium(connection, dev);
-    const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
+    const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, poolId);
 
     const {
         transaction: { instructions },
@@ -84,6 +84,6 @@ async function collectRaydiumPoolFees(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [dev],
-        `to collect fees in pool id (${formatPublicKey(raydiumPoolId)})`
+        `to collect fees in pool id (${formatPublicKey(poolId)})`
     );
 }

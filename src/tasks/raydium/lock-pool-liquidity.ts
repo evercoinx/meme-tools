@@ -8,17 +8,21 @@ import {
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { getTokenAccountInfo, importKeypairFromFile, KeypairKind } from "../helpers/account";
-import { checkFileExists } from "../helpers/filesystem";
-import { formatDecimal, formatError, formatPublicKey, formatSignature } from "../helpers/format";
-import { connectionPool, envVars, explorer, logger, storage, ZERO_DECIMAL } from "../modules";
-import { suppressLogs } from "../modules/logger";
-import { createRaydium, loadRaydiumCpmmPool, RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
+import { getTokenAccountInfo, importKeypairFromFile, KeypairKind } from "../../helpers/account";
+import { checkFileExists } from "../../helpers/filesystem";
+import { formatDecimal, formatError, formatPublicKey, formatSignature } from "../../helpers/format";
+import { connectionPool, envVars, explorer, logger, storage, ZERO_DECIMAL } from "../../modules";
+import { suppressLogs } from "../../modules/logger";
+import {
+    createRaydium,
+    loadRaydiumCpmmPool,
+    RAYDIUM_LP_MINT_DECIMALS,
+} from "../../modules/raydium";
 import {
     STORAGE_RAYDIUM_LP_MINT,
     STORAGE_RAYDIUM_NFT_MINT,
     STORAGE_RAYDIUM_POOL_ID,
-} from "../modules/storage";
+} from "../../modules/storage";
 
 (async () => {
     try {
@@ -26,23 +30,23 @@ import {
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
 
-        const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
-        if (!raydiumLpMint) {
-            throw new Error("Raydium LP mint not loaded from storage");
-        }
-
-        const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
-        if (!raydiumPoolId) {
+        const poolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
+        if (!poolId) {
             throw new Error("Raydium pool id not loaded from storage");
         }
 
-        const sendLockRaydiumPoolLiquidityTransaction = await lockRaydiumPoolLiquidity(
-            new PublicKey(raydiumPoolId),
+        const lpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
+        if (!lpMint) {
+            throw new Error("Raydium LP mint not loaded from storage");
+        }
+
+        const sendLockPoolLiquidityTransaction = await lockPoolLiquidity(
+            new PublicKey(poolId),
             dev,
-            new PublicKey(raydiumLpMint)
+            new PublicKey(lpMint)
         );
 
-        await Promise.all([sendLockRaydiumPoolLiquidityTransaction]);
+        await Promise.all([sendLockPoolLiquidityTransaction]);
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -50,15 +54,15 @@ import {
     }
 })();
 
-async function lockRaydiumPoolLiquidity(
-    raydiumPoolId: PublicKey,
+async function lockPoolLiquidity(
+    poolId: PublicKey,
     dev: Keypair,
     lpMint: PublicKey
 ): Promise<void> {
     const connection = connectionPool.current();
 
     const raydium = await createRaydium(connection, dev);
-    const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
+    const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, poolId);
 
     const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
         connectionPool,
@@ -113,7 +117,7 @@ async function lockRaydiumPoolLiquidity(
     logger.info(
         "Transaction (%s) sent to lock liquidity in pool id (%s)",
         formatSignature(signature),
-        formatPublicKey(raydiumPoolId)
+        formatPublicKey(poolId)
     );
     logger.info(
         "Transaction (%s) confirmed: %s",
@@ -141,6 +145,6 @@ async function lockRaydiumPoolLiquidity(
     //     connection,
     //     [...computeBudgetInstructions, ...instructions],
     //     [dev],
-    //     `to lock liquidity in pool id (${formatPublicKey(raydiumPoolId)})`,
+    //     `to lock liquidity in pool id (${formatPublicKey(poolId)})`,
     // );
 }

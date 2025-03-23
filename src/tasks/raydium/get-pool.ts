@@ -1,6 +1,6 @@
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { checkFileExists } from "../helpers/filesystem";
+import { checkFileExists } from "../../helpers/filesystem";
 import {
     formatCurrency,
     formatDate,
@@ -8,21 +8,25 @@ import {
     formatError,
     formatText,
     formatPercent,
-} from "../helpers/format";
-import { connectionPool, envVars, explorer, logger, storage } from "../modules";
-import { createRaydium, loadRaydiumCpmmPool, RAYDIUM_LP_MINT_DECIMALS } from "../modules/raydium";
-import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
+} from "../../helpers/format";
+import { connectionPool, envVars, explorer, logger, storage } from "../../modules";
+import {
+    createRaydium,
+    loadRaydiumCpmmPool,
+    RAYDIUM_LP_MINT_DECIMALS,
+} from "../../modules/raydium";
+import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
 
 (async () => {
     try {
         await checkFileExists(storage.cacheFilePath);
 
-        const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
-        if (!raydiumPoolId) {
+        const poolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
+        if (!poolId) {
             throw new Error("Raydium pool not loaded from storage");
         }
 
-        await getPool(new PublicKey(raydiumPoolId));
+        await getPool(new PublicKey(poolId));
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -30,22 +34,12 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
     }
 })();
 
-async function getPool(raydiumPoolId: PublicKey): Promise<void> {
+async function getPool(poolId: PublicKey): Promise<void> {
     const raydium = await createRaydium(connectionPool.current());
-    const { poolInfo } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
+    const { poolInfo } = await loadRaydiumCpmmPool(raydium, poolId);
 
-    const {
-        id: poolId,
-        mintAmountA,
-        mintAmountB,
-        lpMint,
-        lpAmount,
-        type,
-        price,
-        openTime,
-        tvl,
-        burnPercent,
-    } = poolInfo;
+    const { mintAmountA, mintAmountB, lpMint, lpAmount, type, price, openTime, tvl, burnPercent } =
+        poolInfo;
     let { mintA, mintB, feeRate } = poolInfo;
 
     if (raydium.cluster === "devnet") {

@@ -8,13 +8,13 @@ import {
     importKeypairFromFile,
     importMintKeypair,
     KeypairKind,
-} from "../helpers/account";
-import { checkFileExists } from "../helpers/filesystem";
-import { formatDecimal, formatError, formatPublicKey } from "../helpers/format";
+} from "../../helpers/account";
+import { checkFileExists } from "../../helpers/filesystem";
+import { formatDecimal, formatError, formatPublicKey } from "../../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
-} from "../helpers/network";
+} from "../../helpers/network";
 import {
     connectionPool,
     envVars,
@@ -24,9 +24,9 @@ import {
     ZERO_DECIMAL,
     UNITS_PER_MINT,
     ZERO_BN,
-} from "../modules";
-import { createRaydium, loadRaydiumCpmmPool } from "../modules/raydium";
-import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
+} from "../../modules";
+import { createRaydium, loadRaydiumCpmmPool } from "../../modules/raydium";
+import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
 
 (async () => {
     try {
@@ -39,18 +39,18 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
             throw new Error("Mint not loaded from storage");
         }
 
-        const raydiumPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
-        if (!raydiumPoolId) {
+        const poolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
+        if (!poolId) {
             throw new Error("Raydium pool id not loaded from storage");
         }
 
-        const sendAddRaydiumPoolLiquidityTransaction = await addRaydiumPoolLiquidity(
-            new PublicKey(raydiumPoolId),
+        const sendAddPoolLiquidityTransaction = await addPoolLiquidity(
+            new PublicKey(poolId),
             dev,
             mint
         );
 
-        await Promise.all([sendAddRaydiumPoolLiquidityTransaction]);
+        await Promise.all([sendAddPoolLiquidityTransaction]);
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -58,8 +58,8 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../modules/storage";
     }
 })();
 
-async function addRaydiumPoolLiquidity(
-    raydiumPoolId: PublicKey,
+async function addPoolLiquidity(
+    poolId: PublicKey,
     dev: Keypair,
     mint: Keypair
 ): Promise<Promise<TransactionSignature | undefined>> {
@@ -67,7 +67,7 @@ async function addRaydiumPoolLiquidity(
     const heliusClient = heliusClientPool.current();
 
     const raydium = await createRaydium(connection, dev);
-    const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, raydiumPoolId);
+    const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, poolId);
 
     const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
         connectionPool,
@@ -118,6 +118,6 @@ async function addRaydiumPoolLiquidity(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [dev],
-        `to add liquidity to pool id (${formatPublicKey(raydiumPoolId)})`
+        `to add liquidity to pool id (${formatPublicKey(poolId)})`
     );
 }

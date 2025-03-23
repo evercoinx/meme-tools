@@ -1,1 +1,1 @@
-yarn format && yarn lint && yarn test
+yarn format && yarn lint && yarn test:raydium
