@@ -8,3 +8,4 @@ node_modules/
 storages/*
 !storages/production/
 .env*
+.yarn
