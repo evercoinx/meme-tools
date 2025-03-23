@@ -37,29 +37,32 @@ export class Explorer {
         throw new Error(`Unknown base URI: ${formatUri(baseUri)}`);
     }
 
-    public generateTransactionUri(signature: string, tag = "<Transaction link>"): string {
-        return chalk.blue(
-            generateLink(`${this.baseUri}/tx/${signature}?cluster=${this.cluster}`, tag)
-        );
-    }
-
-    public generateAddressUri(address: string | PublicKey, tag = "<Address link>"): string {
-        const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
+    public generateTransactionUri(signature: string, tag?: string): string {
         return chalk.blue(
             generateLink(
-                `${this.baseUri}/address/${normalizedAddress}?cluster=${this.cluster}`,
-                tag
+                `${this.baseUri}/tx/${signature}?cluster=${this.cluster}`,
+                tag ?? signature
             )
         );
     }
 
-    public generateTokenUri(address: string | PublicKey, tag = "<Token link>"): string {
+    public generateAddressUri(address: string | PublicKey, tag?: string): string {
         const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
+        return chalk.blue(
+            generateLink(
+                `${this.baseUri}/address/${normalizedAddress}?cluster=${this.cluster}`,
+                tag ?? normalizedAddress
+            )
+        );
+    }
+
+    public generateTokenUri(address: string | PublicKey, tag?: string): string {
         const tokenPath = this.baseUri.includes(SOLSCAN_IO) ? "token" : "address";
+        const normalizedAddress = address instanceof PublicKey ? address.toBase58() : address;
         return chalk.blue(
             generateLink(
                 `${this.baseUri}/${tokenPath}/${normalizedAddress}?cluster=${this.cluster}`,
-                tag
+                tag ?? normalizedAddress
             )
         );
     }

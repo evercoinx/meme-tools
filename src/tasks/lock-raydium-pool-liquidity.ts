@@ -118,7 +118,7 @@ async function lockRaydiumPoolLiquidity(
     logger.info(
         "Transaction (%s) confirmed: %s",
         formatSignature(signature),
-        explorer.generateTransactionUri(signature)
+        explorer.generateTransactionUri(signature, "<Transaction link>")
     );
 
     storage.set(STORAGE_RAYDIUM_NFT_MINT, nftMint);

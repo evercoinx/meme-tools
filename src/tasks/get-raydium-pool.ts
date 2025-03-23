@@ -74,12 +74,12 @@ async function getPool(raydiumPoolId: PublicKey): Promise<void> {
     logger.info(
         "Raydium pool (%s)\n\t\tPool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\tPool type: %s\n\t\tPrice: %s %s ≈ %s %s\n\t\tFee tier: %s\n\t\tOpen time: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s",
         raydium.cluster,
-        explorer.generateAddressUri(poolId, poolId),
+        explorer.generateAddressUri(poolId),
         mintA.symbol,
-        explorer.generateTokenUri(mintA.address, mintA.address),
+        explorer.generateTokenUri(mintA.address),
         mintB.symbol,
-        explorer.generateTokenUri(mintB.address, mintB.address),
-        explorer.generateTokenUri(lpMint.address, lpMint.address),
+        explorer.generateTokenUri(mintB.address),
+        explorer.generateTokenUri(lpMint.address),
         formatText(type),
         formatDecimal(1, 0),
         ...(NATIVE_MINT.toBase58() === mintA.address

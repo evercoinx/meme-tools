@@ -184,7 +184,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .custom((uri: string) => {
                     if (uri && !uri.startsWith("https://x.com")) {
-                        throw new Error(`Invalid Twitter URI: ${formatUri(uri, uri)}`);
+                        throw new Error(`Invalid Twitter URI: ${formatUri(uri)}`);
                     }
                     return uri;
                 })
@@ -196,7 +196,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .custom((uri: string) => {
                     if (uri && !uri.startsWith("https://t.me")) {
-                        throw new Error(`Invalid Telegram URI: ${formatUri(uri, uri)}`);
+                        throw new Error(`Invalid Telegram URI: ${formatUri(uri)}`);
                     }
                     return uri;
                 })
