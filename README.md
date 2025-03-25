@@ -63,9 +63,9 @@
 
 5. Run `yarn create-mint && yarn get-mint && yarn get-funds:main` to create the token mint.
 
-6. Run `yarn open-raydium-pool && yarn lock-raydium-pool-liquidity && yarn get-raydium-pool && yarn get-funds:main` to open a Raydium CPMM pool and to lock liquidity in it.
+6. Run `yarn open-pool:raydium && yarn get-pool:raydium && yarn get-funds:main` to open a Raydium CPMM pool and to lock liquidity in it.
 
-7. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
+7. Run `yarn trade:raydium` to make the traders trade in this pool.
 
 8. Create a banner image with a 3:1 aspect ratio and a size between 600x200 and 1500x500 in the webp format, and save it under _$TOKEN_SYMBOL_banner.webp_ name in the _images/production_ folder.
 
@@ -99,8 +99,8 @@
     - Set `$POOL_TRADING_CYCLE_COUNT` to `1`.
     - Set `$POOL_TRADING_PUMP_BIAS_PERCENT` to `100`.
 
-4. Run `yarn trade-raydium-pool` to make the traders execute buys and sells on this pool.
+4. Run `yarn trade:raydium` to make the traders trade in this pool.
 
 # Token Exit Plan
 
-1. Run `yarn close-raydium-pool && yarn collect-funds && yarn get-funds` to close the Raydium pool and to collect funds with the _main_ wallets.
+1. Run `yarn close-pool:raydium && yarn collect-funds && yarn get-funds` to close the Raydium pool and to collect funds to the _main_ wallets.
