@@ -224,7 +224,7 @@ function checkMintImage(imageContents: Buffer<ArrayBufferLike>): void {
 async function uploadMetadata(groupId: string, imageUri: string): Promise<OffchainTokenMetadata> {
     let metadata = storage.get<OffchainTokenMetadata | undefined>(STORAGE_MINT_METADATA);
     if (metadata) {
-        logger.debug("Mint metadata file loaded from storage");
+        logger.debug("Mint metadata loaded from storage");
         return metadata;
     }
 
@@ -247,15 +247,15 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<Offcha
     if (pinnedFiles.length > 0 && pinnedFiles[0].metadata.name === metadataFilename) {
         metadataUri = generatePinataUri(pinnedFiles[0].ipfs_pin_hash);
         logger.warn(
-            "Mint metadata file already uploaded to IPFS: %s",
-            formatUri(metadataUri, "<Metadata file link>")
+            "Mint metadata already uploaded to IPFS: %s",
+            formatUri(metadataUri, "<Metadata link>")
         );
     } else {
-        logger.debug("Uploading mint metadata file to IPFS");
+        logger.debug("Uploading mint metadata to IPFS");
         const metadataFileContents = JSON.stringify(metadata);
         const metadataFileSize = Buffer.from(metadataFileContents, "utf8").byteLength;
         if (metadataFileSize > MAX_FILE_SIZE) {
-            throw new Error(`Too large metadata file size: ${formatInteger(metadataFileSize)}`);
+            throw new Error(`Too large mint metadata size: ${formatInteger(metadataFileSize)}`);
         }
 
         const metadataFile = new File([metadataFileContents], metadataFilename, {
@@ -265,8 +265,8 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<Offcha
         const upload = await pinataClient.upload.file(metadataFile).group(groupId);
         metadataUri = generatePinataUri(upload.IpfsHash);
         logger.info(
-            "Mint metadata file uploaded to IPFS: %s",
-            formatUri(metadataUri, "<Metadata file link>")
+            "Mint metadata uploaded to IPFS: %s",
+            formatUri(metadataUri, "<Metadata link>")
         );
     }
 

@@ -109,20 +109,27 @@ const SNIPER_SELL_TRADING_CYCLE = 2;
             logger.debug("Raydium pool trading cycle saved to storage");
 
             if ([SNIPER_BUY_TRADING_CYCLE, SNIPER_SELL_TRADING_CYCLE].includes(i)) {
+                const sniperRepeatableCount = new Decimal(envVars.SNIPER_REPEATABLE_PERCENT)
+                    .mul(snipers.length)
+                    .round()
+                    .toNumber();
+                const activeSnipers = shuffle(snipers).slice(0, sniperRepeatableCount);
+
                 await executeTradingCycleForSnipers(
                     raydium,
                     cpmmPool,
-                    snipers,
+                    activeSnipers,
                     mint,
                     envVars.SWAPPER_GROUP_SIZE,
                     i
                 );
             }
 
+            const activeTraders = shuffle(traders).slice(0, envVars.TRADER_COUNT);
             await executeTradingCycleForTraders(
                 raydium,
                 cpmmPool,
-                traders,
+                activeTraders,
                 mint,
                 envVars.SWAPPER_GROUP_SIZE,
                 i,
@@ -145,22 +152,16 @@ async function executeTradingCycleForSnipers(
     sniperGroupSize: number,
     poolTradingCycle: number
 ): Promise<void> {
-    const sniperRepeatableCount = new Decimal(envVars.SNIPER_REPEATABLE_PERCENT)
-        .mul(snipers.length)
-        .round()
-        .toNumber();
-    const activeSnipers = shuffle(snipers).slice(0, sniperRepeatableCount);
-
     logger.info(
         "\n%s\nTrading cycle: %s. Total sniper swaps: %s",
         OUTPUT_SEPARATOR_DOUBLE,
         formatInteger(poolTradingCycle),
-        formatInteger(activeSnipers.length),
+        formatInteger(snipers.length),
         OUTPUT_SEPARATOR_DOUBLE
     );
 
-    for (let i = 0; i < activeSnipers.length; i += sniperGroupSize) {
-        const sniperGroup = activeSnipers.slice(i, i + sniperGroupSize);
+    for (let i = 0; i < snipers.length; i += sniperGroupSize) {
+        const sniperGroup = snipers.slice(i, i + sniperGroupSize);
 
         if (poolTradingCycle === SNIPER_BUY_TRADING_CYCLE) {
             await pumpPool(
@@ -201,18 +202,17 @@ async function executeTradingCycleForTraders(
     poolTradingCycle: number,
     poolTradingPumpBiasPercent: number
 ): Promise<void> {
-    const activeTraders = shuffle(traders).slice(0, envVars.TRADER_COUNT);
     logger.info(
         "\n%s\nTrading cycle: %s. Total trader swaps: %s. Pump bias: %s\n%s",
         OUTPUT_SEPARATOR_DOUBLE,
         formatInteger(poolTradingCycle),
-        formatInteger(activeTraders.length),
+        formatInteger(traders.length),
         formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT),
         OUTPUT_SEPARATOR_DOUBLE
     );
 
-    for (let i = 0; i < activeTraders.length; i += traderGroupSize) {
-        const traderGroup = activeTraders.slice(i, i + traderGroupSize);
+    for (let i = 0; i < traders.length; i += traderGroupSize) {
+        const traderGroup = traders.slice(i, i + traderGroupSize);
 
         if (poolTradingCycle === 0 || generateRandomBoolean(poolTradingPumpBiasPercent)) {
             await pumpPool(

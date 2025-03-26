@@ -102,6 +102,7 @@ const SWAPPER_GAS_FEE_SOL = 0.01;
                     .mul(LAMPORTS_PER_SOL)
                     .trunc()
         );
+
         const traderLamports = new Array(envVars.TRADER_COUNT)
             .fill(0)
             .map(() =>
