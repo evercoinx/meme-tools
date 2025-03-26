@@ -13,13 +13,15 @@ import {
 } from "../../helpers/account";
 import { checkFileExists } from "../../helpers/filesystem";
 import {
+    capitalize,
     formatDecimal,
     formatError,
     formatInteger,
     formatMilliseconds,
     formatPercent,
     formatPublicKey,
-    OUTPUT_SEPARATOR,
+    OUTPUT_SEPARATOR_DOUBLE,
+    OUTPUT_SEPARATOR_SINGLE,
 } from "../../helpers/format";
 import {
     generateRandomBoolean,
@@ -50,6 +52,9 @@ import {
     STORAGE_RAYDIUM_POOL_TRADING_CYCLE,
     STORAGE_TRADER_COUNT,
 } from "../../modules/storage";
+
+const SNIPER_BUY_TRADING_CYCLE = 1;
+const SNIPER_SELL_TRADING_CYCLE = 2;
 
 (async () => {
     try {
@@ -84,6 +89,7 @@ import {
             logger.warn("Only new traders mode enabled");
         }
 
+        const snipers = importSwapperKeypairs(KeypairKind.Sniper);
         const traders = importSwapperKeypairs(KeypairKind.Trader);
         const raydium = await createRaydium(connectionPool.current());
         const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
@@ -98,27 +104,27 @@ import {
             .toNumber();
 
         for (let i = poolTradingCycle; i < poolTradingCycleCount; i++) {
-            const activeTraders = shuffle(traders).slice(0, envVars.TRADER_COUNT);
-
-            logger.info(
-                "\n%s\nTrading cycle: %s. Total trades: %s. Pump bias: %s\n%s",
-                OUTPUT_SEPARATOR,
-                formatInteger(i),
-                formatInteger(activeTraders.length),
-                formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT),
-                OUTPUT_SEPARATOR
-            );
-
             storage.set(STORAGE_RAYDIUM_POOL_TRADING_CYCLE, i);
             storage.save();
             logger.debug("Raydium pool trading cycle saved to storage");
 
-            await executeTradeCycle(
+            if ([SNIPER_BUY_TRADING_CYCLE, SNIPER_SELL_TRADING_CYCLE].includes(i)) {
+                await executeTradingCycleForSnipers(
+                    raydium,
+                    cpmmPool,
+                    snipers,
+                    mint,
+                    envVars.SWAPPER_GROUP_SIZE,
+                    i
+                );
+            }
+
+            await executeTradingCycleForTraders(
                 raydium,
                 cpmmPool,
-                activeTraders,
+                traders,
                 mint,
-                envVars.TRADER_GROUP_SIZE,
+                envVars.SWAPPER_GROUP_SIZE,
                 i,
                 poolTradingPumpBiasPercent
             );
@@ -131,7 +137,62 @@ import {
     }
 })();
 
-async function executeTradeCycle(
+async function executeTradingCycleForSnipers(
+    raydium: Raydium,
+    cpmmPool: RaydiumCpmmPool,
+    snipers: Keypair[],
+    mint: Keypair,
+    sniperGroupSize: number,
+    poolTradingCycle: number
+): Promise<void> {
+    const sniperRepeatableCount = new Decimal(envVars.SNIPER_REPEATABLE_PERCENT)
+        .mul(snipers.length)
+        .round()
+        .toNumber();
+    const activeSnipers = shuffle(snipers).slice(0, sniperRepeatableCount);
+
+    logger.info(
+        "\n%s\nTrading cycle: %s. Total sniper swaps: %s",
+        OUTPUT_SEPARATOR_DOUBLE,
+        formatInteger(poolTradingCycle),
+        formatInteger(activeSnipers.length),
+        OUTPUT_SEPARATOR_DOUBLE
+    );
+
+    for (let i = 0; i < activeSnipers.length; i += sniperGroupSize) {
+        const sniperGroup = activeSnipers.slice(i, i + sniperGroupSize);
+
+        if (poolTradingCycle === SNIPER_BUY_TRADING_CYCLE) {
+            await pumpPool(
+                raydium,
+                cpmmPool,
+                sniperGroup,
+                mint,
+                KeypairKind.Sniper,
+                poolTradingCycle,
+                i + 1,
+                snipers.length
+            );
+        } else if (poolTradingCycle === SNIPER_SELL_TRADING_CYCLE) {
+            await dumpPool(
+                raydium,
+                cpmmPool,
+                sniperGroup,
+                mint,
+                KeypairKind.Sniper,
+                poolTradingCycle,
+                i + 1,
+                snipers.length
+            );
+        }
+
+        if (i !== snipers.length - 1) {
+            logger.info(OUTPUT_SEPARATOR_SINGLE);
+        }
+    }
+}
+
+async function executeTradingCycleForTraders(
     raydium: Raydium,
     cpmmPool: RaydiumCpmmPool,
     traders: Keypair[],
@@ -140,8 +201,18 @@ async function executeTradeCycle(
     poolTradingCycle: number,
     poolTradingPumpBiasPercent: number
 ): Promise<void> {
-    for (let i = 0; i < traders.length; i += traderGroupSize) {
-        const traderGroup = shuffle(traders.slice(i, i + traderGroupSize));
+    const activeTraders = shuffle(traders).slice(0, envVars.TRADER_COUNT);
+    logger.info(
+        "\n%s\nTrading cycle: %s. Total trader swaps: %s. Pump bias: %s\n%s",
+        OUTPUT_SEPARATOR_DOUBLE,
+        formatInteger(poolTradingCycle),
+        formatInteger(activeTraders.length),
+        formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT),
+        OUTPUT_SEPARATOR_DOUBLE
+    );
+
+    for (let i = 0; i < activeTraders.length; i += traderGroupSize) {
+        const traderGroup = activeTraders.slice(i, i + traderGroupSize);
 
         if (poolTradingCycle === 0 || generateRandomBoolean(poolTradingPumpBiasPercent)) {
             await pumpPool(
@@ -149,6 +220,7 @@ async function executeTradeCycle(
                 cpmmPool,
                 traderGroup,
                 mint,
+                KeypairKind.Trader,
                 poolTradingCycle,
                 i + 1,
                 traders.length
@@ -159,6 +231,7 @@ async function executeTradeCycle(
                 cpmmPool,
                 traderGroup,
                 mint,
+                KeypairKind.Trader,
                 poolTradingCycle,
                 i + 1,
                 traders.length
@@ -166,7 +239,7 @@ async function executeTradeCycle(
         }
 
         if (i !== traders.length - 1) {
-            logger.info(OUTPUT_SEPARATOR);
+            logger.info(OUTPUT_SEPARATOR_SINGLE);
         }
     }
 }
@@ -174,19 +247,20 @@ async function executeTradeCycle(
 async function pumpPool(
     raydium: Raydium,
     cpmmPool: RaydiumCpmmPool,
-    traders: Keypair[],
+    swappers: Keypair[],
     mint: Keypair,
+    keypairKind: KeypairKind,
     poolTradingCycle: number,
     tradeNumber: number,
     totalTrades: number
 ): Promise<void> {
-    const lamportsToBuy = await findLamportsToBuy(traders, mint);
+    const lamportsToBuy = await findLamportsToBuy(swappers, mint, keypairKind);
     const sendSwapSolToMintTransactions = await swapSolToMint(
         connectionPool,
         heliusClientPool,
         raydium,
         cpmmPool,
-        traders,
+        swappers,
         lamportsToBuy,
         SWAPPER_SLIPPAGE_PERCENT,
         PriorityLevel.LOW
@@ -204,7 +278,7 @@ async function pumpPool(
     await Promise.all(sendSwapSolToMintTransactions);
 
     await new Promise((resolve) => {
-        const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
+        const delay = generateRandomInteger(envVars.SWAPPER_TRADE_DELAY_RANGE_SEC);
         logger.info(
             "Cycle: %s. Trade: %s/%s. Buy transactions executed: %s. Pausing: %s sec",
             formatInteger(poolTradingCycle),
@@ -217,30 +291,42 @@ async function pumpPool(
     });
 }
 
-async function findLamportsToBuy(traders: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
+async function findLamportsToBuy(
+    swappers: Keypair[],
+    mint: Keypair,
+    keypairKind: KeypairKind
+): Promise<(BN | null)[]> {
     const lamportsToBuy: (BN | null)[] = [];
+    const isSniper = keypairKind === KeypairKind.Sniper;
 
-    for (const [i, trader] of traders.entries()) {
-        const solBalance = await getSolBalance(connectionPool, trader);
-        const buyAmount = new Decimal(generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL)).mul(
-            LAMPORTS_PER_SOL
-        );
-        const minSolBalance = new Decimal(envVars.TRADER_BALANCE_SOL).mul(LAMPORTS_PER_SOL);
+    for (const [i, swapper] of swappers.entries()) {
+        const solBalance = await getSolBalance(connectionPool, swapper);
+        const buyAmount = new Decimal(
+            generateRandomFloat(
+                isSniper
+                    ? envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL
+                    : envVars.TRADER_BUY_AMOUNT_RANGE_SOL
+            )
+        ).mul(LAMPORTS_PER_SOL);
+        const minSolBalance = new Decimal(
+            isSniper ? envVars.SNIPER_BALANCE_SOL : envVars.TRADER_BALANCE_SOL
+        ).mul(LAMPORTS_PER_SOL);
 
         if (solBalance.sub(buyAmount).lt(minSolBalance)) {
             lamportsToBuy[i] = null;
             logger.warn(
-                "Trader (%s) has insufficient balance on wallet: %s SOL",
-                formatPublicKey(trader.publicKey),
+                "%s (%s) has insufficient balance on wallet: %s SOL",
+                capitalize(keypairKind),
+                formatPublicKey(swapper.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
             continue;
         }
 
-        if (envVars.POOL_TRADING_ONLY_NEW_TRADERS) {
+        if (keypairKind === KeypairKind.Trader && envVars.POOL_TRADING_ONLY_NEW_TRADERS) {
             const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
                 connectionPool,
-                trader,
+                swapper,
                 mint.publicKey,
                 TOKEN_2022_PROGRAM_ID
             );
@@ -248,8 +334,9 @@ async function findLamportsToBuy(traders: Keypair[], mint: Keypair): Promise<(BN
             if (mintTokenBalance && mintTokenBalance.gt(ZERO_DECIMAL)) {
                 lamportsToBuy[i] = null;
                 logger.warn(
-                    "Trader (%s) has already bought token on ATA (%s): %s %s",
-                    formatPublicKey(trader.publicKey),
+                    "%s (%s) already bought token on ATA (%s): %s %s",
+                    capitalize(keypairKind),
+                    formatPublicKey(swapper.publicKey),
                     formatPublicKey(mintTokenAccount),
                     formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
                     envVars.TOKEN_SYMBOL
@@ -267,19 +354,20 @@ async function findLamportsToBuy(traders: Keypair[], mint: Keypair): Promise<(BN
 async function dumpPool(
     raydium: Raydium,
     cpmmPool: RaydiumCpmmPool,
-    traders: Keypair[],
+    swappers: Keypair[],
     mint: Keypair,
+    keypairKind: KeypairKind,
     poolTradingCycle: number,
     tradeNumber: number,
     totalTrades: number
 ): Promise<void> {
-    const unitsToSell = await findUnitsToSell(traders, mint);
+    const unitsToSell = await findUnitsToSell(swappers, mint, keypairKind);
     const sendSwapMintToSolTransactions = await swapMintToSol(
         connectionPool,
         heliusClientPool,
         raydium,
         cpmmPool,
-        traders,
+        swappers,
         unitsToSell,
         SWAPPER_SLIPPAGE_PERCENT,
         PriorityLevel.LOW
@@ -297,7 +385,7 @@ async function dumpPool(
     await Promise.all(sendSwapMintToSolTransactions);
 
     await new Promise((resolve) => {
-        const delay = generateRandomInteger(envVars.TRADER_SWAP_DELAY_RANGE_SEC);
+        const delay = generateRandomInteger(envVars.SWAPPER_TRADE_DELAY_RANGE_SEC);
         logger.info(
             "Cycle: %s. Trade: %s/%s. Sell transactions executed: %s. Pausing: %s sec",
             formatInteger(poolTradingCycle),
@@ -310,13 +398,18 @@ async function dumpPool(
     });
 }
 
-async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN | null)[]> {
+async function findUnitsToSell(
+    swappers: Keypair[],
+    mint: Keypair,
+    keypairKind: KeypairKind
+): Promise<(BN | null)[]> {
     const unitsToSell: (BN | null)[] = [];
+    const isSniper = keypairKind === KeypairKind.Sniper;
 
-    for (const [i, trader] of traders.entries()) {
+    for (const [i, swapper] of swappers.entries()) {
         const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
             connectionPool,
-            trader,
+            swapper,
             mint.publicKey,
             TOKEN_2022_PROGRAM_ID
         );
@@ -324,8 +417,9 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
         if (!mintTokenBalance) {
             unitsToSell[i] = null;
             logger.warn(
-                "Trader (%s) has uninitialized %s ATA (%s)",
-                formatPublicKey(trader.publicKey),
+                "%s (%s) has uninitialized %s ATA (%s)",
+                capitalize(keypairKind),
+                formatPublicKey(swapper.publicKey),
                 envVars.TOKEN_SYMBOL,
                 formatPublicKey(mintTokenAccount)
             );
@@ -334,8 +428,9 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
         if (mintTokenBalance.lte(ZERO_DECIMAL)) {
             unitsToSell[i] = null;
             logger.warn(
-                "Trader (%s) has insufficient balance on ATA (%s): %s %s",
-                formatPublicKey(trader.publicKey),
+                "%s (%s) has insufficient balance on ATA (%s): %s %s",
+                capitalize(keypairKind),
+                formatPublicKey(swapper.publicKey),
                 formatPublicKey(mintTokenAccount),
                 formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
                 envVars.TOKEN_SYMBOL
@@ -345,8 +440,9 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
         if (envVars.POOL_TRADING_ONLY_NEW_TRADERS && mintTokenBalance.gt(ZERO_DECIMAL)) {
             unitsToSell[i] = null;
             logger.warn(
-                "Trader (%s) has already bought token on ATA (%s): %s %s",
-                formatPublicKey(trader.publicKey),
+                "%s (%s) already bought token on ATA (%s): %s %s",
+                capitalize(keypairKind),
+                formatPublicKey(swapper.publicKey),
                 formatPublicKey(mintTokenAccount),
                 formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
                 envVars.TOKEN_SYMBOL
@@ -354,7 +450,11 @@ async function findUnitsToSell(traders: Keypair[], mint: Keypair): Promise<(BN |
             continue;
         }
 
-        const sellPercent = generateRandomFloat(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT);
+        const sellPercent = generateRandomFloat(
+            isSniper
+                ? envVars.SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT
+                : envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT
+        );
         unitsToSell[i] = new BN(mintTokenBalance.mul(sellPercent).toFixed(0));
     }
 

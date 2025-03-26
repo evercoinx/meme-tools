@@ -22,7 +22,7 @@ import { envVars, logger } from "../modules";
 
 function getConfig(): void {
     logger.info(
-        "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s (Total: %s)\n\t\tExplorer URI: %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken decimals: %s\n\t\tToken supply: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\t\tToken Telegram URI: %s\n\t\tToken tags: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\t\tPool trading pump bias: %s\n\n\t\tSniper shares in pool: %s (Total: %s)\n\t\tSniper balance: %s SOL\n\n\t\tTrader count: %s\n\t\tTrader group size: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\t\tTrader swap delay: %s sec",
+        "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s (Total: %s)\n\t\tExplorer URI: %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken decimals: %s\n\t\tToken supply: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\t\tToken Telegram URI: %s\n\t\tToken tags: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\t\tPool trading pump bias: %s\n\n\t\tSniper shares in pool: %s (Total: %s)\n\t\tSniper balance: %s SOL\n\n\t\tTrader count: %s\n\t\tSwapper group size: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\t\tSwapper trade delay: %s sec",
         formatText(envVars.NODE_ENV, true),
         formatUri(envVars.IPFS_GATEWAY_URI),
         Array.from(envVars.RPC_URIS)
@@ -51,7 +51,7 @@ function getConfig(): void {
         formatInteger(envVars.SNIPER_POOL_SHARE_PERCENTS.size),
         formatDecimal(envVars.SNIPER_BALANCE_SOL),
         formatInteger(envVars.TRADER_COUNT),
-        formatInteger(envVars.TRADER_GROUP_SIZE),
+        formatInteger(envVars.SWAPPER_GROUP_SIZE),
         formatDecimal(envVars.TRADER_BALANCE_SOL),
         [
             formatDecimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[0]),
@@ -64,9 +64,9 @@ function getConfig(): void {
             formatPercent(envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT[1]),
         ].join(""),
         [
-            formatMilliseconds(envVars.TRADER_SWAP_DELAY_RANGE_SEC[0]),
+            formatMilliseconds(envVars.SWAPPER_TRADE_DELAY_RANGE_SEC[0]),
             " - ",
-            formatMilliseconds(envVars.TRADER_SWAP_DELAY_RANGE_SEC[1]),
+            formatMilliseconds(envVars.SWAPPER_TRADE_DELAY_RANGE_SEC[1]),
         ].join("")
     );
 }

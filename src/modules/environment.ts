@@ -35,12 +35,15 @@ interface EnvironmentSchema {
     POOL_TRADING_ONLY_NEW_TRADERS: boolean;
     SNIPER_POOL_SHARE_PERCENTS: Set<number>;
     SNIPER_BALANCE_SOL: number;
+    SNIPER_REPEATABLE_PERCENT: number;
+    SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL: [number, number];
+    SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT: [number, number];
     TRADER_COUNT: number;
-    TRADER_GROUP_SIZE: number;
     TRADER_BALANCE_SOL: number;
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
     TRADER_SELL_AMOUNT_RANGE_PERCENT: [number, number];
-    TRADER_SWAP_DELAY_RANGE_SEC: [number, number];
+    SWAPPER_GROUP_SIZE: number;
+    SWAPPER_TRADE_DELAY_RANGE_SEC: [number, number];
 }
 
 const ARRAY_SEPARATOR = ",";
@@ -258,6 +261,26 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(0.005)
                 .max(0.1)
                 .description("Sniper balance (in SOL)"),
+            SNIPER_REPEATABLE_PERCENT: Joi.number()
+                .optional()
+                .min(0)
+                .max(50)
+                .default(0)
+                .custom(convertToFractionalPercent)
+                .description("Sniper repeatable percent"),
+            SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL: Joi.array()
+                .required()
+                .items(Joi.number().min(0.001).max(0.1))
+                .unique()
+                .min(2)
+                .max(2)
+                .description("Sniper repeatable buy amount range (in SOL)"),
+            SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT: Joi.array()
+                .required()
+                .items(Joi.number().min(0.01).max(1).custom(convertToFractionalPercent))
+                .min(2)
+                .max(2)
+                .description("Sniper repeatable sell amount range (in percent)"),
             TRADER_COUNT: Joi.number()
                 .optional()
                 .integer()
@@ -265,13 +288,6 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .max(1_000)
                 .default(0)
                 .description("Trader count"),
-            TRADER_GROUP_SIZE: Joi.number()
-                .optional()
-                .integer()
-                .min(1)
-                .max(3)
-                .default(1)
-                .description("Trader group size"),
             TRADER_BALANCE_SOL: Joi.number()
                 .required()
                 .min(0.005)
@@ -290,7 +306,14 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(2)
                 .max(2)
                 .description("Trader sell amount range (in percent)"),
-            TRADER_SWAP_DELAY_RANGE_SEC: Joi.array()
+            SWAPPER_GROUP_SIZE: Joi.number()
+                .optional()
+                .integer()
+                .min(1)
+                .max(5)
+                .default(1)
+                .description("Swapper group size"),
+            SWAPPER_TRADE_DELAY_RANGE_SEC: Joi.array()
                 .required()
                 .items(Joi.number().min(1).max(600).custom(convertToMilliseconds))
                 .unique()
@@ -313,12 +336,16 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             SNIPER_POOL_SHARE_PERCENTS: process.env.SNIPER_POOL_SHARE_PERCENTS
                 ? process.env.SNIPER_POOL_SHARE_PERCENTS.split(ARRAY_SEPARATOR)
                 : [],
+            SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL:
+                process.env.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL?.split(ARRAY_SEPARATOR),
+            SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT:
+                process.env.SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT?.split(ARRAY_SEPARATOR),
             TRADER_BUY_AMOUNT_RANGE_SOL:
                 process.env.TRADER_BUY_AMOUNT_RANGE_SOL?.split(ARRAY_SEPARATOR),
             TRADER_SELL_AMOUNT_RANGE_PERCENT:
                 process.env.TRADER_SELL_AMOUNT_RANGE_PERCENT?.split(ARRAY_SEPARATOR),
-            TRADER_SWAP_DELAY_RANGE_SEC:
-                process.env.TRADER_SWAP_DELAY_RANGE_SEC?.split(ARRAY_SEPARATOR),
+            SWAPPER_TRADE_DELAY_RANGE_SEC:
+                process.env.SWAPPER_TRADE_DELAY_RANGE_SEC?.split(ARRAY_SEPARATOR),
         });
     if (error) {
         throw new Error(error.annotate());

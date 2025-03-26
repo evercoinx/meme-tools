@@ -5,7 +5,8 @@ import chalk from "chalk";
 import Decimal from "decimal.js";
 
 export const OUTPUT_NOT_ALLOWED = chalk.red("n/a");
-export const OUTPUT_SEPARATOR = chalk.gray("=".repeat(80));
+export const OUTPUT_SEPARATOR_DOUBLE = chalk.gray("=".repeat(80));
+export const OUTPUT_SEPARATOR_SINGLE = chalk.gray("-".repeat(80));
 export const OUTPUT_UNKNOWN_PUBLIC_KEY = chalk.gray("?".repeat(44));
 export const OUTPUT_UNKNOWN_VALUE = chalk.gray("?");
 
