@@ -9,6 +9,7 @@ import {
     STORAGE_MINT_SECRET_KEY,
     STORAGE_SNIPER_COUNT,
     STORAGE_TRADER_COUNT,
+    SwapperCount,
 } from "../modules/storage";
 import { findFileNames } from "./filesystem";
 import { capitalize, formatInteger, formatPublicKey, formatText } from "./format";
@@ -98,7 +99,7 @@ export function importMintKeypair(): Keypair | undefined {
 }
 
 export function generateOrImportSwapperKeypairs(
-    count: number,
+    swapperCount: number,
     keypairKind: KeypairKind,
     dryRun = false
 ): Keypair[] {
@@ -107,12 +108,12 @@ export function generateOrImportSwapperKeypairs(
     }
 
     const swappers: Keypair[] = [];
-    const storageKeys = generateSecretStorageKeys(count, keypairKind);
+    const storageSecretKeys = generateStorageSecretKeys(swapperCount, keypairKind);
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < swapperCount; i++) {
         let swapper: Keypair | undefined;
 
-        const encryptedSecretKey = storage.get<string | undefined>(storageKeys[i]);
+        const encryptedSecretKey = storage.get<string | undefined>(storageSecretKeys[i]);
         if (encryptedSecretKey) {
             const secretKey = encryption.decrypt(encryptedSecretKey);
             swapper = Keypair.fromSecretKey(secretKey);
@@ -135,7 +136,7 @@ export function generateOrImportSwapperKeypairs(
                 );
 
                 const encryptedSwapperSecretKey = encryption.encrypt(swapper.secretKey);
-                storage.set(storageKeys[i], encryptedSwapperSecretKey);
+                storage.set(storageSecretKeys[i], encryptedSwapperSecretKey);
                 storage.save();
                 logger.debug(
                     "%s (%s) secret key saved to storage",
@@ -149,17 +150,20 @@ export function generateOrImportSwapperKeypairs(
     }
 
     if (!dryRun) {
-        const storageCountKey =
+        const storageSwapperCountKey =
             keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
-        const savedCount = storage.get<number | undefined>(storageCountKey);
+        const savedSwapperCount = storage.get<SwapperCount | undefined>(storageSwapperCountKey);
 
-        if (savedCount === undefined || count > savedCount) {
-            storage.set(storageCountKey, count);
+        if (savedSwapperCount === undefined || swapperCount > savedSwapperCount.current) {
+            storage.set(storageSwapperCountKey, {
+                previous: savedSwapperCount?.current ?? swapperCount,
+                current: swapperCount,
+            });
             storage.save();
             logger.debug(
                 "%s count %s saved to storage",
                 capitalize(keypairKind),
-                formatInteger(count)
+                formatInteger(swapperCount)
             );
         }
     }
@@ -175,16 +179,16 @@ export function importSwapperKeypairs(keypairKind: KeypairKind): Keypair[] {
     const storageCountKey =
         keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
 
-    const count = storage.get<number | undefined>(storageCountKey);
-    if (count === undefined) {
+    const swapperCount = storage.get<SwapperCount | undefined>(storageCountKey);
+    if (swapperCount === undefined) {
         throw new Error(`${capitalize(keypairKind)} count not loaded from storage`);
     }
 
     const swappers: Keypair[] = [];
-    const storageKeys = generateSecretStorageKeys(count, keypairKind);
+    const storageSecretKeys = generateStorageSecretKeys(swapperCount.current, keypairKind);
 
-    for (let i = 0; i < count; i++) {
-        const encryptedSecretKey = storage.get<string>(storageKeys[i]);
+    for (let i = 0; i < swapperCount.current; i++) {
+        const encryptedSecretKey = storage.get<string>(storageSecretKeys[i]);
         if (!encryptedSecretKey) {
             throw new Error(
                 `${capitalize(keypairKind)} secret key ${formatInteger(i)} not loaded from storage`
@@ -205,7 +209,7 @@ export function importSwapperKeypairs(keypairKind: KeypairKind): Keypair[] {
     return swappers;
 }
 
-function generateSecretStorageKeys(
+function generateStorageSecretKeys(
     keyCount: number,
     keypairKind: KeypairKind
 ): Record<number, string> {

@@ -51,6 +51,7 @@ import {
     STORAGE_RAYDIUM_POOL_ID,
     STORAGE_RAYDIUM_POOL_TRADING_CYCLE,
     STORAGE_TRADER_COUNT,
+    SwapperCount,
 } from "../../modules/storage";
 
 const SNIPER_BUY_TRADING_CYCLE = 1;
@@ -59,6 +60,10 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
 
 (async () => {
     try {
+        if (envVars.POOL_TRADING_ONLY_NEW_TRADERS) {
+            logger.warn("Only new traders mode enabled");
+        }
+
         await checkFileExists(storage.cacheFilePath);
 
         const mint = importMintKeypair();
@@ -76,18 +81,25 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const traderCount = storage.get<number | undefined>(STORAGE_TRADER_COUNT);
-        if (traderCount !== undefined && envVars.TRADER_COUNT > traderCount) {
-            throw new Error(
-                `${formatInteger(envVars.TRADER_COUNT - traderCount)} traders have undistributed funds`
-            );
-        }
-        if (traderCount === 0) {
+        const traderCount = storage.get<SwapperCount | undefined>(STORAGE_TRADER_COUNT);
+        if (traderCount === undefined || traderCount.current === 0) {
             throw new Error("No traders assigned to trade on this pool");
         }
+        if (envVars.TRADER_COUNT > traderCount.current) {
+            throw new Error(
+                `${formatInteger(envVars.TRADER_COUNT - traderCount.current)} traders have undistributed funds`
+            );
+        }
 
+        let traderStartIndex = 0;
         if (envVars.POOL_TRADING_ONLY_NEW_TRADERS) {
-            logger.warn("Only new traders mode enabled");
+            if (envVars.TRADER_COUNT !== traderCount.current) {
+                throw new Error(
+                    `Trader count must be set to ${formatInteger(traderCount.current)}`
+                );
+            }
+
+            traderStartIndex = envVars.TRADER_COUNT - (traderCount.current - traderCount.previous);
         }
 
         const snipers = importSwapperKeypairs(KeypairKind.Sniper);
@@ -98,11 +110,13 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
         let poolTradingCycle = storage.get<number | undefined>(STORAGE_RAYDIUM_POOL_TRADING_CYCLE);
         poolTradingCycle = poolTradingCycle ? poolTradingCycle + 1 : 0;
 
-        const poolTradingCycleCount = poolTradingCycle + envVars.POOL_TRADING_CYCLE_COUNT;
-        const poolTradingPumpBiasPercent = new Decimal(envVars.POOL_TRADING_PUMP_BIAS_PERCENT)
-            .mul(100)
-            .round()
-            .toNumber();
+        const poolTradingCycleCount = envVars.POOL_TRADING_ONLY_NEW_TRADERS
+            ? poolTradingCycle + 1
+            : poolTradingCycle + envVars.POOL_TRADING_CYCLE_COUNT;
+
+        const poolTradingPumpBiasPercent = envVars.POOL_TRADING_ONLY_NEW_TRADERS
+            ? 1
+            : envVars.POOL_TRADING_PUMP_BIAS_PERCENT;
 
         for (let i = poolTradingCycle; i < poolTradingCycleCount; i++) {
             storage.set(STORAGE_RAYDIUM_POOL_TRADING_CYCLE, i);
@@ -146,7 +160,9 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
                 );
             }
 
-            const activeTraders = shuffle(traders).slice(0, envVars.TRADER_COUNT);
+            const activeTraders = envVars.POOL_TRADING_ONLY_NEW_TRADERS
+                ? shuffle(traders.slice(traderStartIndex, envVars.TRADER_COUNT))
+                : shuffle(traders).slice(0, envVars.TRADER_COUNT);
             await executeTraderCycle(
                 raydium,
                 cpmmPool,
@@ -230,14 +246,16 @@ async function executeTraderCycle(
         OUTPUT_SEPARATOR_DOUBLE,
         formatInteger(poolTradingCycle),
         formatInteger(traders.length),
-        formatPercent(envVars.POOL_TRADING_PUMP_BIAS_PERCENT),
+        formatPercent(poolTradingPumpBiasPercent),
         OUTPUT_SEPARATOR_DOUBLE
     );
+
+    const normalizedBiasPercent = new Decimal(poolTradingPumpBiasPercent).mul(100).round().toNumber();
 
     for (let i = 0; i < traders.length; i += traderGroupSize) {
         const traderGroup = traders.slice(i, i + traderGroupSize);
 
-        if (poolTradingCycle === 0 || generateRandomBoolean(poolTradingPumpBiasPercent)) {
+        if (poolTradingCycle === 0 || generateRandomBoolean(normalizedBiasPercent)) {
             await pumpPool(
                 raydium,
                 cpmmPool,

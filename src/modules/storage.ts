@@ -1,6 +1,11 @@
 import { create, FlatCache, FlatCacheEvents } from "flat-cache";
 import { formatStorageFile } from "../helpers/filesystem";
 
+export interface SwapperCount {
+    previous: number;
+    current: number;
+}
+
 export const STORAGE_MINT_IMAGE_URI = "mint_image_uri";
 export const STORAGE_MINT_METADATA = "mint_metadata";
 export const STORAGE_MINT_SECRET_KEY = "mint_secret_key";

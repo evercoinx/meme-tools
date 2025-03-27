@@ -291,21 +291,26 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 ],
                 otherwise: Joi.array().optional().default([0, 0]),
             }).description("Sniper repeatable buy amount range (in SOL)"),
-            SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT: Joi.when("SNIPER_REPEATABLE_SELL_PERCENT", {
-                switch: [
-                    {
-                        is: Joi.number().greater(0),
-                        then: Joi.array()
-                            .required()
-                            .items(Joi.number().min(0.01).max(1).custom(convertToFractionalPercent))
-                            .unique()
-                            .sort({ order: "ascending" })
-                            .min(2)
-                            .max(2),
-                    },
-                ],
-                otherwise: Joi.array().optional().default([0, 0]),
-            }).description("Sniper repeatable sell amount range (in percent)"),
+            SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT: Joi.when(
+                "SNIPER_REPEATABLE_SELL_PERCENT",
+                {
+                    switch: [
+                        {
+                            is: Joi.number().greater(0),
+                            then: Joi.array()
+                                .required()
+                                .items(
+                                    Joi.number().min(0.01).max(1).custom(convertToFractionalPercent)
+                                )
+                                .unique()
+                                .sort({ order: "ascending" })
+                                .min(2)
+                                .max(2),
+                        },
+                    ],
+                    otherwise: Joi.array().optional().default([0, 0]),
+                }
+            ).description("Sniper repeatable sell amount range (in percent)"),
             TRADER_COUNT: Joi.number()
                 .optional()
                 .integer()

@@ -86,9 +86,9 @@
 1. Adjust these environment variables in the _.env.production_ file.
 
     - `TRADER_COUNT`
-    - `POOL_TRADING_ONLY_NEW_TRADERS`
     - `POOL_TRADING_CYCLE_COUNT`
     - `POOL_TRADING_PUMP_BIAS_PERCENT`
+    - `POOL_TRADING_ONLY_NEW_TRADERS`
 
 2. If `$TRADER_COUNT` is adjusted up, run `yarn distribute-funds:dry-run` to estimate funds to transfer to the _trader distributor_ wallet.
 
@@ -98,12 +98,9 @@
 
     - Run `yarn distribute-funds` to distribute funds to the trader wallets.
 
-3. If `$POOL_TRADING_ONLY_NEW_TRADERS` is set to `true`, adjust these environment variables:
+    - Set `$POOL_TRADING_ONLY_NEW_TRADERS` to `true`.
 
-    - Set `$POOL_TRADING_CYCLE_COUNT` to `1`.
-    - Set `$POOL_TRADING_PUMP_BIAS_PERCENT` to `100`.
-
-4. Run `yarn trade:raydium` to make the traders trade in this pool.
+3. Run `yarn trade:raydium` to make the traders trade in this pool.
 
 # Token Exit Plan
 
