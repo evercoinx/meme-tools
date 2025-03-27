@@ -35,7 +35,8 @@ interface EnvironmentSchema {
     POOL_TRADING_ONLY_NEW_TRADERS: boolean;
     SNIPER_POOL_SHARE_PERCENTS: Set<number>;
     SNIPER_BALANCE_SOL: number;
-    SNIPER_REPEATABLE_PERCENT: number;
+    SNIPER_REPEATABLE_BUY_PERCENT: number;
+    SNIPER_REPEATABLE_SELL_PERCENT: number;
     SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL: [number, number];
     SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT: [number, number];
     TRADER_COUNT: number;
@@ -261,14 +262,21 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(0.005)
                 .max(0.1)
                 .description("Sniper balance (in SOL)"),
-            SNIPER_REPEATABLE_PERCENT: Joi.number()
+            SNIPER_REPEATABLE_BUY_PERCENT: Joi.number()
                 .optional()
                 .min(0)
                 .max(50)
                 .default(0)
                 .custom(convertToFractionalPercent)
-                .description("Sniper repeatable percent"),
-            SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL: Joi.when("SNIPER_REPEATABLE_PERCENT", {
+                .description("Sniper repeatable buy percent"),
+            SNIPER_REPEATABLE_SELL_PERCENT: Joi.number()
+                .optional()
+                .min(0)
+                .max(50)
+                .default(0)
+                .custom(convertToFractionalPercent)
+                .description("Sniper repeatable sell percent"),
+            SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL: Joi.when("SNIPER_REPEATABLE_BUY_PERCENT", {
                 switch: [
                     {
                         is: Joi.number().greater(0),
@@ -283,7 +291,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 ],
                 otherwise: Joi.array().optional().default([0, 0]),
             }).description("Sniper repeatable buy amount range (in SOL)"),
-            SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT: Joi.when("SNIPER_REPEATABLE_PERCENT", {
+            SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT: Joi.when("SNIPER_REPEATABLE_SELL_PERCENT", {
                 switch: [
                     {
                         is: Joi.number().greater(0),

@@ -109,11 +109,8 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
             storage.save();
             logger.debug("Raydium pool trading cycle saved to storage");
 
-            if (
-                envVars.SNIPER_REPEATABLE_PERCENT > 0 &&
-                [SNIPER_BUY_TRADING_CYCLE, SNIPER_SELL_TRADING_CYCLE].includes(i)
-            ) {
-                const sniperRepeatableCount = new Decimal(envVars.SNIPER_REPEATABLE_PERCENT)
+            if (i === SNIPER_BUY_TRADING_CYCLE && envVars.SNIPER_REPEATABLE_BUY_PERCENT > 0) {
+                const sniperRepeatableCount = new Decimal(envVars.SNIPER_REPEATABLE_BUY_PERCENT)
                     .mul(snipers.length)
                     .round()
                     .toNumber();
@@ -125,7 +122,27 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
                     activeSnipers,
                     mint,
                     envVars.SWAPPER_GROUP_SIZE,
-                    i
+                    i,
+                    true
+                );
+            } else if (
+                i === SNIPER_SELL_TRADING_CYCLE &&
+                envVars.SNIPER_REPEATABLE_SELL_PERCENT > 0
+            ) {
+                const sniperRepeatableCount = new Decimal(envVars.SNIPER_REPEATABLE_SELL_PERCENT)
+                    .mul(snipers.length)
+                    .round()
+                    .toNumber();
+                const activeSnipers = shuffle(snipers).slice(0, sniperRepeatableCount);
+
+                await executeSniperCycle(
+                    raydium,
+                    cpmmPool,
+                    activeSnipers,
+                    mint,
+                    envVars.SWAPPER_GROUP_SIZE,
+                    i,
+                    false
                 );
             }
 
@@ -154,7 +171,8 @@ async function executeSniperCycle(
     snipers: Keypair[],
     mint: Keypair,
     sniperGroupSize: number,
-    poolTradingCycle: number
+    poolTradingCycle: number,
+    pumpTrade: boolean
 ): Promise<void> {
     logger.info(
         "\n%s\nTrading cycle: %s. Total sniper swaps: %s. Pump bias: %s\n%s",
@@ -168,7 +186,7 @@ async function executeSniperCycle(
     for (let i = 0; i < snipers.length; i += sniperGroupSize) {
         const sniperGroup = snipers.slice(i, i + sniperGroupSize);
 
-        if (poolTradingCycle === SNIPER_BUY_TRADING_CYCLE) {
+        if (pumpTrade) {
             await pumpPool(
                 raydium,
                 cpmmPool,
@@ -179,7 +197,7 @@ async function executeSniperCycle(
                 i + 1,
                 snipers.length
             );
-        } else if (poolTradingCycle === SNIPER_SELL_TRADING_CYCLE) {
+        } else {
             await dumpPool(
                 raydium,
                 cpmmPool,

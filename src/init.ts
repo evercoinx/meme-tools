@@ -20,4 +20,5 @@ Decimal.set({
     crypto: true,
     precision: 18,
     rounding: Decimal.ROUND_FLOOR,
+    defaults: true,
 });
