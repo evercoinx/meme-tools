@@ -268,19 +268,36 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .default(0)
                 .custom(convertToFractionalPercent)
                 .description("Sniper repeatable percent"),
-            SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL: Joi.array()
-                .required()
-                .items(Joi.number().min(0.001).max(0.1))
-                .unique()
-                .min(2)
-                .max(2)
-                .description("Sniper repeatable buy amount range (in SOL)"),
-            SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT: Joi.array()
-                .required()
-                .items(Joi.number().min(0.01).max(1).custom(convertToFractionalPercent))
-                .min(2)
-                .max(2)
-                .description("Sniper repeatable sell amount range (in percent)"),
+            SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL: Joi.when("SNIPER_REPEATABLE_PERCENT", {
+                switch: [
+                    {
+                        is: Joi.number().greater(0),
+                        then: Joi.array()
+                            .required()
+                            .items(Joi.number().min(0.001).max(0.1))
+                            .unique()
+                            .sort({ order: "ascending" })
+                            .min(2)
+                            .max(2),
+                    },
+                ],
+                otherwise: Joi.array().optional().default([0, 0]),
+            }).description("Sniper repeatable buy amount range (in SOL)"),
+            SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT: Joi.when("SNIPER_REPEATABLE_PERCENT", {
+                switch: [
+                    {
+                        is: Joi.number().greater(0),
+                        then: Joi.array()
+                            .required()
+                            .items(Joi.number().min(0.01).max(1).custom(convertToFractionalPercent))
+                            .unique()
+                            .sort({ order: "ascending" })
+                            .min(2)
+                            .max(2),
+                    },
+                ],
+                otherwise: Joi.array().optional().default([0, 0]),
+            }).description("Sniper repeatable sell amount range (in percent)"),
             TRADER_COUNT: Joi.number()
                 .optional()
                 .integer()
@@ -297,12 +314,15 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .items(Joi.number().min(0.001).max(0.1))
                 .unique()
+                .sort({ order: "ascending" })
                 .min(2)
                 .max(2)
                 .description("Trader buy amount range (in SOL)"),
             TRADER_SELL_AMOUNT_RANGE_PERCENT: Joi.array()
                 .required()
                 .items(Joi.number().min(1).max(100).custom(convertToFractionalPercent))
+                .unique()
+                .sort({ order: "ascending" })
                 .min(2)
                 .max(2)
                 .description("Trader sell amount range (in percent)"),
@@ -317,6 +337,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .items(Joi.number().min(1).max(600).custom(convertToMilliseconds))
                 .unique()
+                .sort({ order: "ascending" })
                 .min(2)
                 .max(2)
                 .description("Trader swap delay range (in seconds)"),

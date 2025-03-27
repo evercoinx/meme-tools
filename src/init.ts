@@ -18,6 +18,6 @@ dotenv.config({
 
 Decimal.set({
     crypto: true,
-    precision: 9,
+    precision: 18,
     rounding: Decimal.ROUND_FLOOR,
 });
