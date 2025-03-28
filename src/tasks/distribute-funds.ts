@@ -24,14 +24,7 @@ import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
-import {
-    connectionPool,
-    envVars,
-    heliusClientPool,
-    logger,
-    randomSeed,
-    ZERO_DECIMAL,
-} from "../modules";
+import { connectionPool, envVars, heliusClientPool, logger, seed, ZERO_DECIMAL } from "../modules";
 import { isDryRun } from "../modules/environment";
 
 const DEV_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
@@ -93,11 +86,7 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
                 new Decimal(envVars.POOL_LIQUIDITY_SOL)
                     .mul(poolSharePercent)
                     .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
-                    .add(
-                        randomSeed.generateRandomFloat(
-                            envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL
-                        )
-                    )
+                    .add(seed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
                     .add(envVars.SNIPER_BALANCE_SOL)
                     .mul(LAMPORTS_PER_SOL)
                     .trunc()
@@ -108,7 +97,7 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
             .map(() =>
                 new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
                     .mul(envVars.POOL_TRADING_CYCLE_COUNT)
-                    .add(randomSeed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
+                    .add(seed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
                     .add(envVars.TRADER_BALANCE_SOL)
                     .mul(LAMPORTS_PER_SOL)
                     .trunc()
@@ -159,37 +148,37 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
 
 async function distributeSwapperFunds(
     distributor: Keypair,
-    accounts: Keypair[],
+    swappers: Keypair[],
     lamports: Decimal[],
     keypairKind: KeypairKind,
     dryRun: boolean
 ): Promise<Promise<TransactionSignature | undefined>> {
     const instructions: TransactionInstruction[] = [];
-    let totalFundedAccounts = 0;
+    let totalFundedSwappers = 0;
     let totalLamports = ZERO_DECIMAL;
 
     let connection = connectionPool.current();
     let heliusClient = heliusClientPool.current();
 
-    for (const [i, account] of accounts.entries()) {
-        const solBalance = await getSolBalance(connectionPool, account);
+    for (const [i, swapper] of swappers.entries()) {
+        const solBalance = await getSolBalance(connectionPool, swapper);
         if (solBalance.gt(ZERO_DECIMAL)) {
             logger.debug(
                 "%s (%s) has positive balance on wallet: %s SOL",
                 capitalize(keypairKind),
-                formatPublicKey(account.publicKey),
+                formatPublicKey(swapper.publicKey),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
         } else {
             instructions.push(
                 SystemProgram.transfer({
                     fromPubkey: distributor.publicKey,
-                    toPubkey: account.publicKey,
+                    toPubkey: swapper.publicKey,
                     lamports: lamports[i].toNumber(),
                 })
             );
 
-            totalFundedAccounts++;
+            totalFundedSwappers++;
             totalLamports = totalLamports.add(lamports[i]);
         }
 
@@ -197,22 +186,24 @@ async function distributeSwapperFunds(
         heliusClient = heliusClientPool.next();
     }
 
+    const distributorKind = keypairKind === KeypairKind.Sniper ? "sniper" : "trader";
     if (instructions.length === 0) {
         logger.warn(
-            "No funds to distribute among %s %ss",
-            formatInteger(accounts.length),
+            "%s distributor (%s) already distributed funds among %s %ss",
+            capitalize(distributorKind),
+            formatPublicKey(distributor.publicKey, "long"),
+            formatInteger(swappers.length),
             keypairKind
         );
         return Promise.resolve(undefined);
     }
 
-    const distributorKind = keypairKind === KeypairKind.Sniper ? "sniper" : "trader";
     if (dryRun) {
+        const solBalance = await getSolBalance(connectionPool, distributor);
         const amount = new Decimal(DISTRIBUTOR_GAS_FEE_SOL)
             .mul(LAMPORTS_PER_SOL)
             .plus(totalLamports);
 
-        const solBalance = await getSolBalance(connectionPool, distributor);
         if (solBalance.lt(amount)) {
             const residualAmount = amount.sub(solBalance);
             logger.info(
@@ -220,25 +211,21 @@ async function distributeSwapperFunds(
                 formatDecimal(residualAmount.div(LAMPORTS_PER_SOL)),
                 distributorKind,
                 formatPublicKey(distributor.publicKey, "long"),
-                formatInteger(totalFundedAccounts),
+                formatInteger(totalFundedSwappers),
                 keypairKind
             );
         } else {
             logger.info(
-                "%s distributor (%s) has sufficient balance: %s SOL",
+                "%s distributor (%s) has sufficient balance: %s SOL and must distribute %s SOL to %s %ss",
                 capitalize(distributorKind),
                 formatPublicKey(distributor.publicKey, "long"),
-                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
-            );
-            logger.info(
-                `To distribute %s SOL from %s distributor (%s) to %s %ss`,
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                 formatDecimal(totalLamports.div(LAMPORTS_PER_SOL)),
-                distributorKind,
-                formatPublicKey(distributor.publicKey),
-                formatInteger(totalFundedAccounts),
+                formatInteger(totalFundedSwappers),
                 keypairKind
             );
         }
+
         return Promise.resolve(undefined);
     }
 
@@ -255,6 +242,6 @@ async function distributeSwapperFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from ${distributorKind} distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
+        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from ${distributorKind} distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedSwappers)} ${keypairKind}s`
     );
 }

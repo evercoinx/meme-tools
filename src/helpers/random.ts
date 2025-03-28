@@ -1,7 +1,7 @@
 import { randomBytes, randomInt } from "node:crypto";
 
 export function generateRandomFloat(range: [number, number]): number {
-    const randomFloat = randomBytes(4).readUInt32LE(0) / 0xffffffff;
+    const randomFloat = randomBytes(4).readUInt32LE(0) / 0xffff_ffff;
     return randomFloat * (range[1] - range[0]) + range[0];
 }
 

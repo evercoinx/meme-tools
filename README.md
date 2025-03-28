@@ -97,7 +97,7 @@
 3. Set these environment variables in the _.env.production_ file:
 
     - Token:
-        - `TOKEN_SYMBOL` (Replace the _TOKEN_ value with the actual one)
+        - `TOKEN_SYMBOL` (**Replace the _TOKEN_ value with the actual one**)
         - `TOKEN_NAME` (Defaults to _"Official $TOKEN_NAME $TOKEN_TAGS0"_)
         - `TOKEN_DESCRIPTION` (Defaults to _"$TOKEN_NAME" on Solana"_)
         - `TOKEN_WEBSITE_URI` (Defaults to _""_)

@@ -11,7 +11,7 @@ import { createLogger } from "./logger";
 import { createHeliusClient } from "./helius";
 import { createPinataClient } from "./pinata";
 import { Pool } from "./pool";
-import { RandomSeed } from "./random-seed";
+import { Seed } from "./seed";
 import { createStorage } from "./storage";
 
 export const SWAPPER_SLIPPAGE_PERCENT = 1;
@@ -94,8 +94,8 @@ export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
 
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY_URI);
 
-export const randomSeed = new RandomSeed(
-    `${envVars.NODE_ENV}:${envVars.TOKEN_SYMBOL}:${envVars.TRADER_COUNT}`
+export const seed = new Seed(
+    `${envVars.NODE_ENV}:${envVars.SNIPER_POOL_SHARE_PERCENTS.size}:${envVars.TRADER_COUNT}`
 );
 
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
