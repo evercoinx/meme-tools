@@ -35,7 +35,6 @@ import {
 import { checkFileExists } from "../helpers/filesystem";
 import {
     capitalize,
-    formatDecimal,
     formatError,
     formatInteger,
     formatPublicKey,
@@ -73,9 +72,8 @@ interface OffchainTokenMetadata {
     attributes?: Record<string, { trait_type: string; value: string }>[];
 }
 
-const MIN_MINT_IMAGE_DIMENSION = 100;
-const MAX_MINT_IMAGE_DIMENSION = 500;
-const MAX_FILE_SIZE = 250_000;
+const MINT_IMAGE_DIMENSION = 200;
+const MAX_FILE_SIZE = 200_000;
 
 const generateOffchainTokenMetadata = (
     symbol: string,
@@ -201,17 +199,7 @@ function checkMintImage(imageContents: Buffer<ArrayBufferLike>): void {
     }
 
     const { width, height, type } = imageSize(imageContents);
-    if (width !== height) {
-        throw new Error(
-            `Invalid mint image aspect ratio: ${formatDecimal(1)}x${formatDecimal(width / height, 4)}`
-        );
-    }
-    if (
-        width < MIN_MINT_IMAGE_DIMENSION ||
-        width > MAX_MINT_IMAGE_DIMENSION ||
-        height < MIN_MINT_IMAGE_DIMENSION ||
-        height > MAX_MINT_IMAGE_DIMENSION
-    ) {
+    if (width != MINT_IMAGE_DIMENSION || height != MINT_IMAGE_DIMENSION) {
         throw new Error(
             `Invalid mint image dimensions: ${formatInteger(width)}x${formatInteger(height)}`
         );

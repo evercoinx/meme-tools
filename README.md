@@ -92,7 +92,11 @@
     yarn getenv
     ```
 
-2. Create a meme image with a 1:1 aspect ratio and a size between 100x100 and 500x500 in the webp format, and save it under the _$TOKEN_SYMBOL.wepb_ name in the _images/production_ folder.
+2. Create the two meme images in the webp format:
+
+    1. A token image with a size of 200x200. Save it as the _$TOKEN_SYMBOL.wepb_ in the _images/production_ folder.
+
+    2. A banner image with a size of 600x200. Save it as _$TOKEN_SYMBOL_banner.webp_ in the _images/production_ folder.
 
 3. Set these environment variables in the _.env.production_ file:
 
@@ -131,11 +135,12 @@
     yarn trade:raydium
     ```
 
-9. Create a banner image with a 3:1 aspect ratio and a size between 600x200 and 1500x500 in the webp format, and save it under _$TOKEN_SYMBOL_banner.webp_ name in the _images/production_ folder.
+9. Fill in the forms and pay to update token information on these platforms:
 
-10. Fill in the form to update token information on [Dexscreener](https://marketplace.dexscreener.com/product/token-info/order).
+- [Dexscreener](https://marketplace.dexscreener.com/product/token-info/order)
+- [Dextools](https://www.dextools.io/marketplace/en/create-socials)
 
-11. Check token trending on these platforms:
+10. Check token trending on these platforms:
 
 - [DexScreener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana)
 - [DexTools](https://www.dextools.io/app/en/solana/trending)
