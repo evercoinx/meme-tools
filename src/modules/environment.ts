@@ -50,10 +50,10 @@ interface EnvironmentSchema {
 const ARRAY_SEPARATOR = ",";
 
 const convertToFractionalPercent = (percent: string) =>
-    new Decimal(percent).div(100).toDP(4).toNumber();
+    new Decimal(percent).div(100).toDP(4, Decimal.ROUND_HALF_UP).toNumber();
 
 const convertToMilliseconds = (seconds: string) =>
-    new Decimal(seconds).mul(1_000).round().toNumber();
+    new Decimal(seconds).mul(1_000).toDP(0, Decimal.ROUND_HALF_UP).toNumber();
 
 export function isDryRun(): boolean {
     const {

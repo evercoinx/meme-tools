@@ -124,11 +124,10 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
             logger.debug("Raydium pool trading cycle saved to storage");
 
             if (i === SNIPER_BUY_TRADING_CYCLE && envVars.SNIPER_REPEATABLE_BUY_PERCENT > 0) {
-                const sniperRepeatableCount = new Decimal(envVars.SNIPER_REPEATABLE_BUY_PERCENT)
-                    .mul(snipers.length)
-                    .round()
-                    .toNumber();
-                const activeSnipers = shuffle(snipers).slice(0, sniperRepeatableCount);
+                const activeSnipers = getActiveSnipers(
+                    snipers,
+                    envVars.SNIPER_REPEATABLE_BUY_PERCENT
+                );
 
                 await executeSniperCycle(
                     raydium,
@@ -143,11 +142,10 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
                 i === SNIPER_SELL_TRADING_CYCLE &&
                 envVars.SNIPER_REPEATABLE_SELL_PERCENT > 0
             ) {
-                const sniperRepeatableCount = new Decimal(envVars.SNIPER_REPEATABLE_SELL_PERCENT)
-                    .mul(snipers.length)
-                    .round()
-                    .toNumber();
-                const activeSnipers = shuffle(snipers).slice(0, sniperRepeatableCount);
+                const activeSnipers = getActiveSnipers(
+                    snipers,
+                    envVars.SNIPER_REPEATABLE_SELL_PERCENT
+                );
 
                 await executeSniperCycle(
                     raydium,
@@ -163,6 +161,7 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
             const activeTraders = envVars.POOL_TRADING_ONLY_NEW_TRADERS
                 ? shuffle(traders.slice(traderStartIndex, envVars.TRADER_COUNT))
                 : shuffle(traders).slice(0, envVars.TRADER_COUNT);
+
             await executeTraderCycle(
                 raydium,
                 cpmmPool,
@@ -180,6 +179,14 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
         process.exit(1);
     }
 })();
+
+function getActiveSnipers(snipers: Keypair[], percent: number): Keypair[] {
+    const sniperRepeatableCount = new Decimal(percent)
+        .mul(snipers.length)
+        .toDP(0, Decimal.ROUND_HALF_UP)
+        .toNumber();
+    return shuffle(snipers).slice(0, sniperRepeatableCount);
+}
 
 async function executeSniperCycle(
     raydium: Raydium,
@@ -250,7 +257,10 @@ async function executeTraderCycle(
         OUTPUT_SEPARATOR_DOUBLE
     );
 
-    const normalizedBiasPercent = new Decimal(poolTradingPumpBiasPercent).mul(100).round().toNumber();
+    const normalizedBiasPercent = new Decimal(poolTradingPumpBiasPercent)
+        .mul(100)
+        .toDP(0, Decimal.ROUND_HALF_UP)
+        .toNumber();
 
     for (let i = 0; i < traders.length; i += traderGroupSize) {
         const traderGroup = traders.slice(i, i + traderGroupSize);
