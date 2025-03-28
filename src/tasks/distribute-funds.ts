@@ -36,7 +36,7 @@ import { isDryRun } from "../modules/environment";
 
 const DEV_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
 const DEV_GAS_FEE_SOL = 0.1;
-const SWAPPER_GAS_FEE_SOL = 0.01;
+const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
 
 (async () => {
     try {
@@ -208,10 +208,9 @@ async function distributeSwapperFunds(
 
     const distributorKind = keypairKind === KeypairKind.Sniper ? "sniper" : "trader";
     if (dryRun) {
-        const amount = totalLamports
-            .div(LAMPORTS_PER_SOL)
-            .plus(SWAPPER_GAS_FEE_SOL)
-            .mul(LAMPORTS_PER_SOL);
+        const amount = new Decimal(DISTRIBUTOR_GAS_FEE_SOL)
+            .mul(LAMPORTS_PER_SOL)
+            .plus(totalLamports);
 
         const solBalance = await getSolBalance(connectionPool, distributor);
         if (solBalance.lt(amount)) {
@@ -230,6 +229,14 @@ async function distributeSwapperFunds(
                 capitalize(distributorKind),
                 formatPublicKey(distributor.publicKey, "long"),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
+            );
+            logger.info(
+                `To distribute %s SOL from %s distributor (%s) to %s %ss`,
+                formatDecimal(totalLamports.div(LAMPORTS_PER_SOL)),
+                distributorKind,
+                formatPublicKey(distributor.publicKey),
+                formatInteger(totalFundedAccounts),
+                keypairKind
             );
         }
         return Promise.resolve(undefined);
