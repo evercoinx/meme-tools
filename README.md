@@ -70,7 +70,7 @@
     yarn distribute-funds:dry-run
     ```
 
-7. Transfer the reported funds to the _main_ wallets.
+7. Transfer the reported funds from my Phantom wallet to the _main_ wallets using [Jumper Bridge](https://jumper.exchange/?fromChain=1&fromToken=0xdAC17F958D2ee523a2206206994597C13D831ec7&toChain=1151111081099710&toToken=11111111111111111111111111111111).
 
 8. Run this command again to make sure that all the _main_ wallets have sufficient balances:
 
@@ -86,19 +86,32 @@
 
 # Token Launch Plan
 
-1. Run this command to make sure that the _production_ environment is set correctly:
+1. Find a meta using the following platforms:
+
+    - [Discord](https://discord.com/) (Tweetshift channels)
+    - [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc)
+    - [Dex Tools](https://www.dextools.io/app/en/trending)
+    - [Defined](https://www.defined.fi/tokens/discover?createdAt=hour4&rankingBy=volume&rankingDirection=DESC)
+
+2. Register an email on [Gmail](https://workspace.google.com/intl/en-US/gmail/).
+
+3. Register an account on [X.com](https://x.com/i/flow/signup).
+
+4. Create a Telegram channel.
+
+5. Run this command to make sure that the _production_ environment is set correctly:
 
     ```bash
     yarn getenv
     ```
 
-2. Create the two meme images in the webp format:
+6. Create the two meme images in the webp format:
 
     1. A token image with a size of 200x200. Save it as the _$TOKEN_SYMBOL.wepb_ in the _images/production_ folder.
 
     2. A banner image with a size of 600x200. Save it as _$TOKEN_SYMBOL_banner.webp_ in the _images/production_ folder.
 
-3. Set these environment variables in the _.env.production_ file:
+7. Set these environment variables in the _.env.production_ file:
 
     - Token:
         - `TOKEN_SYMBOL` (**Replace the _TOKEN_ value with the actual one**)
@@ -109,42 +122,42 @@
         - `TOKEN_TELEGRAM_URI` (Defaults to _""_)
         - `TOKEN_TAGS` (Defaults to _"meme"_)
 
-4. Run these commands to rename token key pair and storage files:
+8. Run these commands to rename token key pair and storage files:
 
     ```bash
     yarn rename-token-files && yarn get-funds:main
     ```
 
-5. Run these commands to create the token mint:
+9. Run these commands to create the token mint:
 
     ```bash
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-6. Run these commands to open a Raydium CPMM pool:
+10. Run these commands to open a Raydium CPMM pool:
 
     ```bash
     yarn open-pool:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
-7. Lock the pool liquidity on [UNCX](https://solana.uncx.network/lockers/manage/locker).
+11. Lock the pool liquidity on [UNCX](https://solana.uncx.network/lockers/manage/locker) for 3 days.
 
-8. Run this command to start trading in this pool:
+12. Run this command to start trading in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-9. Fill in the forms and pay to update token information on these platforms:
+13. Fill in the forms and pay to update token information on these platforms:
 
-- [Dexscreener](https://marketplace.dexscreener.com/product/token-info/order)
-- [Dextools](https://www.dextools.io/marketplace/en/create-socials)
+- [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
+- [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
 
 10. Check token trending on these platforms:
 
-- [DexScreener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana)
-- [DexTools](https://www.dextools.io/app/en/solana/trending)
-- [Defined](https://www.defined.fi/tokens/discover?network=sol&createdAt=hour12&rankingBy=volume&rankingDirection=DESC)
+- [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana)
+- [Dex Tools](https://www.dextools.io/app/en/solana/trending)
+- [Defined](https://www.defined.fi/tokens/discover?network=sol&createdAt=hour4&rankingBy=volume&rankingDirection=DESC)
 
 # Token Post Launch Plan
 
@@ -205,3 +218,11 @@
     ```bash
     yarn remove-liquidity:raydium
     ```
+
+4. Run these commands to list the _main_ wallets and import their secret keys into my Phantom wallet:
+
+    ```bash
+    yarn get-accounts:main
+    ```
+
+5. Transfer the collected funds from the imported _main_ wallets to my Phantom wallet using [Jumper Bridge](https://jumper.exchange/?fromChain=1151111081099710&fromToken=11111111111111111111111111111111&toChain=1&toToken=0xdAC17F958D2ee523a2206206994597C13D831ec7).
