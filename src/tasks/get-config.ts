@@ -9,6 +9,7 @@ import {
     OUTPUT_UNKNOWN_VALUE,
 } from "../helpers/format";
 import { envVars, logger } from "../modules";
+import { generateOffchainTokenMetadata } from "./create-mint";
 
 (async () => {
     try {
@@ -21,8 +22,20 @@ import { envVars, logger } from "../modules";
 })();
 
 function getConfig(): void {
+    const tokenMetadata = generateOffchainTokenMetadata(
+        envVars.TOKEN_SYMBOL,
+        envVars.TOKEN_NAME,
+        envVars.TOKEN_DESCRIPTION,
+        envVars.TOKEN_DECIMALS,
+        "",
+        envVars.TOKEN_TAGS,
+        envVars.TOKEN_WEBSITE_URI,
+        envVars.TOKEN_TWITTER_URI,
+        envVars.TOKEN_TELEGRAM_URI
+    );
+
     logger.info(
-        "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s (Total: %s)\n\t\tExplorer URI: %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken decimals: %s\n\t\tToken supply: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\t\tToken Telegram URI: %s\n\t\tToken tags: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\t\tPool trading pump bias: %s\n\n\t\tSniper shares in pool: %s (Total: %s)\n\t\tSniper balance: %s SOL\n\t\tSniper repeatable buy: %s SOL\n\t\tSniper repeatable sell: %s\n\t\tSniper repeatable buy amount: %s SOL\n\t\tSniper repeatable sell amount: %s\n\n\t\tTrader count: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\n\t\tSwapper group size: %s\n\t\tSwapper trade delay: %s sec",
+        "Configuration (%s):\n\t\tIPFS gateway URI: %s\n\t\tRPC URIs: %s (Total: %s)\n\t\tExplorer URI: %s\n\n\t\tToken symbol: %s\n\t\tToken name: %s\n\t\tToken description: %s\n\t\tToken decimals: %s\n\t\tToken supply: %s\n\t\tToken webiste URI: %s\n\t\tToken Twitter URI: %s\n\t\tToken Telegram URI: %s\n\t\tToken tags: %s\n\n\t\tPool size: %s\n\t\tPool liquidity: %s SOL\n\t\tPool trading cycle count: %s\n\t\tPool trading pump bias: %s\n\n\t\tSniper shares in pool: %s (Total: %s)\n\t\tSniper balance: %s SOL\n\t\tSniper repeatable buy: %s\n\t\tSniper repeatable sell: %s\n\t\tSniper repeatable buy amount: %s SOL\n\t\tSniper repeatable sell amount: %s\n\n\t\tTrader count: %s\n\t\tTrader balance: %s SOL\n\t\tTrader buy amount: %s SOL\n\t\tTrader sell amount: %s\n\n\t\tSwapper group size: %s\n\t\tSwapper trade delay: %s sec",
         formatText(envVars.NODE_ENV, true),
         formatUri(envVars.IPFS_GATEWAY_URI),
         Array.from(envVars.RPC_URIS)
@@ -30,14 +43,18 @@ function getConfig(): void {
             .join(" "),
         formatInteger(envVars.RPC_URIS.size),
         formatUri(envVars.EXPLORER_URI),
-        formatText(envVars.TOKEN_SYMBOL),
-        formatText(envVars.TOKEN_NAME),
-        formatText(envVars.TOKEN_DESCRIPTION),
-        formatInteger(envVars.TOKEN_DECIMALS),
+        formatText(tokenMetadata.symbol),
+        formatText(tokenMetadata.name),
+        formatText(tokenMetadata.description),
+        formatInteger(tokenMetadata.decimals),
         formatInteger(envVars.TOKEN_SUPPLY),
-        envVars.TOKEN_WEBSITE_URI ? formatUri(envVars.TOKEN_WEBSITE_URI) : OUTPUT_UNKNOWN_VALUE,
-        envVars.TOKEN_TWITTER_URI ? formatUri(envVars.TOKEN_TWITTER_URI) : OUTPUT_UNKNOWN_VALUE,
-        envVars.TOKEN_TELEGRAM_URI ? formatUri(envVars.TOKEN_TELEGRAM_URI) : OUTPUT_UNKNOWN_VALUE,
+        tokenMetadata.external_url ? formatUri(tokenMetadata.external_url) : OUTPUT_UNKNOWN_VALUE,
+        tokenMetadata.social_links?.twitter
+            ? formatUri(tokenMetadata.social_links.twitter)
+            : OUTPUT_UNKNOWN_VALUE,
+        tokenMetadata.social_links?.telegram
+            ? formatUri(tokenMetadata.social_links.telegram)
+            : OUTPUT_UNKNOWN_VALUE,
         Array.from(envVars.TOKEN_TAGS)
             .map((tag) => formatText(tag))
             .join(" "),

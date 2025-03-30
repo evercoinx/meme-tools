@@ -75,7 +75,7 @@ interface OffchainTokenMetadata {
 const MINT_IMAGE_DIMENSION = 200;
 const MAX_FILE_SIZE = 200_000;
 
-const generateOffchainTokenMetadata = (
+export function generateOffchainTokenMetadata(
     symbol: string,
     name: string,
     description: string,
@@ -85,7 +85,7 @@ const generateOffchainTokenMetadata = (
     websiteUri?: string,
     twitterUri?: string,
     telegramUri?: string
-): Omit<OffchainTokenMetadata, "uri"> => {
+): Omit<OffchainTokenMetadata, "uri"> {
     if (tags.size === 0) {
         throw new Error("Tags must have at least one item");
     }
@@ -117,10 +117,7 @@ const generateOffchainTokenMetadata = (
     }
 
     return metadata;
-};
-
-const generatePinataUri = (ipfsHash: string): string =>
-    `${envVars.IPFS_GATEWAY_URI}/ipfs/${ipfsHash}`;
+}
 
 (async () => {
     try {
@@ -191,6 +188,10 @@ async function uploadMintImage(groupId: string): Promise<string> {
     logger.debug("Mint image URI saved to storage");
 
     return imageUri;
+}
+
+function generatePinataUri(ipfsHash: string): string {
+    return `${envVars.IPFS_GATEWAY_URI}/ipfs/${ipfsHash}`;
 }
 
 function checkMintImage(imageContents: Buffer<ArrayBufferLike>): void {
