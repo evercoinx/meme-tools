@@ -2,7 +2,11 @@
 
 # Token Pre Launch Plan
 
-1. Run `yarn setenv:prod` to set the _production_ environment.
+1. Run this command to set the _production_ environment:
+
+    ```bash
+    yarn setenv:prod
+    ```
 
 2. Temporarily, set this environment variable in the _.env.production_ file:
 
@@ -58,27 +62,33 @@
         - `SWAPPER_GROUP_SIZE` (Defaults to _1_)
         - `SWAPPER_TRADE_DELAY_RANGE_SEC`
 
-5. Run this command to grind the _main_ keypairs:
+5. Run this command to check the configuration:
+
+    ```bash
+    yarn get-config
+    ```
+
+6. Run this command to grind the _main_ keypairs:
 
     ```bash
     yarn grind-keypairs
     ```
 
-6. Run this command to estimate funds to transfer to the _main_ wallets:
+7. Run this command to estimate funds to transfer to the _main_ wallets:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-7. Transfer the reported funds from my Phantom wallet to the _main_ wallets using [Jumper Bridge](https://jumper.exchange/?fromChain=1&fromToken=0xdAC17F958D2ee523a2206206994597C13D831ec7&toChain=1151111081099710&toToken=11111111111111111111111111111111).
+8. Transfer the reported funds from my Phantom wallet to the _main_ wallets using [Jumper Bridge](https://jumper.exchange/?fromChain=1&fromToken=0xdAC17F958D2ee523a2206206994597C13D831ec7&toChain=1151111081099710&toToken=11111111111111111111111111111111).
 
-8. Run this command again to make sure that all the _main_ wallets have sufficient balances:
+9. Run this command again to make sure that all the _main_ wallets have sufficient balances:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-9. Run these commands to distribute funds to the sniper and trader wallets:
+10. Run these commands to distribute funds to the sniper and trader wallets:
 
     ```bash
     yarn distribute-funds && yarn get-funds
@@ -88,10 +98,10 @@
 
 1. Find a meta using the following platforms:
 
-    - [Discord](https://discord.com/) (Tweetshift channels)
-    - [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc)
+    - [Discord](https://discord.com) (Tweetshift channels)
+    - [Dex Screener](https://dexscreener.com/1h?rankBy=trendingScoreH1&order=desc)
     - [Dex Tools](https://www.dextools.io/app/en/trending)
-    - [Defined](https://www.defined.fi/tokens/discover?createdAt=hour4&rankingBy=volume&rankingDirection=DESC)
+    - [Defined](https://www.defined.fi/tokens/discover?createdAt=hour1&rankingBy=volume&rankingDirection=DESC)
 
 2. Register an email on [Gmail](https://workspace.google.com/intl/en-US/gmail/).
 
@@ -122,33 +132,39 @@
         - `TOKEN_TELEGRAM_URI` (Defaults to _""_)
         - `TOKEN_TAGS` (Defaults to _"meme"_)
 
-8. Run these commands to rename token key pair and storage files:
+8. Run this command to check the configuration:
+
+    ```bash
+    yarn get-config
+    ```
+
+9. Run these commands to rename token key pair and storage files:
 
     ```bash
     yarn rename-token-files && yarn get-funds:main
     ```
 
-9. Run these commands to create the token mint:
+10. Run these commands to create the token mint:
 
     ```bash
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-10. Run these commands to open a Raydium CPMM pool:
+11. Run these commands to open a Raydium CPMM pool:
 
     ```bash
     yarn open-pool:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
-11. Lock the pool liquidity on [UNCX](https://solana.uncx.network/lockers/manage/locker) for 3 days.
+12. Lock the pool liquidity on [UNCX](https://solana.uncx.network/lockers/manage/locker) for 3 days.
 
-12. Run this command to start trading in this pool:
+13. Run this command to start trading in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-13. Fill in the forms and pay to update token information on these platforms:
+14. Fill in the forms and pay to update token information on these platforms:
 
 - [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
 - [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
