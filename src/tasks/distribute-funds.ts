@@ -24,18 +24,29 @@ import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
-import { connectionPool, envVars, heliusClientPool, logger, seed, ZERO_DECIMAL } from "../modules";
+import {
+    connectionPool,
+    envVars,
+    heliusClientPool,
+    logger,
+    pyth,
+    seed,
+    ZERO_DECIMAL,
+} from "../modules";
 import { isDryRun } from "../modules/environment";
 
 const DEV_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
 const DEV_GAS_FEE_SOL = 0.1;
 const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
+const USD_TRANSFER_MULTIPLIER = 1.05;
 
 (async () => {
     try {
         let swapperGroupSize: number;
 
         const dryRun = isDryRun();
+        const solUsdPrice = await pyth.getSolUsdPrice();
+
         if (dryRun) {
             logger.warn("Dry run mode enabled");
 
@@ -48,10 +59,16 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
 
             const solBalance = await getSolBalance(connectionPool, dev);
             if (solBalance.lt(amount)) {
-                const residualAmount = amount.sub(solBalance);
+                const residualAmount = amount.sub(solBalance).div(LAMPORTS_PER_SOL);
                 logger.info(
-                    "Transfer %s SOL to dev (%s)",
-                    formatDecimal(residualAmount.div(LAMPORTS_PER_SOL)),
+                    "Transfer %s SOL (%s USD) to dev (%s)",
+                    formatDecimal(residualAmount),
+                    formatDecimal(
+                        residualAmount
+                            .mul(solUsdPrice)
+                            .mul(USD_TRANSFER_MULTIPLIER)
+                            .toDP(2, Decimal.ROUND_CEIL)
+                    ),
                     formatPublicKey(dev.publicKey, "long")
                 );
             } else {
@@ -114,6 +131,7 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
                     sniperGroup,
                     sniperGroupLamports,
                     KeypairKind.Sniper,
+                    solUsdPrice,
                     dryRun
                 )
             );
@@ -130,6 +148,7 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
                     traderGroup,
                     traderGroupLamports,
                     KeypairKind.Trader,
+                    solUsdPrice,
                     dryRun
                 )
             );
@@ -151,6 +170,7 @@ async function distributeSwapperFunds(
     swappers: Keypair[],
     lamports: Decimal[],
     keypairKind: KeypairKind,
+    solUsdPrice: Decimal,
     dryRun: boolean
 ): Promise<Promise<TransactionSignature | undefined>> {
     const instructions: TransactionInstruction[] = [];
@@ -205,10 +225,16 @@ async function distributeSwapperFunds(
             .plus(totalLamports);
 
         if (solBalance.lt(amount)) {
-            const residualAmount = amount.sub(solBalance);
+            const residualAmount = amount.sub(solBalance).div(LAMPORTS_PER_SOL);
             logger.info(
-                "Transfer %s SOL to %s distributor (%s) to distribute among %s %ss",
-                formatDecimal(residualAmount.div(LAMPORTS_PER_SOL)),
+                "Transfer %s SOL (%s USD) to %s distributor (%s) to distribute among %s %ss",
+                formatDecimal(residualAmount),
+                formatDecimal(
+                    residualAmount
+                        .mul(solUsdPrice)
+                        .mul(USD_TRANSFER_MULTIPLIER)
+                        .toDP(2, Decimal.ROUND_CEIL)
+                ),
                 distributorKind,
                 formatPublicKey(distributor.publicKey, "long"),
                 formatInteger(totalFundedSwappers),

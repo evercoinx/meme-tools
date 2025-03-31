@@ -11,6 +11,7 @@ import { createLogger } from "./logger";
 import { createHeliusClient } from "./helius";
 import { createPinataClient } from "./pinata";
 import { Pool } from "./pool";
+import { Pyth } from "./pyth";
 import { Seed } from "./seed";
 import { createStorage } from "./storage";
 
@@ -93,6 +94,8 @@ export const encryption = new Encryption(
 export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
 
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY_URI);
+
+export const pyth = new Pyth(connectionPool, envVars.RPC_CLUSTER);
 
 export const seed = new Seed(
     `${envVars.NODE_ENV}:${envVars.SNIPER_POOL_SHARE_PERCENTS.size}:${envVars.TRADER_COUNT}`

@@ -74,21 +74,29 @@
     yarn grind-keypairs
     ```
 
-7. Run this command to estimate funds to transfer to the _main_ wallets:
+7. Run these commands to list the _main_ wallets and import their secret keys into _my SVM_ wallet:
+
+    ```bash
+    yarn get-accounts:main
+    ```
+
+8. Run this command to estimate USD funds to transfer to the _main SVM_ wallets:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-8. Transfer the reported funds from my Phantom wallet to the _main_ wallets using [Jumper Bridge](https://jumper.exchange/?fromChain=1&fromToken=0xdAC17F958D2ee523a2206206994597C13D831ec7&toChain=1151111081099710&toToken=11111111111111111111111111111111).
+9. Transfer the reported USD funds from _my EVM_ wallet to the _main SVM_ wallets using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=ETHEREUM&chainOut=SOLANA&token=USDT).
 
-9. Run this command again to make sure that all the _main_ wallets have sufficient balances:
+10. Swap these USD funds to SOL for each _main SVM_ wallet.
+
+11. Run this command again to make sure that all the _main_ wallets have sufficient balances:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-10. Run these commands to distribute funds to the sniper and trader wallets:
+12. Run these commands to distribute funds to the sniper and trader wallets:
 
     ```bash
     yarn distribute-funds && yarn get-funds
@@ -235,10 +243,6 @@
     yarn remove-liquidity:raydium
     ```
 
-4. Run these commands to list the _main_ wallets and import their secret keys into my Phantom wallet:
+4. Swap the collected SOL funds to USDT for each _main SVM_ wallet.
 
-    ```bash
-    yarn get-accounts:main
-    ```
-
-5. Transfer the collected funds from the imported _main_ wallets to my Phantom wallet using [Jumper Bridge](https://jumper.exchange/?fromChain=1151111081099710&fromToken=11111111111111111111111111111111&toChain=1&toToken=0xdAC17F958D2ee523a2206206994597C13D831ec7).
+5. Transfer the collected funds from the imported _main SVM_ wallets to _my EVM_ wallet using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=ETHEREUM&token=USDT).
