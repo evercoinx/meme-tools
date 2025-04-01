@@ -38,7 +38,8 @@ import { isDryRun } from "../modules/environment";
 const DEV_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
 const DEV_GAS_FEE_SOL = 0.1;
 const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
-const USD_TRANSFER_MULTIPLIER = 1.05;
+const TRANSFER_MULTIPLIER_USD = 1.1;
+const TRANSFER_MIN_NATIVE_USD = 1;
 
 (async () => {
     try {
@@ -66,7 +67,8 @@ const USD_TRANSFER_MULTIPLIER = 1.05;
                     formatDecimal(
                         residualAmount
                             .mul(solUsdPrice)
-                            .mul(USD_TRANSFER_MULTIPLIER)
+                            .mul(TRANSFER_MULTIPLIER_USD)
+                            .add(TRANSFER_MIN_NATIVE_USD)
                             .toDP(2, Decimal.ROUND_CEIL)
                     ),
                     formatPublicKey(dev.publicKey, "long")
@@ -232,7 +234,8 @@ async function distributeSwapperFunds(
                 formatDecimal(
                     residualAmount
                         .mul(solUsdPrice)
-                        .mul(USD_TRANSFER_MULTIPLIER)
+                        .mul(TRANSFER_MULTIPLIER_USD)
+                        .add(TRANSFER_MIN_NATIVE_USD)
                         .toDP(2, Decimal.ROUND_CEIL)
                 ),
                 distributorKind,
