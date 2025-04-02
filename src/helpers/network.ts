@@ -317,7 +317,7 @@ async function pollTransactionConfirmation(
                 clearInterval(intervalId);
                 reject(
                     new ResentTransactionError(
-                        `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature, "<Transactin link>")}. Reasone: timeout after ${formatMilliseconds(elapsed)} sec`
+                        `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature, "<Transaction link>")}. Reason: timeout after ${formatMilliseconds(elapsed)} sec`
                     )
                 );
             }
@@ -329,7 +329,7 @@ async function pollTransactionConfirmation(
 
                 return reject(
                     new FailedTransactionError(
-                        `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature, "<Transactin link>")}. Reason: ${formatRpcError(result.err)}`
+                        `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature, "<Transaction link>")}. Reason: ${formatRpcError(result.err)}`
                     )
                 );
             } else if (result?.confirmationStatus === "confirmed") {

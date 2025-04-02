@@ -74,12 +74,12 @@ export async function loadRaydiumCpmmPool(
         programId = DEV_CREATE_CPMM_POOL_PROGRAM.toBase58();
     } else {
         const results = await Promise.all([
-            raydium.api.fetchPoolById({ ids: poolIdKey }),
+            raydium.cpmm.getPoolInfoFromRpc(poolIdKey),
             raydium.cpmm.getCpmmPoolKeys(poolIdKey),
             raydium.cpmm.getRpcPoolInfo(poolIdKey, true),
         ]);
 
-        poolInfo = results[0][0] as ApiV3PoolInfoStandardItemCpmm;
+        ({ poolInfo } = results[0]);
         poolKeys = results[1];
         rpcData = results[2];
         programId = CREATE_CPMM_POOL_PROGRAM.toBase58();
