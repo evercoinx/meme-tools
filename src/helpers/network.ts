@@ -151,7 +151,7 @@ async function createTransaction(
     instructions: TransactionInstruction[],
     signers: Signer[]
 ): Promise<VersionedTransaction> {
-    const { blockhash } = await connection.getLatestBlockhash();
+    const { blockhash } = await connection.getLatestBlockhash("finalized");
     const messageV0 = new TransactionMessage({
         instructions,
         payerKey: signers[0].publicKey,
