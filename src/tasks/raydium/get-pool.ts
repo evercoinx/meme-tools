@@ -38,35 +38,31 @@ async function getPool(poolId: PublicKey): Promise<void> {
     const raydium = await createRaydium(connectionPool.current());
     const { poolInfo } = await loadRaydiumCpmmPool(raydium, poolId);
 
-    const { mintAmountA, mintAmountB, lpMint, lpAmount, type, price, openTime, tvl, burnPercent } =
+    const { mintAmountA, mintAmountB, lpMint, lpAmount, type, feeRate, price, openTime, tvl, burnPercent } =
         poolInfo;
-    let { mintA, mintB, feeRate } = poolInfo;
+    let { mintA, mintB } = poolInfo;
 
-    if (raydium.cluster === "devnet") {
-        const wsolParams = {
-            symbol: "WSOL",
-            name: "Wrapped SOL",
-            decimals: 9,
-        };
-        const tokenParams = {
-            symbol: envVars.TOKEN_SYMBOL,
-            name: envVars.TOKEN_SYMBOL,
-            decimals: envVars.TOKEN_DECIMALS,
-        };
+    const wsolParams = {
+        symbol: "WSOL",
+        name: "Wrapped SOL",
+        decimals: 9,
+    };
+    const tokenParams = {
+        symbol: envVars.TOKEN_SYMBOL,
+        name: envVars.TOKEN_SYMBOL,
+        decimals: envVars.TOKEN_DECIMALS,
+    };
 
-        if (mintA.address === NATIVE_MINT.toBase58()) {
-            mintA = { ...mintA, ...wsolParams };
-            mintB = { ...mintB, ...tokenParams };
-        } else {
-            mintA = { ...mintA, ...tokenParams };
-            mintB = { ...mintB, ...wsolParams };
-        }
-
-        feeRate = feeRate / 1e6;
+    if (mintA.address === NATIVE_MINT.toBase58()) {
+        mintA = { ...mintA, ...wsolParams };
+        mintB = { ...mintB, ...tokenParams };
+    } else {
+        mintA = { ...mintA, ...tokenParams };
+        mintB = { ...mintB, ...wsolParams };
     }
 
     logger.info(
-        "Raydium pool (%s)\n\t\tPool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\tPool type: %s\n\t\tPrice: %s %s ≈ %s %s\n\t\tFee tier: %s\n\t\tOpen time: %s\n\t\tPool liquidity: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s",
+        "Raydium pool (%s)\n\t\tPool id: %s\n\t\t%s mint: %s\n\t\t%s mint: %s\n\t\tLP mint: %s\n\t\tPool type: %s\n\t\tPrice: %s %s ≈ %s %s\n\t\tFee tier: %s\n\t\tOpen time: %s\n\t\tTVL: %s\n\t\tPooled %s: %s\n\t\tPooled %s: %s\n\t\tLP supply: %s\n\t\tPermanently locked: %s",
         raydium.cluster,
         explorer.generateAddressUri(poolId),
         mintA.symbol,
@@ -79,7 +75,7 @@ async function getPool(poolId: PublicKey): Promise<void> {
         ...(NATIVE_MINT.toBase58() === mintA.address
             ? [mintA.symbol, formatDecimal(price, mintA.decimals), mintB.symbol]
             : [mintB.symbol, formatDecimal(price, mintB.decimals), mintA.symbol]),
-        formatPercent(feeRate),
+        formatPercent(feeRate / 1e6),
         formatDate(Number(openTime)),
         formatCurrency(tvl),
         mintA.symbol,
