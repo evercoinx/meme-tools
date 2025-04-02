@@ -62,7 +62,7 @@ class ResentTransactionError extends Error {
 
 const TRANSACTION_RESEND_TIMEOUT_MS = 15_000;
 const TRANSACTION_RETRY_INTERVAL_MS = TRANSACTION_RESEND_TIMEOUT_MS / 3;
-const TRANSACTION_RESEND_ATTEMPTS = 3;
+const TRANSACTION_RESEND_ATTEMPTS = 4;
 const RECOMMENDED_COMPUTE_UNIT_PRICE = 10_000;
 const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
 const MIN_COMPUTE_UNIT_LIMIT = 1_000;
@@ -317,7 +317,7 @@ async function pollTransactionConfirmation(
                 clearInterval(intervalId);
                 reject(
                     new ResentTransactionError(
-                        `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature, "<Transaction link>")}. Reason: timeout after ${formatMilliseconds(elapsed)} sec`
+                        `Transaction (${formatSignature(signature)}) failed: ${explorer.generateTransactionUri(signature, "<Transaction link>")}. Reason: Timeout after ${formatMilliseconds(elapsed)} sec`
                     )
                 );
             }

@@ -54,6 +54,7 @@ import {
     SwapperCount,
 } from "../../modules/storage";
 
+const MAX_FAILED_TRADE_ATTEMPTS = 4;
 const SNIPER_BUY_TRADING_CYCLE = 1;
 const SNIPER_SELL_TRADING_CYCLE = 2;
 const SWAPPER_MIN_BALANCE_DIVISOR = 2;
@@ -107,78 +108,103 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
         const raydium = await createRaydium(connectionPool.current());
         const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
-        let poolTradingCycle = storage.get<number | undefined>(STORAGE_RAYDIUM_POOL_TRADING_CYCLE);
-        poolTradingCycle = poolTradingCycle ? poolTradingCycle + 1 : 0;
-
-        const poolTradingCycleCount = envVars.POOL_TRADING_ONLY_NEW_TRADERS
-            ? poolTradingCycle + 1
-            : poolTradingCycle + envVars.POOL_TRADING_CYCLE_COUNT;
-
-        const poolTradingPumpBiasPercent = envVars.POOL_TRADING_ONLY_NEW_TRADERS
-            ? 1
-            : envVars.POOL_TRADING_PUMP_BIAS_PERCENT;
-
-        for (let i = poolTradingCycle; i < poolTradingCycleCount; i++) {
-            storage.set(STORAGE_RAYDIUM_POOL_TRADING_CYCLE, i);
-            storage.save();
-            logger.debug("Raydium pool trading cycle saved to storage");
-
-            if (i === SNIPER_BUY_TRADING_CYCLE && envVars.SNIPER_REPEATABLE_BUY_PERCENT > 0) {
-                const activeSnipers = getActiveSnipers(
-                    snipers,
-                    envVars.SNIPER_REPEATABLE_BUY_PERCENT
-                );
-
-                await executeSniperCycle(
+        let i = 0;
+        while (true) {
+            try {
+                await executeTradingCycles(
                     raydium,
                     cpmmPool,
-                    activeSnipers,
                     mint,
-                    envVars.SWAPPER_GROUP_SIZE,
-                    i,
-                    true
-                );
-            } else if (
-                i === SNIPER_SELL_TRADING_CYCLE &&
-                envVars.SNIPER_REPEATABLE_SELL_PERCENT > 0
-            ) {
-                const activeSnipers = getActiveSnipers(
                     snipers,
-                    envVars.SNIPER_REPEATABLE_SELL_PERCENT
+                    traders,
+                    traderStartIndex
                 );
 
-                await executeSniperCycle(
-                    raydium,
-                    cpmmPool,
-                    activeSnipers,
-                    mint,
-                    envVars.SWAPPER_GROUP_SIZE,
-                    i,
-                    false
-                );
+                i = 0;
+                process.exit(0);
+            } catch (error: unknown) {
+                i++;
+
+                if (i >= MAX_FAILED_TRADE_ATTEMPTS) {
+                    throw new Error(
+                        `Attempt: #${i}. ${error instanceof Error ? error.message : String(error)}`
+                    );
+                }
+
+                logger.error("Attempt #%d: %s", i, formatError(error));
             }
-
-            const activeTraders = envVars.POOL_TRADING_ONLY_NEW_TRADERS
-                ? shuffle(traders.slice(traderStartIndex, envVars.TRADER_COUNT))
-                : shuffle(traders).slice(0, envVars.TRADER_COUNT);
-
-            await executeTraderCycle(
-                raydium,
-                cpmmPool,
-                activeTraders,
-                mint,
-                envVars.SWAPPER_GROUP_SIZE,
-                i,
-                poolTradingPumpBiasPercent
-            );
         }
-
-        process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
         process.exit(1);
     }
 })();
+
+async function executeTradingCycles(
+    raydium: Raydium,
+    cpmmPool: RaydiumCpmmPool,
+    mint: Keypair,
+    snipers: Keypair[],
+    traders: Keypair[],
+    traderStartIndex: number
+) {
+    let poolTradingCycle = storage.get<number | undefined>(STORAGE_RAYDIUM_POOL_TRADING_CYCLE);
+    poolTradingCycle = poolTradingCycle ? poolTradingCycle + 1 : 0;
+
+    const poolTradingCycleCount = envVars.POOL_TRADING_ONLY_NEW_TRADERS
+        ? poolTradingCycle + 1
+        : poolTradingCycle + envVars.POOL_TRADING_CYCLE_COUNT;
+
+    const poolTradingPumpBiasPercent = envVars.POOL_TRADING_ONLY_NEW_TRADERS
+        ? 1
+        : envVars.POOL_TRADING_PUMP_BIAS_PERCENT;
+
+    for (let i = poolTradingCycle; i < poolTradingCycleCount; i++) {
+        storage.set(STORAGE_RAYDIUM_POOL_TRADING_CYCLE, i);
+        storage.save();
+        logger.debug("Raydium pool trading cycle saved to storage");
+
+        if (i === SNIPER_BUY_TRADING_CYCLE && envVars.SNIPER_REPEATABLE_BUY_PERCENT > 0) {
+            const activeSnipers = getActiveSnipers(snipers, envVars.SNIPER_REPEATABLE_BUY_PERCENT);
+
+            await executeSniperCycle(
+                raydium,
+                cpmmPool,
+                activeSnipers,
+                mint,
+                envVars.SWAPPER_GROUP_SIZE,
+                i,
+                true
+            );
+        } else if (i === SNIPER_SELL_TRADING_CYCLE && envVars.SNIPER_REPEATABLE_SELL_PERCENT > 0) {
+            const activeSnipers = getActiveSnipers(snipers, envVars.SNIPER_REPEATABLE_SELL_PERCENT);
+
+            await executeSniperCycle(
+                raydium,
+                cpmmPool,
+                activeSnipers,
+                mint,
+                envVars.SWAPPER_GROUP_SIZE,
+                i,
+                false
+            );
+        }
+
+        const activeTraders = envVars.POOL_TRADING_ONLY_NEW_TRADERS
+            ? shuffle(traders.slice(traderStartIndex, envVars.TRADER_COUNT))
+            : shuffle(traders).slice(0, envVars.TRADER_COUNT);
+
+        await executeTraderCycle(
+            raydium,
+            cpmmPool,
+            activeTraders,
+            mint,
+            envVars.SWAPPER_GROUP_SIZE,
+            i,
+            poolTradingPumpBiasPercent
+        );
+    }
+}
 
 function getActiveSnipers(snipers: Keypair[], percent: number): Keypair[] {
     const sniperRepeatableCount = new Decimal(percent)
