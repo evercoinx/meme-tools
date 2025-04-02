@@ -60,8 +60,8 @@ class ResentTransactionError extends Error {
     }
 }
 
-const TRANSACTION_POLL_TIMEOUT_MS = 15_000;
-const TRANSACTION_POLL_INTERVAL_MS = TRANSACTION_POLL_TIMEOUT_MS / 10;
+const TRANSACTION_RESEND_TIMEOUT_MS = 15_000;
+const TRANSACTION_RETRY_INTERVAL_MS = TRANSACTION_RESEND_TIMEOUT_MS / 3;
 const TRANSACTION_RESEND_ATTEMPTS = 3;
 const RECOMMENDED_COMPUTE_UNIT_PRICE = 10_000;
 const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
@@ -288,7 +288,7 @@ export async function sendAndConfirmVersionedTransaction(
                 error instanceof ResentTransactionError &&
                 resendAttempts < TRANSACTION_RESEND_ATTEMPTS
             ) {
-                logger.error(
+                logger.warn(
                     "Transaction (%s) resent: %s",
                     signature ? formatSignature(signature) : "?",
                     error.message
@@ -311,9 +311,9 @@ async function pollTransactionConfirmation(
 
     return new Promise<TransactionSignature>((resolve, reject) => {
         const intervalId = setInterval(async () => {
-            elapsed += TRANSACTION_POLL_INTERVAL_MS;
+            elapsed += TRANSACTION_RETRY_INTERVAL_MS;
 
-            if (elapsed >= TRANSACTION_POLL_TIMEOUT_MS) {
+            if (elapsed >= TRANSACTION_RESEND_TIMEOUT_MS) {
                 clearInterval(intervalId);
                 reject(
                     new ResentTransactionError(
@@ -342,7 +342,7 @@ async function pollTransactionConfirmation(
                 );
                 return resolve(signature);
             }
-        }, TRANSACTION_POLL_INTERVAL_MS);
+        }, TRANSACTION_RETRY_INTERVAL_MS);
     });
 }
 
