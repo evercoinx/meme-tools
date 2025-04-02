@@ -54,7 +54,9 @@ import {
     SwapperCount,
 } from "../../modules/storage";
 
-const MAX_FAILED_TRADE_ATTEMPTS = 4;
+const MAX_FAILED_TRADE_PERCENT = 0.05;
+const BASE_BACKOFF_PERIOD_MS = 1_000;
+const MAX_BACKOFF_PERIOD_MS = 8_000;
 const SNIPER_BUY_TRADING_CYCLE = 1;
 const SNIPER_SELL_TRADING_CYCLE = 2;
 const SWAPPER_MIN_BALANCE_DIVISOR = 2;
@@ -108,6 +110,12 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
         const raydium = await createRaydium(connectionPool.current());
         const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
+        const maxFailedTradeAttempts = new Decimal(snipers.length)
+            .add(traders.length)
+            .mul(MAX_FAILED_TRADE_PERCENT)
+            .toDP(0, Decimal.ROUND_HALF_UP)
+            .toNumber();
+
         let i = 0;
         while (true) {
             try {
@@ -125,13 +133,20 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
             } catch (error: unknown) {
                 i++;
 
-                if (i >= MAX_FAILED_TRADE_ATTEMPTS) {
+                if (i >= maxFailedTradeAttempts) {
                     throw new Error(
                         `Attempt: #${i}. ${error instanceof Error ? error.message : String(error)}`
                     );
                 }
 
-                logger.error("Attempt #%d: %s", i, formatError(error));
+                logger.error("Attempt: #%d. %s", i, formatError(error));
+
+                const backoff = Math.min(
+                    BASE_BACKOFF_PERIOD_MS * 2 ** (i - 1),
+                    MAX_BACKOFF_PERIOD_MS
+                );
+                logger.warn("Restarting in %s sec", formatMilliseconds(backoff));
+                await new Promise((resolve) => setTimeout(resolve, backoff));
             }
         }
     } catch (error: unknown) {
