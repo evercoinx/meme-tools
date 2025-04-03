@@ -78,15 +78,6 @@ export async function getComputeBudgetInstructions(
     instructions: TransactionInstruction[],
     signers: Keypair[]
 ): Promise<TransactionInstruction[]> {
-    if (
-        cluster === "mainnet-beta" &&
-        [PriorityLevel.MIN, PriorityLevel.LOW].includes(priorityLevel)
-    ) {
-        throw new Error(
-            `Unacceptable priority level for ${formatText(cluster)} cluster: ${formatText(priorityLevel)}`
-        );
-    }
-
     const sendGetcomputeUnitPrice = getComputeUnitPrice(
         connection,
         cluster,

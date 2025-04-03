@@ -43,10 +43,6 @@ export interface RaydiumCpmmPool {
 export const RAYDIUM_LP_MINT_DECIMALS = 9;
 
 export async function createRaydium(connection: Connection, owner?: Keypair): Promise<Raydium> {
-    if (connection.rpcEndpoint === clusterApiUrl("mainnet-beta")) {
-        throw new Error(`Public mainnet RPC not allowed: ${formatUri(connection.rpcEndpoint)}`);
-    }
-
     return Raydium.load({
         connection,
         cluster: envVars.RPC_CLUSTER === "mainnet-beta" ? "mainnet" : envVars.RPC_CLUSTER,

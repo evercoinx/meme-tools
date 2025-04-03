@@ -1,4 +1,5 @@
 import { parseArgs } from "node:util";
+import { clusterApiUrl } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import Joi from "joi";
 import { formatUri } from "../helpers/format";
@@ -114,6 +115,12 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
 
                         for (const rpcUri of rpcUris.values()) {
                             if (/mainnet/i.test(rpcUri)) {
+                                if (clusterApiUrl("mainnet-beta").includes(rpcUri)) {
+                                    throw new Error(
+                                        `Public mainnet RPC forbidden: ${formatUri(rpcUri)}`
+                                    );
+                                }
+
                                 counters.mainnet++;
                             } else if (/devnet/i.test(rpcUri)) {
                                 counters.devnet++;

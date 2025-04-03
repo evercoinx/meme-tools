@@ -58,9 +58,9 @@ export const connectionPool = new Pool(
                 }),
                 commitment: "confirmed",
                 confirmTransactionInitialTimeout: TRANSACTION_CONFIRMATION_TIMEOUT_MS,
-                disableRetryOnRateLimit: false,
+                disableRetryOnRateLimit: true,
                 fetch: async (
-                    url: string | URL | Request,
+                    uri: string | URL | Request,
                     options?: RequestInit,
                     timeout = TRANSACTION_CONFIRMATION_TIMEOUT_MS
                 ): Promise<Response> => {
@@ -68,7 +68,7 @@ export const connectionPool = new Pool(
                     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
                     try {
-                        const response = await fetch(url, {
+                        const response = await fetch(uri, {
                             ...options,
                             signal: controller.signal,
                         });
