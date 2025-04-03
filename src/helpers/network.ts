@@ -33,6 +33,7 @@ import {
     formatInteger,
     formatMilliseconds,
     formatSignature,
+    formatText,
 } from "./format";
 
 export interface TransactionOptions {
@@ -77,6 +78,15 @@ export async function getComputeBudgetInstructions(
     instructions: TransactionInstruction[],
     signers: Keypair[]
 ): Promise<TransactionInstruction[]> {
+    if (
+        cluster === "mainnet-beta" &&
+        [PriorityLevel.MIN, PriorityLevel.LOW].includes(priorityLevel)
+    ) {
+        throw new Error(
+            `Unacceptable priority level for ${formatText(cluster)} cluster: ${formatText(priorityLevel)}`
+        );
+    }
+
     const sendGetcomputeUnitPrice = getComputeUnitPrice(
         connection,
         cluster,
@@ -270,7 +280,7 @@ export async function sendAndConfirmVersionedTransaction(
     const transaction = await createTransaction(connection, instructions, signers);
 
     let signature: TransactionSignature | undefined;
-    let resendAttempts = 0;
+    let attempts = 0;
     const startTime = Date.now();
 
     do {
@@ -284,17 +294,14 @@ export async function sendAndConfirmVersionedTransaction(
 
             return await pollTransactionConfirmation(connection, signature);
         } catch (error: unknown) {
-            if (
-                error instanceof ResentTransactionError &&
-                resendAttempts < TRANSACTION_RESEND_ATTEMPTS
-            ) {
+            if (error instanceof ResentTransactionError && attempts < TRANSACTION_RESEND_ATTEMPTS) {
                 logger.warn(
                     "Transaction (%s) resent: %s",
                     signature ? formatSignature(signature) : "?",
                     error.message
                 );
 
-                resendAttempts++;
+                attempts++;
                 continue;
             }
 

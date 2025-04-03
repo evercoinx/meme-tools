@@ -355,7 +355,7 @@ async function pumpPool(
         swappers,
         lamportsToBuy,
         SWAPPER_SLIPPAGE_PERCENT,
-        PriorityLevel.LOW
+        PriorityLevel.DEFAULT
     );
     if (sendSwapSolToMintTransactions.length === 0) {
         logger.warn(
@@ -402,7 +402,7 @@ async function dumpPool(
         swappers,
         unitsToSell,
         SWAPPER_SLIPPAGE_PERCENT,
-        PriorityLevel.LOW
+        PriorityLevel.DEFAULT
     );
     if (sendSwapMintToSolTransactions.length === 0) {
         logger.warn(

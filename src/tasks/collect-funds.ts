@@ -182,7 +182,7 @@ async function closeTokenAccounts(
                         connection,
                         envVars.RPC_CLUSTER,
                         heliusClient,
-                        PriorityLevel.LOW,
+                        PriorityLevel.DEFAULT,
                         instructions,
                         [account]
                     ))
@@ -244,7 +244,7 @@ async function collectFunds(
                     connection,
                     envVars.RPC_CLUSTER,
                     heliusClient,
-                    PriorityLevel.LOW,
+                    PriorityLevel.DEFAULT,
                     instructions,
                     [account]
                 ))

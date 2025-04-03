@@ -262,7 +262,7 @@ async function distributeSwapperFunds(
         connection,
         envVars.RPC_CLUSTER,
         heliusClient,
-        PriorityLevel.LOW,
+        PriorityLevel.DEFAULT,
         instructions,
         [distributor]
     );
