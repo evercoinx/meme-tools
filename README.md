@@ -111,25 +111,27 @@
     - [Dex Tools](https://www.dextools.io/app/en/trending)
     - [Defined](https://www.defined.fi/tokens/discover?createdAt=hour1&rankingBy=volume&rankingDirection=DESC)
 
-2. Register an email on [Gmail](https://workspace.google.com/intl/en-US/gmail/).
+2. If needed to have token's socials:
 
-3. Register an account on [X.com](https://x.com/i/flow/signup).
+    1. Register an email on [Gmail](https://workspace.google.com/intl/en-US/gmail/).
 
-4. Create a Telegram channel.
+    2. Register an account on [X.com](https://x.com/i/flow/signup).
 
-5. Run this command to make sure that the _production_ environment is set correctly:
+    3. Create a Telegram channel.
+
+3. Run this command to make sure that the _production_ environment is set correctly:
 
     ```bash
     yarn getenv
     ```
 
-6. Create the two meme images in the webp format:
+4. Create the two meme images in the webp format:
 
     1. A token image with a size of 200x200. Save it as the _$TOKEN_SYMBOL.wepb_ in the _images/production_ folder.
 
     2. A banner image with a size of 600x200. Save it as _$TOKEN_SYMBOL_banner.webp_ in the _images/production_ folder.
 
-7. Set these environment variables in the _.env.production_ file:
+5. Set these environment variables in the _.env.production_ file:
 
     - Token:
         - `TOKEN_SYMBOL` (**Replace the _TOKEN_ value with the actual one**)
@@ -140,39 +142,37 @@
         - `TOKEN_TELEGRAM_URI` (Defaults to _""_)
         - `TOKEN_TAGS` (Defaults to _"meme"_)
 
-8. Run this command to check the configuration:
+6. Run this command to check the configuration:
 
     ```bash
     yarn get-config
     ```
 
-9. Run these commands to rename token key pair and storage files:
+7. Run these commands to rename token key pair and storage files:
 
     ```bash
     yarn rename-token-files && yarn get-funds:main
     ```
 
-10. Run these commands to create the token mint:
+8. Run these commands to create the token mint:
 
     ```bash
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-11. Run these commands to open a Raydium CPMM pool:
+9. Run these commands to open a Raydium CPMM pool and burn liquidity in it:
 
     ```bash
-    yarn open-pool:raydium && yarn get-pool:raydium && yarn get-funds:main
+    yarn open-pool:raydium && yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
-12. Lock the pool liquidity on [UNCX](https://solana.uncx.network/lockers/manage/locker) for 3 days.
-
-13. Run this command to start trading in this pool:
+10. Run this command to start trading in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-14. Fill in the forms and pay to update token information on these platforms:
+11. Fill in the forms and pay to update token information on these platforms:
 
 - [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
 - [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
@@ -235,14 +235,6 @@
     yarn close-pool:raydium && yarn collect-funds && yarn get-funds
     ```
 
-2. Unlock the pool liquidity on [UNCX](https://solana.uncx.network/lockers/manage/locker) after expiring a lock period.
+2. Swap the collected SOL funds to USDT for each _main SVM_ wallet.
 
-3. Run these commands to remove liquidity from the pool:
-
-    ```bash
-    yarn remove-liquidity:raydium
-    ```
-
-4. Swap the collected SOL funds to USDT for each _main SVM_ wallet.
-
-5. Transfer the collected funds from the imported _main SVM_ wallets to _my EVM_ wallet using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=ETHEREUM&token=USDT).
+3. Transfer the collected funds from the imported _main SVM_ wallets to _my EVM_ wallet using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=ETHEREUM&token=USDT).
