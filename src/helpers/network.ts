@@ -13,6 +13,7 @@ import {
     Connection,
     Keypair,
     LAMPORTS_PER_SOL,
+    MessageV0,
     Signer,
     SystemProgram,
     TransactionError,
@@ -33,7 +34,6 @@ import {
     formatInteger,
     formatMilliseconds,
     formatSignature,
-    formatText,
 } from "./format";
 
 export interface TransactionOptions {
@@ -152,6 +152,27 @@ async function createTransaction(
     instructions: TransactionInstruction[],
     signers: Signer[]
 ): Promise<VersionedTransaction> {
+    const messageV0 = await getCompiledMessageV0(connection, instructions, signers);
+    const transaction = new VersionedTransaction(messageV0);
+    transaction.sign(signers);
+    return transaction;
+}
+
+export async function calculateFee(
+    connection: Connection,
+    instructions: TransactionInstruction[],
+    signers: Signer[]
+): Promise<number> {
+    const messageV0 = await getCompiledMessageV0(connection, instructions, signers);
+    const { value } = await connection.getFeeForMessage(messageV0);
+    return value ?? 5_000;
+}
+
+async function getCompiledMessageV0(
+    connection: Connection,
+    instructions: TransactionInstruction[],
+    signers: Signer[]
+): Promise<MessageV0> {
     const { blockhash } = await connection.getLatestBlockhash("finalized");
     const messageV0 = new TransactionMessage({
         instructions,
@@ -159,10 +180,7 @@ async function createTransaction(
         recentBlockhash: blockhash,
     });
 
-    const transaction = new VersionedTransaction(messageV0.compileToV0Message());
-    transaction.sign(signers);
-
-    return transaction;
+    return messageV0.compileToV0Message();
 }
 
 async function getComputeUnitPrice(

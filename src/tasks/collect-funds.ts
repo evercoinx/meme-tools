@@ -24,6 +24,7 @@ import {
 import { checkFileExists } from "../helpers/filesystem";
 import { capitalize, formatDecimal, formatError, formatPublicKey } from "../helpers/format";
 import {
+    calculateFee,
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
 } from "../helpers/network";
@@ -38,8 +39,6 @@ import {
     ZERO_DECIMAL,
 } from "../modules";
 import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
-
-const MIN_REMAINING_BALANCE_LAMPORTS = 5_000;
 
 (async () => {
     try {
@@ -216,25 +215,24 @@ async function collectFunds(
 
     let connection = connectionPool.current();
     let heliusClient = heliusClientPool.current();
+    let fee: number | undefined;
 
     for (const account of accounts) {
         const solBalance = await getSolBalance(connectionPool, account);
-        if (solBalance.lte(MIN_REMAINING_BALANCE_LAMPORTS)) {
+        if (solBalance.eq(ZERO_DECIMAL)) {
             logger.warn(
-                "%s (%s) has insufficient balance on wallet: %s SOL",
+                "%s (%s) has zero balance on wallet",
                 capitalize(keypairKind),
-                formatPublicKey(account.publicKey),
-                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
+                formatPublicKey(account.publicKey)
             );
             continue;
         }
 
-        const residualLamports = solBalance.sub(MIN_REMAINING_BALANCE_LAMPORTS);
-        const instructions = [
+        const testInstructions = [
             SystemProgram.transfer({
                 fromPubkey: account.publicKey,
                 toPubkey: distributor.publicKey,
-                lamports: residualLamports.toNumber(),
+                lamports: 1,
             }),
         ];
 
@@ -245,11 +243,28 @@ async function collectFunds(
                     envVars.RPC_CLUSTER,
                     heliusClient,
                     PriorityLevel.DEFAULT,
-                    instructions,
+                    testInstructions,
                     [account]
                 ))
             );
         }
+
+        if (fee === undefined) {
+            fee = await calculateFee(
+                connection,
+                [...computeBudgetInstructions, ...testInstructions],
+                [account]
+            );
+        }
+
+        const residualLamports = solBalance.sub(fee);
+        const instructions = [
+            SystemProgram.transfer({
+                fromPubkey: account.publicKey,
+                toPubkey: distributor.publicKey,
+                lamports: residualLamports.toNumber(),
+            }),
+        ];
 
         sendTransactions.push(
             sendAndConfirmVersionedTransaction(

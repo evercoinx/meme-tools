@@ -38,8 +38,18 @@ async function getPool(poolId: PublicKey): Promise<void> {
     const raydium = await createRaydium(connectionPool.current());
     const { poolInfo } = await loadRaydiumCpmmPool(raydium, poolId);
 
-    const { mintAmountA, mintAmountB, lpMint, lpAmount, type, feeRate, price, openTime, tvl, burnPercent } =
-        poolInfo;
+    const {
+        mintAmountA,
+        mintAmountB,
+        lpMint,
+        lpAmount,
+        type,
+        feeRate,
+        price,
+        openTime,
+        tvl,
+        burnPercent,
+    } = poolInfo;
     let { mintA, mintB } = poolInfo;
 
     const wsolParams = {

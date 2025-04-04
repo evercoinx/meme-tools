@@ -11,7 +11,6 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
 import {
-    clusterApiUrl,
     Connection,
     Keypair,
     LAMPORTS_PER_SOL,
@@ -22,7 +21,7 @@ import {
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";
-import { formatDecimal, formatPublicKey, formatText, formatUri } from "../helpers/format";
+import { formatDecimal, formatPublicKey, formatText } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
