@@ -62,7 +62,10 @@ const TRANSFER_MIN_NATIVE_USD = 1;
             if (solBalance.lt(amount)) {
                 const residualAmount = amount.sub(solBalance).div(LAMPORTS_PER_SOL);
                 logger.info(
-                    "Transfer %s SOL (%s USD) to dev (%s)",
+                    "Dev (%s) has %s balance: %s SOL. Transfer %s SOL (%s USD)",
+                    formatPublicKey(dev.publicKey, "long"),
+                    formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
+                    formatError("insufficient"),
                     formatDecimal(residualAmount),
                     formatDecimal(
                         residualAmount
@@ -70,14 +73,14 @@ const TRANSFER_MIN_NATIVE_USD = 1;
                             .mul(TRANSFER_MULTIPLIER_USD)
                             .add(TRANSFER_MIN_NATIVE_USD)
                             .toDP(2, Decimal.ROUND_CEIL)
-                    ),
-                    formatPublicKey(dev.publicKey, "long")
+                    )
                 );
             } else {
                 logger.info(
-                    "Dev (%s) has sufficient balance: %s SOL",
+                    "Dev (%s) has sufficient balance: %s SOL and must spend %s SOL",
                     formatPublicKey(dev.publicKey, "long"),
-                    formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
+                    formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
+                    formatDecimal(amount.div(LAMPORTS_PER_SOL))
                 );
             }
 
@@ -229,7 +232,11 @@ async function distributeSwapperFunds(
         if (solBalance.lt(amount)) {
             const residualAmount = amount.sub(solBalance).div(LAMPORTS_PER_SOL);
             logger.info(
-                "Transfer %s SOL (%s USD) to %s distributor (%s) to distribute among %s %ss",
+                "%s distributor (%s) has %s balance: %s SOL. Transfer %s SOL (%s USD) to distribute among %s %ss",
+                capitalize(distributorKind),
+                formatPublicKey(distributor.publicKey, "long"),
+                formatError("insufficient"),
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                 formatDecimal(residualAmount),
                 formatDecimal(
                     residualAmount
@@ -238,8 +245,6 @@ async function distributeSwapperFunds(
                         .add(TRANSFER_MIN_NATIVE_USD)
                         .toDP(2, Decimal.ROUND_CEIL)
                 ),
-                distributorKind,
-                formatPublicKey(distributor.publicKey, "long"),
                 formatInteger(totalFundedSwappers),
                 keypairKind
             );
