@@ -57,7 +57,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
             snipers,
             sniperUnitsToSell,
             SWAPPER_SLIPPAGE_PERCENT,
-            PriorityLevel.VERY_HIGH,
+            PriorityLevel.HIGH,
             { skipPreflight: true }
         );
         const sendDevSwapMintToSolTransactions = await swapMintToSol(
@@ -68,7 +68,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
             [dev],
             devUnitsToSell,
             SWAPPER_SLIPPAGE_PERCENT,
-            PriorityLevel.VERY_HIGH,
+            PriorityLevel.HIGH,
             { skipPreflight: true }
         );
         const sendTraderSwapMintToSolTransactions = await swapMintToSol(
@@ -79,7 +79,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
             traders,
             traderUnitsToSell,
             SWAPPER_SLIPPAGE_PERCENT,
-            PriorityLevel.VERY_HIGH,
+            PriorityLevel.DEFAULT,
             { skipPreflight: true }
         );
 
