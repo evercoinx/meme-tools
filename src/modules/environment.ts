@@ -189,24 +189,22 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .uri()
                 .description("Token website URI"),
             TOKEN_TWITTER_URI: Joi.string()
-                .optional()
+                .required()
                 .trim()
-                .allow("")
                 .uri()
                 .custom((uri: string) => {
-                    if (uri && !uri.startsWith("https://x.com")) {
+                    if (!uri.startsWith("https://x.com")) {
                         throw new Error(`Invalid Twitter URI: ${formatUri(uri)}`);
                     }
                     return uri;
                 })
                 .description("Token Twitter URI"),
             TOKEN_TELEGRAM_URI: Joi.string()
-                .optional()
+                .required()
                 .trim()
-                .allow("")
                 .uri()
                 .custom((uri: string) => {
-                    if (uri && !uri.startsWith("https://t.me")) {
+                    if (!uri.startsWith("https://t.me")) {
                         throw new Error(`Invalid Telegram URI: ${formatUri(uri)}`);
                     }
                     return uri;

@@ -113,7 +113,7 @@
 
 2. If needed to have token's socials:
 
-    1. Register an email on [Gmail](https://workspace.google.com/intl/en-US/gmail/).
+    1. Create an email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html).
 
     2. Register an account on [X.com](https://x.com/i/flow/signup).
 
@@ -129,7 +129,7 @@
 
     1. A token image with a size of 200x200. Save it as the _$TOKEN_SYMBOL.wepb_ in the _images/production_ folder.
 
-    2. A banner image with a size of 600x200. Save it as _$TOKEN_SYMBOL_banner.webp_ in the _images/production_ folder.
+    2. A banner image with a size of 600x200. Save it as _$TOKEN_SYMBOL-banner.webp_ in the _images/production_ folder.
 
 5. Set these environment variables in the _.env.production_ file:
 
@@ -138,8 +138,8 @@
         - `TOKEN_NAME` (Defaults to _"Official $TOKEN_NAME $TOKEN_TAGS0"_)
         - `TOKEN_DESCRIPTION` (Defaults to _"$TOKEN_NAME" on Solana"_)
         - `TOKEN_WEBSITE_URI` (Defaults to _""_)
-        - `TOKEN_TWITTER_URI` (Defaults to _""_)
-        - `TOKEN_TELEGRAM_URI` (Defaults to _""_)
+        - `TOKEN_TWITTER_URI` (Set it to the Twitter URI created on step 2.2)
+        - `TOKEN_TELEGRAM_URI` (Set it to the Telegram URI created on step 2.3)
         - `TOKEN_TAGS` (Defaults to _"meme"_)
 
 6. Run this command to check the configuration:

@@ -29,9 +29,9 @@ function getConfig(): void {
         envVars.TOKEN_DECIMALS,
         "",
         envVars.TOKEN_TAGS,
-        envVars.TOKEN_WEBSITE_URI,
         envVars.TOKEN_TWITTER_URI,
-        envVars.TOKEN_TELEGRAM_URI
+        envVars.TOKEN_TELEGRAM_URI,
+        envVars.TOKEN_WEBSITE_URI
     );
 
     logger.info(
