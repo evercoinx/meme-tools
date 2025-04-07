@@ -4,6 +4,7 @@ import { join, parse } from "node:path";
 import { Connection } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
+import { formatInteger, formatMilliseconds, formatUri } from "../helpers/format";
 import { Encryption } from "./encryption";
 import { extractEnvironmentVariables } from "./environment";
 import { Explorer } from "./explorer";
@@ -59,24 +60,7 @@ export const connectionPool = new Pool(
                 commitment: "confirmed",
                 confirmTransactionInitialTimeout: TRANSACTION_CONFIRMATION_TIMEOUT_MS,
                 disableRetryOnRateLimit: true,
-                fetch: async (
-                    uri: string | URL | Request,
-                    options?: RequestInit,
-                    timeout = TRANSACTION_CONFIRMATION_TIMEOUT_MS
-                ): Promise<Response> => {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-                    try {
-                        const response = await fetch(uri, {
-                            ...options,
-                            signal: controller.signal,
-                        });
-                        return response;
-                    } finally {
-                        clearTimeout(timeoutId);
-                    }
-                },
+                fetch: fetchUri,
             })
     )
 );
@@ -102,3 +86,61 @@ export const seed = new Seed(
 );
 
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
+
+const MAX_FETCH_ATTEMTPS = 5;
+const BASE_BACKOFF_PERIOD_MS = 1_000;
+const MAX_BACKOFF_PERIOD_MS = 8_000;
+
+async function fetchUri(
+    uri: string | URL | Request,
+    options?: RequestInit,
+    timeout = TRANSACTION_CONFIRMATION_TIMEOUT_MS
+): Promise<Response> {
+    for (let i = 1; i <= MAX_FETCH_ATTEMTPS; i++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        try {
+            const response = await fetch(uri, {
+                ...options,
+                signal: controller.signal,
+            });
+            if (response.ok) {
+                return response;
+            }
+
+            logger.warn(
+                "Attempt: %s. Fetch failed with status %s for %s",
+                formatInteger(i),
+                formatInteger(response.status),
+                formatUri(uri)
+            );
+        } catch (error: unknown) {
+            if (error instanceof Error && error.name === "AbortError") {
+                logger.warn(
+                    "Attempt: %s. Fetch timeout after %s for %s",
+                    formatInteger(i),
+                    formatMilliseconds(timeout),
+                    formatUri(uri)
+                );
+            } else {
+                logger.warn(
+                    "Attempt: %s. Fetch failed for %s. Reason: %s",
+                    formatInteger(i),
+                    formatUri(uri),
+                    error instanceof Error ? error.message : String(error)
+                );
+            }
+        } finally {
+            clearTimeout(timeoutId);
+        }
+
+        const backoff = Math.min(BASE_BACKOFF_PERIOD_MS * 2 ** (i - 1), MAX_BACKOFF_PERIOD_MS);
+        logger.warn("Refetching in %s sec", formatMilliseconds(backoff));
+        await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
+
+    throw new Error(
+        `Fetch failed after ${formatInteger(MAX_FETCH_ATTEMTPS)} attempts for ${formatUri(uri)}`
+    );
+}

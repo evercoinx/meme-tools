@@ -133,7 +133,10 @@ export function formatText(text: string, highlighted = false): string {
     return highlighted ? chalk.bgYellow(text) : chalk.yellow(text);
 }
 
-export function formatUri(uri: string, tag?: string): string {
+export function formatUri(uri: string | URL | Request, tag?: string): string {
+    if (typeof uri !== "string") {
+        uri = uri.toString();
+    }
     return chalk.blue(generateLink(uri, tag || uri));
 }
 
