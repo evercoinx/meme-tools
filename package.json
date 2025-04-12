@@ -69,14 +69,14 @@
     "packageManager": "yarn@4.7.0",
     "dependencies": {
         "@pythnetwork/client": "^2.22.1",
-        "@raydium-io/raydium-sdk-v2": "^0.1.118-alpha",
+        "@raydium-io/raydium-sdk-v2": "^0.1.119-alpha",
         "@solana/spl-token": "^0.4.13",
         "@solana/web3.js": "^1.98.0",
         "arweave": "^1.15.7",
         "bs58": "^6.0.0",
         "chalk": "^5.4.1",
         "decimal.js": "^10.5.0",
-        "dotenv": "^16.4.7",
+        "dotenv": "^16.5.0",
         "fastestsmallesttextencoderdecoder": "^1.0.22",
         "flat-cache": "^6.1.8",
         "got": "^11.8.6",
@@ -93,9 +93,9 @@
         "@types/bn.js": "^5.1.6",
         "@types/decimal.js": "^7.4.3",
         "@types/minimist": "^1.2.5",
-        "@types/node": "^22.14.0",
+        "@types/node": "^22.14.1",
         "eslint": "^9.24.0",
-        "eslint-config-prettier": "^10.1.1",
+        "eslint-config-prettier": "^10.1.2",
         "eslint-plugin-prettier": "^5.2.6",
         "husky": "^9.1.7",
         "joi": "^17.13.3",
@@ -103,6 +103,6 @@
         "source-map-support": "^0.5.21",
         "ts-node": "^10.9.2",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.29.0"
+        "typescript-eslint": "^8.29.1"
     }
 }
