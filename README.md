@@ -106,30 +106,40 @@
 
 1. Find a meta using the following platforms:
 
-    - [Discord](https://discord.com) (Tweetshift channels)
+    - [Discord](https://discord.com/channels/1329183129604198490)
     - [Dex Screener](https://dexscreener.com/1h?rankBy=trendingScoreH1&order=desc)
     - [Dex Tools](https://www.dextools.io/app/en/trending)
     - [Defined](https://www.defined.fi/tokens/discover?createdAt=hour1&rankingBy=volume&rankingDirection=DESC)
 
-2. If needed to have token's socials:
+2. Create the following meme images on [Midjourney](https://www.midjourney.com):
+
+    1. The token image with the size of 200x200. Save it as the _$TOKEN_SYMBOL.wepb_ in the _images/production_ folder.
+
+    2. The banner image with the size of 600x200. Save it as _$TOKEN_SYMBOL-banner.webp_ in the _images/production_ folder.
+
+3. Create social channels:
 
     1. Create an email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html).
 
-    2. Register an account on [X.com](https://x.com/i/flow/signup).
+    2. Create an account on [X.com](https://x.com/i/flow/signup).
 
-    3. Create a Telegram channel.
+    3. Write the greeting post on the X account.
 
-3. Run this command to make sure that the _production_ environment is set correctly:
+    4. Boost the X.com account and the greeting post via [Socialplug.io](https://panel.socialplug.io/order/twitter-nft):
+
+        - 100 Twitter NFT Followers
+        - 200 Twitter NFT Likes
+        - 200 Twitter NFT Retweets
+        - 30 Twitter NFT Comments
+        - 30 Twitter NFT Quote Tweets
+
+    5. Create a Telegram public group and channel.
+
+4. Run this command to make sure that the _production_ environment is set correctly:
 
     ```bash
     yarn getenv
     ```
-
-4. Create the two meme images in the webp format:
-
-    1. A token image with a size of 200x200. Save it as the _$TOKEN_SYMBOL.wepb_ in the _images/production_ folder.
-
-    2. A banner image with a size of 600x200. Save it as _$TOKEN_SYMBOL-banner.webp_ in the _images/production_ folder.
 
 5. Set these environment variables in the _.env.production_ file:
 
@@ -172,12 +182,14 @@
     yarn trade:raydium
     ```
 
-11. Fill in the forms and pay to update token information on these platforms:
+11. Update the token information on these platforms and write the corresponding posts on the X account:
 
 - [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
 - [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
 
-10. Check token trending on these platforms:
+13. Buy the boost 10x pack on [Dex Screener](https://dexscreener.com) and write the corresponding post on the X account.
+
+14. Check token trending on these platforms:
 
 - [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana)
 - [Dex Tools](https://www.dextools.io/app/en/solana/trending)
