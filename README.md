@@ -8,11 +8,11 @@
     yarn setenv:prod
     ```
 
-2. Temporarily, set this environment variable in the _.env.production_ file:
+2. Set this environment variable in the _.env.production_ file:
 
     - `TOKEN_SYMBOL=TOKEN`
 
-3. If needed, run this command to generate pool shares for the snipers:
+3. If required, run this command to generate pool shares for the snipers:
 
     ```bash
     yarn generate-shares
@@ -74,33 +74,41 @@
     yarn grind-keypairs
     ```
 
-7. Run these commands to list the _main_ wallets and import their secret keys into _my SVM_ wallet:
+7. Run these commands to list the _main_ wallets and import their secret keys into _my Phantom_ wallet:
 
     ```bash
     yarn get-accounts:main
     ```
 
-8. Run this command to estimate USD funds to transfer to the _main SVM_ wallets:
+8. Run this command to estimate USDC to transfer to the _main_ wallets:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-9. Transfer the reported USD funds from _my EVM_ wallet to the _main SVM_ wallets using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=ETHEREUM&chainOut=SOLANA&token=USDT).
+9. Transfer USDC from _my Metamask_ wallet to the _main_ wallets using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=ETHEREUM&chainOut=SOLANA&token=USDC).
 
-10. Swap these USD funds to SOL for each _main SVM_ wallet.
+10. Swap USDC to SOL for each _main_ wallet.
 
-11. Run this command again to make sure that all the _main_ wallets have sufficient balances:
+11. Run this command again to make sure that all the _main_ wallets have sufficient SOL:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-12. Run these commands to distribute funds to the sniper and trader wallets:
+12. Run these commands to distribute funds to the _sniper_ and _trader_ wallets:
 
     ```bash
     yarn distribute-funds && yarn get-funds
     ```
+
+13. Transfer 581 USDC to the _marketing_ wallet:
+
+    - 300 USDC to update the token info on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
+    - 100 USDC to boost 10x pack on [Dex Screener](https://dexscreener.com)
+    - 181 USDC to boost the X account on [SocialPlug](https://panel.socialplug.io/order/twitter-nft)
+
+14. Add 181 USDC to my account on [SocialPlug](https://panel.socialplug.io/portal/page/pg_add_funds).
 
 # Token Launch Plan
 
@@ -111,29 +119,19 @@
     - [Dex Tools](https://www.dextools.io/app/en/trending)
     - [Defined](https://www.defined.fi/tokens/discover?createdAt=hour1&rankingBy=volume&rankingDirection=DESC)
 
-2. Create the following meme images on [Midjourney](https://www.midjourney.com):
+2. Create the two meme images on [Midjourney](https://www.midjourney.com):
 
-    1. The token image with the size of 200x200. Save it as the _$TOKEN_SYMBOL.wepb_ in the _images/production_ folder.
+    - The token image with the size of 200x200. Save it as the _$TOKEN_SYMBOL.wepb_ in the _images/production_ folder
 
-    2. The banner image with the size of 600x200. Save it as _$TOKEN_SYMBOL-banner.webp_ in the _images/production_ folder.
+    - The banner image with the size of 600x200. Save it as _$TOKEN_SYMBOL-banner.webp_ in the _images/production_ folder
 
-3. Create social channels:
+3. Create the social channels:
 
-    1. Create an email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html).
+    - Create an email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html)
 
-    2. Create an account on [X.com](https://x.com/i/flow/signup).
+    - Create an account on [X.com](https://x.com/i/flow/signup)
 
-    3. Write the greeting post on the X account.
-
-    4. Boost the X.com account and the greeting post via [Socialplug.io](https://panel.socialplug.io/order/twitter-nft):
-
-        - 100 Twitter NFT Followers
-        - 200 Twitter NFT Likes
-        - 200 Twitter NFT Retweets
-        - 30 Twitter NFT Comments
-        - 30 Twitter NFT Quote Tweets
-
-    5. Create a Telegram public group and channel.
+    - Create a Telegram public group and channel
 
 4. Run this command to make sure that the _production_ environment is set correctly:
 
@@ -170,30 +168,47 @@
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-9. Run these commands to open a Raydium CPMM pool and burn liquidity in it:
+9. Run the marketing campaign:
+
+    - Write posts about the token launch on the X and Telegram accounts
+
+    - Boost the X post above with the following items via [SocialPlug](https://panel.socialplug.io/order/twitter-nft):
+
+        - 100 Followers
+        - 200 Likes
+        - 200 Retweets
+        - 30 Comments
+        - 30 Quote Tweets
+
+    - Buy Dex Screener reactions on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener)
+
+10. Run these commands to open a Raydium CPMM pool and burn liquidity in it:
 
     ```bash
     yarn open-pool:raydium && yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
-10. Run this command to start trading in this pool:
+11. Run this command to start trading in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-11. Update the token information on these platforms and write the corresponding posts on the X account:
+12. Update the token information on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order) and write posts about it on the X and Telegram accounts.
 
-- [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
-- [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
+13. Boost the X post above with _200 Likes_ via [SocialPlug](https://panel.socialplug.io/order/twitter-nft)
 
-13. Buy the boost 10x pack on [Dex Screener](https://dexscreener.com) and write the corresponding post on the X account.
+14. Buy the boost 10x pack on [Dex Screener](https://dexscreener.com) and write posts about it on the X and Telegram accounts.
 
-14. Check token trending on these platforms:
+15. Boost the X post above with _200 Likes_ via [SocialPlug](https://panel.socialplug.io/order/twitter-nft)
 
-- [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana)
+16. Monitor token trending on these platforms:
+
+- [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana&boosted=1&profile=1)
 - [Dex Tools](https://www.dextools.io/app/en/solana/trending)
 - [Defined](https://www.defined.fi/tokens/discover?network=sol&createdAt=hour4&rankingBy=volume&rankingDirection=DESC)
+
+17. Boost the X post about 500 Dex Screener reactions with _200 Likes_ via [SocialPlug](https://panel.socialplug.io/order/twitter-nft)
 
 # Token Post Launch Plan
 
@@ -211,13 +226,13 @@
 
 2. If the `$TRADER_COUNT` variable is adjusted up:
 
-    1. Run this command to estimate funds to transfer to the _trader distributor_ wallet:
+    1. Run this command to estimate USDC to transfer to the _trader distributor_ wallet:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-    2. Transfer the reported funds to the _trader distributor_ wallet:
+    2. Transfer USDC to the _trader distributor_ wallet:
 
     3. Run this command again to make sure that the _trader distributor_ wallet has sufficient balance:
 
@@ -239,6 +254,16 @@
     yarn trade:raydium
     ```
 
+4. Extend the marketing campaign:
+
+    - Update the token information on [Dex Tools](https://www.dextools.io/marketplace/en/create-socials) and write posts about it on the X and Telegram accounts.
+
+    - Boost the X post above with _200 Likes_ via [SocialPlug](https://panel.socialplug.io/order/twitter-nft)
+
+    - Buy the boost 10x pack on [Dex Screener](https://dexscreener.com) and write posts about it on the X and Telegram accounts.
+
+    - Boost the X post above with _200 Likes_ via [SocialPlug](https://panel.socialplug.io/order/twitter-nft)
+
 # Token Exit Plan
 
 1. Run these commands to close the Raydium pool and to collect funds to the _main_ wallets.
@@ -247,6 +272,6 @@
     yarn close-pool:raydium && yarn collect-funds && yarn get-funds
     ```
 
-2. Swap the collected SOL funds to USDT for each _main SVM_ wallet.
+2. Swap the collected SOL to USDC for each _main_ wallet.
 
-3. Transfer the collected funds from the imported _main SVM_ wallets to _my EVM_ wallet using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=ETHEREUM&token=USDT).
+3. Transfer the collected USDC from the _main_ wallets to _my Metamask_ wallet using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=ETHEREUM&token=USDC).
