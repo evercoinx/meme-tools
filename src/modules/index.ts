@@ -23,7 +23,7 @@ export const ZERO_DECIMAL = new Decimal(0);
 export const envVars = extractEnvironmentVariables();
 export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
 export const MINT_DUST_UNITS = new Decimal(100).mul(UNITS_PER_MINT);
-export const MINT_IMAGE_TYPE = "webp";
+export const MINT_IMAGE_TYPE = "jpg";
 export const MINT_IMAGE_FILE_NAME = `${envVars.TOKEN_SYMBOL.toLowerCase()}.${MINT_IMAGE_TYPE}`;
 export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
 

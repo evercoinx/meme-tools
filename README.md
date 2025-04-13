@@ -121,9 +121,9 @@
 
 2. Create the two meme images on [Midjourney](https://www.midjourney.com):
 
-    - The token image with the size of 200x200. Save it as the _$TOKEN_SYMBOL.wepb_ in the _images/production_ folder
+    - The token image with the size of 200x200. Save it as the _$TOKEN_SYMBOL.jpg_ in the _images/production_ folder
 
-    - The banner image with the size of 600x200. Save it as _$TOKEN_SYMBOL-banner.webp_ in the _images/production_ folder
+    - The banner image with the size of 600x200. Save it as _$TOKEN_SYMBOL-banner.jpg in the \_images/production_ folder
 
 3. Create the social channels:
 
