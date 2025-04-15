@@ -46,7 +46,7 @@ const TRANSFER_MIN_NATIVE_USD = 1;
         let swapperGroupSize: number;
 
         const dryRun = isDryRun();
-        const solUsdPrice = await pyth.getSolUsdPrice();
+        const usdPrice = await pyth.getUsdPriceForSol();
 
         if (dryRun) {
             logger.warn("Dry run mode enabled");
@@ -64,12 +64,12 @@ const TRANSFER_MIN_NATIVE_USD = 1;
                 logger.info(
                     "Dev (%s) has %s balance: %s SOL. Transfer %s SOL (%s USD)",
                     formatPublicKey(dev.publicKey, "long"),
-                    formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                     formatError("insufficient"),
+                    formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                     formatDecimal(residualAmount),
                     formatDecimal(
                         residualAmount
-                            .mul(solUsdPrice)
+                            .mul(usdPrice)
                             .mul(TRANSFER_MULTIPLIER_USD)
                             .add(TRANSFER_MIN_NATIVE_USD)
                             .toDP(2, Decimal.ROUND_CEIL)
@@ -136,7 +136,7 @@ const TRANSFER_MIN_NATIVE_USD = 1;
                     sniperGroup,
                     sniperGroupLamports,
                     KeypairKind.Sniper,
-                    solUsdPrice,
+                    usdPrice,
                     dryRun
                 )
             );
@@ -153,7 +153,7 @@ const TRANSFER_MIN_NATIVE_USD = 1;
                     traderGroup,
                     traderGroupLamports,
                     KeypairKind.Trader,
-                    solUsdPrice,
+                    usdPrice,
                     dryRun
                 )
             );
@@ -175,7 +175,7 @@ async function distributeSwapperFunds(
     swappers: Keypair[],
     lamports: Decimal[],
     keypairKind: KeypairKind,
-    solUsdPrice: Decimal,
+    usdPrice: Decimal,
     dryRun: boolean
 ): Promise<Promise<TransactionSignature | undefined>> {
     const instructions: TransactionInstruction[] = [];
@@ -240,7 +240,7 @@ async function distributeSwapperFunds(
                 formatDecimal(residualAmount),
                 formatDecimal(
                     residualAmount
-                        .mul(solUsdPrice)
+                        .mul(usdPrice)
                         .mul(TRANSFER_MULTIPLIER_USD)
                         .add(TRANSFER_MIN_NATIVE_USD)
                         .toDP(2, Decimal.ROUND_CEIL)
