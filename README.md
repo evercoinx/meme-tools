@@ -12,7 +12,7 @@
 
     - `TOKEN_SYMBOL=TOKEN`
 
-3. If required, run this command to generate pool shares for the snipers:
+3. Optionally, run this command to generate pool shares for the snipers:
 
     ```bash
     yarn generate-shares
@@ -102,13 +102,9 @@
     yarn distribute-funds && yarn get-funds
     ```
 
-13. Make sure that the _marketing_ wallet has at least 581 USDC on balance. The promotions are as follows:
+13. Make sure that the _marketing_ account has sufficient budget of 600 USDC.
 
-    - 300 USDC to update the token info on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
-    - 100 USDC to buy the 10x pack boost on [Dex Screener](https://dexscreener.com)
-    - 181 USDC to promote the X account via [SocialPlug](https://panel.socialplug.io/order/twitter-nft)
-
-14. Add 181 USDC to the account on [SocialPlug](https://panel.socialplug.io/portal/page/pg_add_funds).
+14. Add 200 USDC to the account on [SocialPlug](https://panel.socialplug.io/portal/page/pg_add_funds).
 
 # Token Launch Plan
 
@@ -133,9 +129,9 @@
 
     - Connect this website to the registered domain
 
-4. Create these social channels:
+4. Create the social channels:
 
-    - Create an email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html), if the website is not created
+    - If the website is not created, create an email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html)
 
     - Create an account on [X.com](https://x.com/i/flow/signup). Use either an Adguard or Godaddy email for it
 
@@ -176,13 +172,13 @@
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-10. Order the following promotions for the X account on [SocialPlug](https://panel.socialplug.io/order/twitter-nft):
+10. Order the following promotions for the X account on [SocialPlug Crypto Twitter](https://panel.socialplug.io/order/twitter-nft):
 
-    - 100 Followers
+    - 100 NFT Followers (20 USDC)
 
-11. Order the following promotions for the Telegram channel on [SocialPlug](https://panel.socialplug.io/order/telegram):
+11. Order the following promotions for the Telegram channel on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
 
-    - 100 Subscribers
+    - 500 Group Members (10 USDC)
 
 12. Run this command to open a Raydium CPMM pool:
 
@@ -196,36 +192,73 @@
     yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
-14. Publish posts about the token launch on the X account and the Telegram group.
+14. Add the contract address to the website, if any.
 
-15. Run this command to generate comments for the previously published X post:
+15. Start social hype about the token launch:
 
-    ```bash
-    yarn get-comments:twitter
-    ```
+    1. Publish and pin posts about the token launch on the X account and the Telegram group.
 
-16. Order the following promotions for the previously published X post on [SocialPlug](https://panel.socialplug.io/order/twitter-nft):
+    2. Run this command to generate comments for the published X post:
 
-    - 200 Likes
-    - 200 Retweets
-    - 30 Comments
-    - 30 Quote Tweets
+        ```bash
+        yarn get-comments:twitter
+        ```
 
-17. Add the contract address to the website if any.
+    3. Order the following promotions for the published X post on [SocialPlug Twitter](https://panel.socialplug.io/order/twitter-usa-services) and [SocialPlug Crypto Twitter](https://panel.socialplug.io/order/twitter-nft):
 
-18. Update the token information on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order), publish posts about it on the X account and the Telegram group, and order the _200 Likes_ promotion for the published X post on [SocialPlug](https://panel.socialplug.io/order/twitter-nft).
+        - 500 Likes (11 USDC)
+        - 1,000 Post Views (3,8 USDC)
+        - 100 Bookmarks (5 USDC)
+        - 200 NFT Retweets (22 USDC)
+        - 30 NFT Comments (25 USDC)
 
-19. Buy the boost 10x pack on [Dex Screener](https://dexscreener.com), publish posts about it on the X account and the Telegram group, and order the _200 Likes_ promotion for the published X post on [SocialPlug](https://panel.socialplug.io/order/twitter-nft).
+    4. Order the following promotions for the published Telegram post on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
 
-20. Order the _500 Dex Screener reactions_ promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener).
+        - 500 Mix Positive Reactions (9 USDC)
 
-21. Run this command to trade in this pool:
+16. Start social hype about the token information update on Dex Screener:
+
+    1. Update the token information for 299 USDC on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
+
+    2. Publish and pin posts on the X account and the Telegram group
+
+    3. Order the following promotions for the published X post on [SocialPlug Twitter](https://panel.socialplug.io/order/twitter-usa-services):
+
+        - 500 Likes (11 USDC)
+        - 1,000 Post Views (3,8 USDC)
+        - 100 Retweets (3 USDC)
+
+    4. Order the following promotions for the published Telegram post on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
+
+        - 250 Mix Positive Reactions (6 USDC)
+
+17. Start social hype about the token boost on Dex Screener:
+
+    1. Buy the boost 10x pack for 99 USDC on [Dex Screener](https://dexscreener.com)
+
+    2. Publish and pin posts on the X account and the Telegram group
+
+    3. Order the following promotions for the published X post on [SocialPlug Twitter](https://panel.socialplug.io/order/twitter-usa-services):
+
+        - 500 Likes (11 USDC)
+        - 1,000 Post Views (3,8 USDC)
+        - 100 Retweets (3 USDC)
+
+    4. Order the following promotions for the published Telegram post on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
+
+        - 250 Mix Positive Reactions (6 USDC)
+
+18. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
+
+    - _500 Dex Screener reactions_ (10 USD)
+
+19. Run this command to trade in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-22. Monitor token trending on these platforms:
+20. Monitor token trending on these platforms:
 
 - [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana&boosted=1&profile=1)
 - [Dex Tools](https://www.dextools.io/app/en/solana/trending)
@@ -233,11 +266,23 @@
 
 # Token Post Launch Plan
 
-1. Publish posts about the meme on the X account and the Telegram group.
+1. Publish posts with meme variations on the X account and the Telegram group regularly.
 
-2. Publish posts about reaching 500 Dex Screener reactions on the X account and the Telegram group, and raid it on the Telegram group.
+2. Start social hype about reaching 500 reactions on Dex Screener:
 
-3. If opt in, adjust these environment variables in the _.env.production_ file:
+    1. Publish and pin posts on the X account and the Telegram group
+
+    2. Order the following promotions for the published X post on [SocialPlug Twitter](https://panel.socialplug.io/order/twitter-usa-services):
+
+        - 500 Likes (11 USDC)
+        - 1,000 Post Views (3,8 USDC)
+        - 100 Retweets (3 USDC)
+
+    3. Order the following promotions for the published Telegram post on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
+
+        - 250 Mix Positive Reactions (6 USDC)
+
+3. Optionally, adjust these environment variables in the _.env.production_ file:
 
     - Pool:
 
@@ -248,6 +293,9 @@
     - Trader:
 
         - `TRADER_COUNT`
+
+    - Swapper:
+        - `SWAPPER_TRADE_DELAY_RANGE_SEC`
 
 4. If the `$TRADER_COUNT` variable is adjusted up:
 
@@ -279,9 +327,21 @@
     yarn trade:raydium
     ```
 
-6. Optionally, update the token information on [Dex Tools](https://www.dextools.io/marketplace/en/create-socials), publish posts about it on the X account and the Telegram group, and raid it on the Telegram group.
+6. Optionally, start social hype about the token information update on Dex Screener:
 
-7. Optionally, buy another boost 10x pack on [Dex Screener](https://dexscreener.com) after the expiration of the original one, publish posts about it on the X account and the Telegram group, and raid it on the Telegram group.
+    1. Update the token information for 299 USDC on [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
+
+    2. Publish and pin posts on the X account and the Telegram group
+
+    3. Raid it on the Telegram group
+
+7. Optionally, start social hype about another token boost on Dex Screener:
+
+    1. Buy the boost 10x pack for 99 USDC on [Dex Screener](https://dexscreener.com)
+
+    2. Publish and pin posts on the X account and the Telegram group
+
+    3. Raid it on the Telegram group
 
 # Token Exit Plan
 
