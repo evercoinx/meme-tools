@@ -80,15 +80,15 @@
     yarn get-accounts:main
     ```
 
-8. Run this command to estimate how much USDC should be transferred to the _main_ accounts:
+8. Run this command to estimate how much USD should be transferred to the _main_ accounts:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-9. Transfer USDC from _marketing_ account on Base to the _main_ accounts on Solana using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=BASE&chainOut=SOLANA&token=USDC).
+9. Transfer USD from _marketing_ account on Base to the _main_ accounts on Solana using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=BASE&chainOut=SOLANA&token=USDC).
 
-10. Swap the transferred USDC to SOL for each _main_ account.
+10. Swap the transferred USD to SOL for each _main_ account.
 
 11. Run this command again to make sure that all the _main_ accounts have sufficient SOL:
 
@@ -102,9 +102,9 @@
     yarn distribute-funds && yarn get-funds
     ```
 
-13. Make sure that the _marketing_ account has sufficient budget of 600 USDC.
+13. Make sure that the _marketing_ account has at least 600 USD budget.
 
-14. Add 200 USDC to the account on [SocialPlug](https://panel.socialplug.io/portal/page/pg_add_funds).
+14. Add 200 USD to the account on [Graming](https://graming.com/usd/).
 
 # Token Launch Plan
 
@@ -121,29 +121,13 @@
 
     - The banner image with the size of 600x200. Save it as _$TOKEN_SYMBOL-banner.jpg_ in the _images/production_ folder
 
-3. Optionally, create a website:
-
-    - Register a domain via [Godaddy](https://www.godaddy.com)
-
-    - Create the website via [Hodl.fyi](https://hodl.fyi)
-
-    - Connect this website to the registered domain
-
-4. Create the social channels:
-
-    - If the website is not created, create an email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html)
-
-    - Create an account on [X.com](https://x.com/i/flow/signup). Use either an Adguard or Godaddy email for it
-
-    - Create a Telegram public group
-
-5. Run this command to make sure that the _production_ environment is set correctly:
+3. Run this command to make sure that the _production_ environment is set correctly:
 
     ```bash
     yarn getenv
     ```
 
-6. Set these environment variables in the _.env.production_ file:
+4. Set these environment variables in the _.env.production_ file:
 
     - Token:
         - `TOKEN_SYMBOL` (**Replace the _TOKEN_ value with the actual one**)
@@ -154,11 +138,27 @@
         - `TOKEN_TELEGRAM_URI` (Set it to the Telegram URI created on step 2.3)
         - `TOKEN_TAGS` (Defaults to _"meme"_)
 
-7. Run this command to check the current configuration:
+5. Run this command to check the current configuration:
 
     ```bash
     yarn get-config
     ```
+
+6. Optionally, create a website bound to some domain:
+
+    - Register the domain via [Godaddy](https://www.godaddy.com/en-ph/domainsearch/find?domainToCheck=)
+
+    - Create the website via [Hodl.fyi](https://hodl.fyi)
+
+    - Update nameservers on [Godaddy](https://dcc.godaddy.com/control/dnsmanagement)
+
+7. Create the social channels:
+
+    - If the website has been already created on the previous step, check its email on [Godaddy](https://account.godaddy.com/products). Otherwise, create the email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html)
+
+    - Create an account on [X.com](https://x.com/i/flow/signup) using the email from the previous step
+
+    - Create a public channel and a private group on [Telegram](https://telegram.org/) protected with [Safeguard bot](https://t.me/Safeguard)
 
 8. Run these commands to rename the key pair and storage files for the token:
 
@@ -172,93 +172,74 @@
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-10. Order the following promotions for the X account on [SocialPlug Crypto Twitter](https://panel.socialplug.io/order/twitter-nft):
+10. Order the following promotions for the X account:
 
-    - 100 NFT Followers (20 USDC)
+    - 1,000 Followers (19.00 USD) on [Graming](https://graming.com/buy-twitter-x-followers/)
 
-11. Order the following promotions for the Telegram channel on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
-
-    - 500 Group Members (10 USDC)
-
-12. Run this command to open a Raydium CPMM pool:
+11. Run this command to open a Raydium CPMM pool:
 
     ```bash
     yarn open-pool:raydium
     ```
 
-13. Shortly after the previous step, run these commands to burn liquidity in this pool:
+12. Shortly after the previous step, run these commands to burn liquidity in this pool:
 
     ```bash
     yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
-14. Add the contract address to the website, if any.
+13. If the website has been created, update the following information on [Hodl.fyi](https://hodl.fyi/):
 
-15. Start social hype about the token launch:
+    - Add the contract address
+    - Update the links of liquidity pools on Dex Screener and Dex Tools
 
-    1. Publish and pin posts about the token launch on the X account and the Telegram group.
+14. Start social hype about the token launch:
 
-    2. Run this command to generate comments for the published X post:
+    - Publish and pin posts about the token launch on the X account and the Telegram group
 
-        ```bash
-        yarn get-comments:twitter
-        ```
+    - Order the following promotions for the published X post:
 
-    3. Order the following promotions for the published X post on [SocialPlug Twitter](https://panel.socialplug.io/order/twitter-usa-services) and [SocialPlug Crypto Twitter](https://panel.socialplug.io/order/twitter-nft):
+        - 700 Likes (8.40 USD) on [Graming](https://graming.com/buy-twitter-x-likes/)
+        - 7,000 Post Views (4.41 USD) [Graming](https://graming.com/buy-twitter-x-views/)
+        - 350 Retweets (7.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
+        - 25 Comments (7.00 USD) [Graming](https://graming.com/buy-twitter-x-comments/)
+        - 250 Bookmarks (5.00 USD) [Graming](https://graming.com/buy-twitter-x-bookmarks/)
 
-        - 500 Likes (11 USDC)
-        - 1,000 Post Views (3,8 USDC)
-        - 100 Bookmarks (5 USDC)
-        - 200 NFT Retweets (22 USDC)
-        - 30 NFT Comments (25 USDC)
+15. Start social hype about the token information update on Dex Screener:
 
-    4. Order the following promotions for the published Telegram post on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
+    - Update the token information for 299 USD on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
 
-        - 500 Mix Positive Reactions (9 USDC)
+    - Publish and pin posts on the X account and the Telegram group
 
-16. Start social hype about the token information update on Dex Screener:
+    - Order the following promotions for the published X post:
 
-    1. Update the token information for 299 USDC on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
+        - 600 Likes (7.20 USD) on [Graming](https://graming.com/buy-twitter-x-likes/)
+        - 6,000 Post Views (3.78 USD) [Graming](https://graming.com/buy-twitter-x-views/)
+        - 300 Retweets (6.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
 
-    2. Publish and pin posts on the X account and the Telegram group
+16. Start social hype about the token boost on Dex Screener:
 
-    3. Order the following promotions for the published X post on [SocialPlug Twitter](https://panel.socialplug.io/order/twitter-usa-services):
-
-        - 500 Likes (11 USDC)
-        - 1,000 Post Views (3,8 USDC)
-        - 100 Retweets (3 USDC)
-
-    4. Order the following promotions for the published Telegram post on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
-
-        - 250 Mix Positive Reactions (6 USDC)
-
-17. Start social hype about the token boost on Dex Screener:
-
-    1. Buy the boost 10x pack for 99 USDC on [Dex Screener](https://dexscreener.com)
+    1. Buy the boost 10x pack for 99 USD on [Dex Screener](https://dexscreener.com)
 
     2. Publish and pin posts on the X account and the Telegram group
 
-    3. Order the following promotions for the published X post on [SocialPlug Twitter](https://panel.socialplug.io/order/twitter-usa-services):
+    3. Order the following promotions for the published X post:
 
-        - 500 Likes (11 USDC)
-        - 1,000 Post Views (3,8 USDC)
-        - 100 Retweets (3 USDC)
+        - 500 Likes (6.00 USD) on [Graming](https://graming.com/buy-twitter-x-likes/)
+        - 5,000 Post Views (3.15 USD) [Graming](https://graming.com/buy-twitter-x-views/)
+        - 250 Retweets (5.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
 
-    4. Order the following promotions for the published Telegram post on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
-
-        - 250 Mix Positive Reactions (6 USDC)
-
-18. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
+17. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
 
     - _500 Dex Screener reactions_ (10 USD)
 
-19. Run this command to trade in this pool:
+18. Run this command to trade in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-20. Monitor token trending on these platforms:
+19. Monitor token trending on these platforms:
 
 - [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana&boosted=1&profile=1)
 - [Dex Tools](https://www.dextools.io/app/en/solana/trending)
@@ -270,17 +251,13 @@
 
 2. Start social hype about reaching 500 reactions on Dex Screener:
 
-    1. Publish and pin posts on the X account and the Telegram group
+    - Publish and pin posts on the X account and the Telegram group
 
-    2. Order the following promotions for the published X post on [SocialPlug Twitter](https://panel.socialplug.io/order/twitter-usa-services):
+    - Order the following promotions for the published X post:
 
-        - 500 Likes (11 USDC)
-        - 1,000 Post Views (3,8 USDC)
-        - 100 Retweets (3 USDC)
-
-    3. Order the following promotions for the published Telegram post on [SocialPlug Telegram](https://panel.socialplug.io/order/telegram-services):
-
-        - 250 Mix Positive Reactions (6 USDC)
+        - 500 Likes (6.00 USD) on [Graming](https://graming.com/buy-twitter-x-likes/)
+        - 5,000 Post Views (3.15 USD) [Graming](https://graming.com/buy-twitter-x-views/)
+        - 250 Retweets (5.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
 
 3. Optionally, adjust these environment variables in the _.env.production_ file:
 
@@ -299,27 +276,27 @@
 
 4. If the `$TRADER_COUNT` variable is adjusted up:
 
-    1. Run this command to estimate USDC to transfer to the _trader distributor_ account:
+    - Run this command to estimate USD to transfer to the _trader distributor_ account:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-    2. Transfer USDC from the _marketing_ account to the _trader distributor_ account.
+    - Transfer USD from the _marketing_ account to the _trader distributor_ account.
 
-    3. Run this command again to make sure that the _trader distributor_ account has sufficient balance:
+    - Run this command again to make sure that the _trader distributor_ account has sufficient balance:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-    4. Run this command to distribute funds to the new _trader_ accounts:
+    - Run this command to distribute funds to the new _trader_ accounts:
 
     ```bash
     yarn distribute-funds
     ```
 
-    5. Set `$POOL_TRADING_ONLY_NEW_TRADERS` to `true`.
+    - Set `$POOL_TRADING_ONLY_NEW_TRADERS` to `true`.
 
 5. Run this command to trade in this pool:
 
@@ -329,29 +306,29 @@
 
 6. Optionally, start social hype about the token information update on Dex Screener:
 
-    1. Update the token information for 299 USDC on [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
+    - Update the token information for 295 USD on [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
 
-    2. Publish and pin posts on the X account and the Telegram group
+    - Publish and pin posts on the X account and the Telegram group
 
-    3. Raid it on the Telegram group
+    - Raid it on the Telegram group
 
 7. Optionally, start social hype about another token boost on Dex Screener:
 
-    1. Buy the boost 10x pack for 99 USDC on [Dex Screener](https://dexscreener.com)
+    - Buy the boost 10x pack for 99 USD on [Dex Screener](https://dexscreener.com)
 
-    2. Publish and pin posts on the X account and the Telegram group
+    - Publish and pin posts on the X account and the Telegram group
 
-    3. Raid it on the Telegram group
+    - Raid it on the Telegram group
 
 # Token Exit Plan
 
-1. Run this command to close the Raydium pool.
+1. Run this command to close the Raydium pool:
 
     ```bash
     yarn close-pool:raydium
     ```
 
-2. Run these commands to collect funds on the _main_ accounts.
+2. Run these commands to collect funds on the _main_ accounts:
 
     ```bash
     yarn collect-funds && yarn get-funds
@@ -359,6 +336,6 @@
 
 3. Transfer the SOL from the _main_ accounts to the _marketing_ account.
 
-4. Swap the transferred SOL to USDC on the _marketing_ account.
+4. Swap the transferred SOL to USD on the _marketing_ account.
 
-5. Transfer the swapped USDC from the _marketing_ account on Solana to the _marketing_ account on Base using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=BASE&token=USDC).
+5. Transfer the swapped USD from the _marketing_ account on Solana to the _marketing_ account on Base using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=BASE&token=USDC).
