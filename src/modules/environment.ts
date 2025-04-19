@@ -355,7 +355,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .items(Joi.number().min(1).max(600).custom(convertToMilliseconds))
                 .unique()
-                .sort({ order: "descending" })
+                .sort({ order: "ascending" })
                 .min(2)
                 .max(2)
                 .description("Trader swap delay range (in seconds)"),
