@@ -1,6 +1,6 @@
-# Meme Tools
+# Meme Tools Plan
 
-# Token Pre Launch Plan
+# Funding Phase
 
 1. Run this command to set the _production_ environment:
 
@@ -86,27 +86,29 @@
     yarn distribute-funds:dry-run
     ```
 
-9. Transfer USD from _marketing_ account on Base to the _main_ accounts on Solana using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=BASE&chainOut=SOLANA&token=USDC).
+9. Transfer USDC from _marketing_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=BASE&chainOut=SOLANA&token=USDC).
 
-10. Swap the transferred USD to SOL for each _main_ account.
+10. Swap the transferred USDC to SOL for the _dev_ and _sniper distributor_ accounts.
 
-11. Run this command again to make sure that all the _main_ accounts have sufficient SOL:
+11. Transfer SOL from _marketing_ account to the _trader distributor_ account using the _Phantom_ wallet on Solana.
+
+12. Run this command again to make sure that all the _main_ accounts have sufficient SOL:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-12. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_ and _trader_ accounts:
+13. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_ and _trader_ accounts:
 
     ```bash
     yarn distribute-funds && yarn get-funds
     ```
 
-13. Make sure that the _marketing_ account has at least 600 USD budget.
+14. Make sure that the _marketing_ account has at least 400 USDC budget.
 
-14. Add 200 USD to the account on [Graming](https://graming.com/usd/).
+15. Make sure that the account on [Graming](https://graming.com/usd/) is topped up with at least 100 USD.
 
-# Token Launch Plan
+# Token Pre Launch Phase
 
 1. Find a meta using the following platforms:
 
@@ -166,34 +168,36 @@
     yarn rename-token-files && yarn get-funds:main
     ```
 
-9. Run these commands to create the token mint:
+# Token Launch Phase
+
+1. Run these commands to create the token mint:
 
     ```bash
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-10. Order the following promotions for the X account:
+2. Order the following promotions for the X account:
 
     - 1,000 Followers (19.00 USD) on [Graming](https://graming.com/buy-twitter-x-followers/)
 
-11. Run this command to open a Raydium CPMM pool:
+3. Run this command to open a Raydium CPMM pool:
 
     ```bash
     yarn open-pool:raydium
     ```
 
-12. Shortly after the previous step, run these commands to burn liquidity in this pool:
+4. Shortly after the previous step, run these commands to burn liquidity in this pool:
 
     ```bash
     yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
-13. If the website has been created, update the following information on [Hodl.fyi](https://hodl.fyi/):
+5. If the website has been created, update the following information on [Hodl.fyi](https://hodl.fyi/):
 
     - Add the contract address
     - Update the links of liquidity pools on Dex Screener and Dex Tools
 
-14. Start social hype about the token launch:
+6. Start social hype about the token launch:
 
     - Publish and pin posts about the token launch on the X account and the Telegram group
 
@@ -205,7 +209,7 @@
         - 25 Comments (7.00 USD) [Graming](https://graming.com/buy-twitter-x-comments/)
         - 250 Bookmarks (5.00 USD) [Graming](https://graming.com/buy-twitter-x-bookmarks/)
 
-15. Start social hype about the token information update on Dex Screener:
+7. Start social hype about the token information update on Dex Screener:
 
     - Update the token information for 299 USD on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
 
@@ -217,7 +221,7 @@
         - 6,000 Post Views (3.78 USD) [Graming](https://graming.com/buy-twitter-x-views/)
         - 300 Retweets (6.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
 
-16. Start social hype about the token boost on Dex Screener:
+8. Start social hype about the token boost on Dex Screener:
 
     1. Buy the boost 10x pack for 99 USD on [Dex Screener](https://dexscreener.com)
 
@@ -229,23 +233,23 @@
         - 5,000 Post Views (3.15 USD) [Graming](https://graming.com/buy-twitter-x-views/)
         - 250 Retweets (5.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
 
-17. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
+9. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
 
     - _500 Dex Screener reactions_ (10 USD)
 
-18. Run this command to trade in this pool:
+10. Run this command to trade in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-19. Monitor token trending on these platforms:
+11. Monitor token trending on these platforms:
 
 - [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana&boosted=1&profile=1)
 - [Dex Tools](https://www.dextools.io/app/en/solana/trending)
 - [Defined](https://www.defined.fi/tokens/discover?network=sol&createdAt=hour4&rankingBy=volume&rankingDirection=DESC)
 
-# Token Post Launch Plan
+# Token Post Launch Phase
 
 1. Publish posts with meme variations on the X account and the Telegram group regularly.
 
@@ -320,7 +324,7 @@
 
     - Raid it on the Telegram group
 
-# Token Exit Plan
+# Token Exit Phase
 
 1. Run this command to close the Raydium pool:
 
@@ -336,6 +340,6 @@
 
 3. Transfer the SOL from the _main_ accounts to the _marketing_ account.
 
-4. Swap the transferred SOL to USD on the _marketing_ account.
+4. Swap the transferred SOL to USDC on the _marketing_ account.
 
-5. Transfer the swapped USD from the _marketing_ account on Solana to the _marketing_ account on Base using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=BASE&token=USDC).
+5. Transfer the swapped USDC from the _marketing_ account on Solana to the _marketing_ account on Base using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=BASE&token=USDC).
