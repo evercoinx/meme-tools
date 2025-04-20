@@ -18,7 +18,7 @@
     yarn generate-shares
     ```
 
-4. Set these environment variables in the _.env.production_ file:
+4. Optionally, set the following environment variables in the _.env.production_ file:
 
     - Common:
 
@@ -86,11 +86,11 @@
     yarn distribute-funds:dry-run
     ```
 
-9. Transfer USDC from _marketing_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=BASE&chainOut=SOLANA&token=USDC).
+9. Transfer USDC from _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=BASE&chainOut=SOLANA&token=USDC).
 
 10. Swap the transferred USDC to SOL for the _dev_ and _sniper distributor_ accounts.
 
-11. Transfer SOL from _marketing_ account to the _trader distributor_ account using the _Phantom_ wallet on Solana.
+11. Transfer SOL from _collector_ account to the _trader distributor_ account.
 
 12. Run this command again to make sure that all the _main_ accounts have sufficient SOL:
 
@@ -104,9 +104,9 @@
     yarn distribute-funds && yarn get-funds
     ```
 
-14. Make sure that the _marketing_ account has at least 400 USDC budget.
+14. Make sure that the _collector_ account has at least 400 USDC budget.
 
-15. Make sure that the account on [Graming](https://graming.com/usd/) is topped up with at least 100 USD.
+15. Make sure that the account on [Graming](https://graming.com/usd/) is topped up with at least 20 USD.
 
 # Token Pre Launch Phase
 
@@ -146,23 +146,19 @@
     yarn get-config
     ```
 
-6. Optionally, create a website bound to some domain:
+6. Create the social channels:
 
-    - Register the domain via [Godaddy](https://www.godaddy.com/en-ph/domainsearch/find?domainToCheck=)
-
-    - Create the website via [Hodl.fyi](https://hodl.fyi)
-
-    - Update nameservers on [Godaddy](https://dcc.godaddy.com/control/dnsmanagement)
-
-7. Create the social channels:
-
-    - If the website has been already created on the previous step, check its email on [Godaddy](https://account.godaddy.com/products). Otherwise, create the email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html)
+    - Create the email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html)
 
     - Create an account on [X.com](https://x.com/i/flow/signup) using the email from the previous step
 
+    - Set up the X.com profile
+
     - Create a public channel and a private group on [Telegram](https://telegram.org) protected with [Safeguard bot](https://t.me/Safeguard)
 
-8. Run these commands to rename the key pair and storage files for the token:
+    - Set up the Telegram channel and group
+
+7. Run these commands to rename the key pair and storage files for the token:
 
     ```bash
     yarn rename-token-files && yarn get-funds:main
@@ -176,25 +172,17 @@
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-2. Order the following promotions for the X account:
+2. Add the token address to the X account and the Telegram account
 
-    - 1,000 Followers (19.00 USD) on [Graming](https://graming.com/buy-twitter-x-followers/)
+3. Order the following promotions for the X account:
 
-3. If the website has been created, update the following information on [Hodl.fyi](https://hodl.fyi):
-
-    - Add the contract address
+    - 500 Followers (9.50 USD) on [Graming](https://graming.com/buy-twitter-x-followers/)
 
 4. Start social hype about the token launch:
 
-    - Publish and pin posts about the token launch on the X account and the Telegram group
+    - Publish and pin posts about the meme description
 
-    - Order the following promotions for the published X post:
-
-        - 700 Likes (8.40 USD) on [Graming](https://graming.com/buy-twitter-x-likes/)
-        - 7,000 Post Views (4.41 USD) [Graming](https://graming.com/buy-twitter-x-views/)
-        - 350 Retweets (7.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
-        - 25 Comments (7.00 USD) [Graming](https://graming.com/buy-twitter-x-comments/)
-        - 250 Bookmarks (5.00 USD) [Graming](https://graming.com/buy-twitter-x-bookmarks/)
+    - Publish and pin posts about the meme launch on the X account and the Telegram group
 
 5. Run this command to open a Raydium CPMM pool:
 
@@ -208,45 +196,33 @@
     yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
-7. If the website has been created, update the following information on [Hodl.fyi](https://hodl.fyi):
-
-    - Update links with liquidity pool addresses on Dex Screener and Dex Tools
-
-8. Start social hype about the token information update on Dex Screener:
+7. Start social hype about the token information update on Dex Screener:
 
     - Update the token information for 299 USD on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
 
     - Publish and pin posts on the X account and the Telegram group
 
-    - Order the following promotions for the published X post:
+    - Raid it on the Telegram group
 
-        - 600 Likes (7.20 USD) on [Graming](https://graming.com/buy-twitter-x-likes/)
-        - 6,000 Post Views (3.78 USD) [Graming](https://graming.com/buy-twitter-x-views/)
-        - 300 Retweets (6.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
+8. Start social hype about the token boost on Dex Screener:
 
-9. Start social hype about the token boost on Dex Screener:
+    - Buy the boost 10x pack for 99 USD on [Dex Screener](https://dexscreener.com)
 
-    1. Buy the boost 10x pack for 99 USD on [Dex Screener](https://dexscreener.com)
+    - Publish and pin posts on the X account and the Telegram group
 
-    2. Publish and pin posts on the X account and the Telegram group
+    - Raid it on the Telegram group
 
-    3. Order the following promotions for the published X post:
-
-        - 500 Likes (6.00 USD) on [Graming](https://graming.com/buy-twitter-x-likes/)
-        - 5,000 Post Views (3.15 USD) [Graming](https://graming.com/buy-twitter-x-views/)
-        - 250 Retweets (5.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
-
-10. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
+9. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
 
     - _500 Dex Screener reactions_ (10 USD)
 
-11. Run this command to trade in this pool:
+10. Run this command to trade in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-12. Monitor token trending on these platforms:
+11. Monitor token trending on these platforms:
 
 - [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana&boosted=1&profile=1)
 - [Dex Tools](https://www.dextools.io/app/en/solana/trending)
@@ -254,19 +230,13 @@
 
 # Token Post Launch Phase
 
-1. Publish posts with meme variations on the X account and the Telegram group regularly.
-
-2. Start social hype about reaching 500 reactions on Dex Screener:
+1. Start social hype about reaching 500 reactions on Dex Screener:
 
     - Publish and pin posts on the X account and the Telegram group
 
-    - Order the following promotions for the published X post:
+    - Raid it on the Telegram group
 
-        - 500 Likes (6.00 USD) on [Graming](https://graming.com/buy-twitter-x-likes/)
-        - 5,000 Post Views (3.15 USD) [Graming](https://graming.com/buy-twitter-x-views/)
-        - 250 Retweets (5.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
-
-3. Optionally, adjust these environment variables in the _.env.production_ file:
+2. Optionally, adjust these environment variables in the _.env.production_ file:
 
     - Pool:
 
@@ -281,7 +251,7 @@
     - Swapper:
         - `SWAPPER_TRADE_DELAY_RANGE_SEC`
 
-4. If the `$TRADER_COUNT` variable is adjusted up:
+3. If the `$TRADER_COUNT` variable is adjusted up:
 
     - Run this command to estimate USD to transfer to the _trader distributor_ account:
 
@@ -289,7 +259,7 @@
     yarn distribute-funds:dry-run
     ```
 
-    - Transfer USD from the _marketing_ account to the _trader distributor_ account.
+    - Transfer USD from the _collector_ account to the _trader distributor_ account.
 
     - Run this command again to make sure that the _trader distributor_ account has sufficient balance:
 
@@ -305,13 +275,13 @@
 
     - Set `$POOL_TRADING_ONLY_NEW_TRADERS` to `true`.
 
-5. Run this command to trade in this pool:
+4. Run this command to trade in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-6. Optionally, start social hype about the token information update on Dex Screener:
+5. Optionally, start social hype about the token information update on Dex Screener:
 
     - Update the token information for 295 USD on [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
 
@@ -319,7 +289,7 @@
 
     - Raid it on the Telegram group
 
-7. Optionally, start social hype about another token boost on Dex Screener:
+6. Optionally, start social hype about another token boost on Dex Screener:
 
     - Buy the boost 10x pack for 99 USD on [Dex Screener](https://dexscreener.com)
 
@@ -341,8 +311,8 @@
     yarn collect-funds && yarn get-funds
     ```
 
-3. Transfer the SOL from the _main_ accounts to the _marketing_ account.
+3. Transfer the SOL from the _main_ accounts to the _collector_ account.
 
-4. Swap the transferred SOL to USDC on the _marketing_ account.
+4. Swap some transferred SOL to USDC on the _collector_ account.
 
-5. Transfer the swapped USDC from the _marketing_ account on Solana to the _marketing_ account on Base using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=BASE&token=USDC).
+5. Transfer the swapped USDC from the _collector_ account on Solana to the _collector_ account on Base using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=BASE&token=USDC).
