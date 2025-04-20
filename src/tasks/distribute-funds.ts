@@ -38,7 +38,7 @@ import { isDryRun } from "../modules/environment";
 const DEV_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
 const DEV_GAS_FEE_SOL = 0.1;
 const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
-const TRANSFER_MULTIPLIER_USD = 1.1;
+const TRANSFER_MULTIPLIER_USD = 1.2;
 const TRANSFER_MIN_NATIVE_USD = 1;
 
 (async () => {
