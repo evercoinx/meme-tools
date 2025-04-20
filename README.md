@@ -160,7 +160,7 @@
 
     - Create an account on [X.com](https://x.com/i/flow/signup) using the email from the previous step
 
-    - Create a public channel and a private group on [Telegram](https://telegram.org/) protected with [Safeguard bot](https://t.me/Safeguard)
+    - Create a public channel and a private group on [Telegram](https://telegram.org) protected with [Safeguard bot](https://t.me/Safeguard)
 
 8. Run these commands to rename the key pair and storage files for the token:
 
@@ -180,24 +180,11 @@
 
     - 1,000 Followers (19.00 USD) on [Graming](https://graming.com/buy-twitter-x-followers/)
 
-3. Run this command to open a Raydium CPMM pool:
-
-    ```bash
-    yarn open-pool:raydium
-    ```
-
-4. Shortly after the previous step, run these commands to burn liquidity in this pool:
-
-    ```bash
-    yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
-    ```
-
-5. If the website has been created, update the following information on [Hodl.fyi](https://hodl.fyi/):
+3. If the website has been created, update the following information on [Hodl.fyi](https://hodl.fyi):
 
     - Add the contract address
-    - Update the links of liquidity pools on Dex Screener and Dex Tools
 
-6. Start social hype about the token launch:
+4. Start social hype about the token launch:
 
     - Publish and pin posts about the token launch on the X account and the Telegram group
 
@@ -209,7 +196,23 @@
         - 25 Comments (7.00 USD) [Graming](https://graming.com/buy-twitter-x-comments/)
         - 250 Bookmarks (5.00 USD) [Graming](https://graming.com/buy-twitter-x-bookmarks/)
 
-7. Start social hype about the token information update on Dex Screener:
+5. Run this command to open a Raydium CPMM pool:
+
+    ```bash
+    yarn open-pool:raydium
+    ```
+
+6. Shortly after the previous step, run these commands to burn liquidity in this pool:
+
+    ```bash
+    yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
+    ```
+
+7. If the website has been created, update the following information on [Hodl.fyi](https://hodl.fyi):
+
+    - Update links with liquidity pool addresses on Dex Screener and Dex Tools
+
+8. Start social hype about the token information update on Dex Screener:
 
     - Update the token information for 299 USD on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
 
@@ -221,7 +224,7 @@
         - 6,000 Post Views (3.78 USD) [Graming](https://graming.com/buy-twitter-x-views/)
         - 300 Retweets (6.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
 
-8. Start social hype about the token boost on Dex Screener:
+9. Start social hype about the token boost on Dex Screener:
 
     1. Buy the boost 10x pack for 99 USD on [Dex Screener](https://dexscreener.com)
 
@@ -233,17 +236,17 @@
         - 5,000 Post Views (3.15 USD) [Graming](https://graming.com/buy-twitter-x-views/)
         - 250 Retweets (5.00 USD) [Graming](https://graming.com/buy-twitter-x-retweets/)
 
-9. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
+10. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
 
     - _500 Dex Screener reactions_ (10 USD)
 
-10. Run this command to trade in this pool:
+11. Run this command to trade in this pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-11. Monitor token trending on these platforms:
+12. Monitor token trending on these platforms:
 
 - [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana&boosted=1&profile=1)
 - [Dex Tools](https://www.dextools.io/app/en/solana/trending)
