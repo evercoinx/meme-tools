@@ -305,6 +305,11 @@
     },
     { "key": "trader_count", "value": { "previous": 102, "current": 102 } },
     {
+        "key": "mint_image_uri",
+        "value": "https://lavender-elaborate-anaconda-136.mypinata.cloud/ipfs/bafkreifzt5bmpxddrwrsa36qi42hfmrtkeydbuwd6unzworea4pfefmapq"
+    },
+    { "key": "raydium_pool_id", "value": "8HNXTYnjrJk24siCVb4SNp8xJpwezRk9FH3tBtSsySEb" },
+    {
         "key": "sniper_3_secret_key",
         "value": "encrypted:S0/vvW+elUeihj7PGDZPc8oCOJPKHjawQm0DTIjRX21PR1k2KQNYxs01gpL1VZrDz/4T8DaMHwI/ZQfIPSqunHmHtKQ63KikwHqts4lnBNArPk3Umn+eWfs482Mnm22eMHgCyrkZC6WLgy1zeLo7boCt+QDHDZiNqh/Ep/MPR2f+YS7J51UaSzK+igif4doT"
     },
@@ -424,6 +429,7 @@
         "key": "trader_100_secret_key",
         "value": "encrypted:y0Zk82ugzeCpBC4QCgremDubcnS+AB0v5MT9J0YYvCeJ8bV6m4/vCRfk8tnVw5LrhZhlLtAqBwsXe1NuvRT0K9742UZm9m33ydrRNwhFY5VOADbqzSqW6rV3nD33W1lkX7PE8rckg1/JF1kfxc7zCemKhW5v8quxls1EMcWRkHBq5q2OchTsaGt0MDemUN3s"
     },
+    { "key": "raydium_pool_trading_cycle", "value": 21 },
     {
         "key": "sniper_6_secret_key",
         "value": "encrypted:bSVHf+xbvxiuK/19DtokiKzJBK3fORhuWfUWUCmspl1Nv1a56kbLovVG5Q+eH7OBUCyavZc7QSODoWblLps4jcaDxzhRCHsqXwgnLw3y48J4CwkJ5n/i9laMtbSzagsPnBeKKd2URyMF1XgxVJ7P4RJJrvVEPywY/f4LgJdcFzuJkjYF/d6iiYjWfwmxyxpM"
@@ -576,5 +582,27 @@
     {
         "key": "trader_99_secret_key",
         "value": "encrypted:BIW4dxcu7iS/QvqJ/BKysCwQ5qdv0ReKi1bPuCXydtBGFBPTVHhjSCwaj8DSXDIQBQ4nO+1t6Qv8r66pthyM0dr4eoN6YM5iCvKqSKBC0S2dtA+Ou7cyvoLP6Wq4jT5L1fMXGm03RD62K1t9+cGTmBgVkO6y75CJoj6ql+m6JTKHuLN9burYTfjfbmXiViED"
-    }
+    },
+    {
+        "key": "mint_secret_key",
+        "value": "encrypted:iqHwUnz0n1RfxcC9V6Oi09CsCL00xw4dDrhu520qeftwsab3GZadKlXZSKfJ55/jZXymctPw36/r3Sw0faTxF2p+EMB799x1yK/a8Xgz6plXFo2hqxQcMGtfaaH0lOgOnzkKX0lAWZjvtOc0Z+NHMosHQNQG/BTFkn4Fi+aR88sPIzM+Ij4OlIK/lJZ4GQJC"
+    },
+    {
+        "key": "mint_metadata",
+        "value": {
+            "symbol": "EGGLON",
+            "name": "EGGLON",
+            "description": "Egglon Meme on Solana",
+            "decimals": 6,
+            "image": "https://lavender-elaborate-anaconda-136.mypinata.cloud/ipfs/bafkreifzt5bmpxddrwrsa36qi42hfmrtkeydbuwd6unzworea4pfefmapq",
+            "social_links": {
+                "twitter": "https://x.com/EgglonMeme",
+                "telegram": "https://t.me/EgglonMeme"
+            },
+            "tags": ["meme", "celebrity", "fun"],
+            "external_url": "https://egglon.xyz",
+            "uri": "https://lavender-elaborate-anaconda-136.mypinata.cloud/ipfs/bafkreidco6g3v3chw2c6ineecyoemaf7ja2v7d5m3qvlonb6ms7uiiwssu"
+        }
+    },
+    { "key": "raydium_lp_mint", "value": "Gr7dH3L5kg26jPsp98nn3fBoMr8A3qxuxWmKRPxENkUj" }
 ]
