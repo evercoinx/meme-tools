@@ -44,7 +44,7 @@
 
     - Sniper:
 
-        - `SNIPER_POOL_SHARE_PERCENTS`
+        - `SNIPER_POOL_SHARE_RANGE_PERCENT`
         - `SNIPER_BALANCE_SOL`
         - `SNIPER_REPEATABLE_BUY_PERCENT` (Defaults to _0_)
         - `SNIPER_REPEATABLE_SELL_PERCENT` (Defaults to _0_)

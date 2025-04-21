@@ -3,6 +3,7 @@ import { clusterApiUrl } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import Joi from "joi";
 import { formatUri } from "../helpers/format";
+import { shuffle } from "../helpers/random";
 
 export type NodeEnv = "development" | "test" | "production";
 
@@ -34,6 +35,7 @@ interface EnvironmentSchema {
     POOL_TRADING_CYCLE_COUNT: number;
     POOL_TRADING_PUMP_BIAS_PERCENT: number;
     POOL_TRADING_ONLY_NEW_TRADERS: boolean;
+    SNIPER_POOL_SHARE_RANGE_PERCENT: [number, number];
     SNIPER_POOL_SHARE_PERCENTS: Set<number>;
     SNIPER_BALANCE_SOL: number;
     SNIPER_REPEATABLE_BUY_PERCENT: number;
@@ -50,11 +52,19 @@ interface EnvironmentSchema {
 
 const ARRAY_SEPARATOR = ",";
 
-const convertToFractionalPercent = (percent: string) =>
+const convertToDecimalFraction = (percent: string) =>
     new Decimal(percent).div(100).toDP(4, Decimal.ROUND_HALF_UP).toNumber();
 
 const convertToMilliseconds = (seconds: string) =>
     new Decimal(seconds).mul(1_000).toDP(0, Decimal.ROUND_HALF_UP).toNumber();
+
+const generateFloatRange = (start: number, end: number, step = 0.01) => {
+    const floatRange: number[] = [];
+    for (let i = start; i <= end; i += step) {
+        floatRange.push(parseFloat(i.toFixed(2)));
+    }
+    return floatRange;
+};
 
 export function isDryRun(): boolean {
     const {
@@ -228,7 +238,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(10)
                 .max(100)
                 .default(100)
-                .custom(convertToFractionalPercent)
+                .custom(convertToDecimalFraction)
                 .description("Pool size (in percent)"),
             POOL_LIQUIDITY_SOL: Joi.number()
                 .required()
@@ -247,21 +257,33 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(0)
                 .max(100)
                 .default(50)
-                .custom(convertToFractionalPercent)
+                .custom(convertToDecimalFraction)
                 .description("Pool trading pump bias (in percent)"),
             POOL_TRADING_ONLY_NEW_TRADERS: Joi.boolean()
                 .optional()
                 .default(false)
                 .description("Pool trading with only new traders"),
-            SNIPER_POOL_SHARE_PERCENTS: Joi.array()
-                .optional()
-                .items(Joi.number().min(0.5).max(3).custom(convertToFractionalPercent))
+            SNIPER_POOL_SHARE_RANGE_PERCENT: Joi.array()
+                .required()
+                .items(Joi.number().min(0.5).max(3).custom(convertToDecimalFraction))
                 .unique()
-                .min(0)
-                .max(200)
-                .default([])
+                .sort({ order: "ascending" })
+                .min(2)
+                .max(2)
+                .description("Sniper pool share range (in percents)"),
+            SNIPER_POOL_SHARE_PERCENTS: Joi.array()
+                .default(
+                    Joi.ref("SNIPER_POOL_SHARE_RANGE_PERCENT", {
+                        adjust: (range: [number, number]) =>
+                            shuffle(
+                                generateFloatRange(range[0] * 100, range[1] * 100).map((value) =>
+                                    convertToDecimalFraction(value.toString())
+                                )
+                            ),
+                    })
+                )
                 .cast("set")
-                .description("Sniper share pool (in percents)"),
+                .description("Sniper pool share percents"),
             SNIPER_BALANCE_SOL: Joi.number()
                 .required()
                 .min(0.005)
@@ -272,14 +294,14 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(0)
                 .max(50)
                 .default(0)
-                .custom(convertToFractionalPercent)
+                .custom(convertToDecimalFraction)
                 .description("Sniper repeatable buy percent"),
             SNIPER_REPEATABLE_SELL_PERCENT: Joi.number()
                 .optional()
                 .min(0)
                 .max(50)
                 .default(0)
-                .custom(convertToFractionalPercent)
+                .custom(convertToDecimalFraction)
                 .description("Sniper repeatable sell percent"),
             SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL: Joi.when("SNIPER_REPEATABLE_BUY_PERCENT", {
                 switch: [
@@ -305,7 +327,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                             then: Joi.array()
                                 .required()
                                 .items(
-                                    Joi.number().min(0.01).max(1).custom(convertToFractionalPercent)
+                                    Joi.number().min(0.01).max(1).custom(convertToDecimalFraction)
                                 )
                                 .unique()
                                 .sort({ order: "ascending" })
@@ -338,7 +360,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Trader buy amount range (in SOL)"),
             TRADER_SELL_AMOUNT_RANGE_PERCENT: Joi.array()
                 .required()
-                .items(Joi.number().min(1).max(100).custom(convertToFractionalPercent))
+                .items(Joi.number().min(1).max(100).custom(convertToDecimalFraction))
                 .unique()
                 .sort({ order: "ascending" })
                 .min(2)
@@ -353,7 +375,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Swapper group size"),
             SWAPPER_TRADE_DELAY_RANGE_SEC: Joi.array()
                 .required()
-                .items(Joi.number().min(1).max(600).custom(convertToMilliseconds))
+                .items(Joi.number().min(1).max(10).custom(convertToMilliseconds))
                 .unique()
                 .sort({ order: "ascending" })
                 .min(2)
@@ -372,8 +394,8 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             ...process.env,
             RPC_URIS: process.env.RPC_URIS?.split(ARRAY_SEPARATOR),
             TOKEN_TAGS: process.env.TOKEN_TAGS?.split(ARRAY_SEPARATOR),
-            SNIPER_POOL_SHARE_PERCENTS: process.env.SNIPER_POOL_SHARE_PERCENTS
-                ? process.env.SNIPER_POOL_SHARE_PERCENTS.split(ARRAY_SEPARATOR)
+            SNIPER_POOL_SHARE_RANGE_PERCENT: process.env.SNIPER_POOL_SHARE_RANGE_PERCENT
+                ? process.env.SNIPER_POOL_SHARE_RANGE_PERCENT.split(ARRAY_SEPARATOR)
                 : [],
             SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL:
                 process.env.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL?.split(ARRAY_SEPARATOR),
