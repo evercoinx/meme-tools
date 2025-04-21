@@ -17,7 +17,10 @@ export function shuffle<T>(items: T[]): T[] {
     return items.length < 2
         ? items
         : items
-              .map((value) => ({ value, sort: randomBytes(4).readUInt32LE(0) }))
+              .map((value) => ({
+                  value,
+                  sort: randomBytes(4).readUInt32LE(0),
+              }))
               .sort((a, b) => a.sort - b.sort)
               .map(({ value }) => value);
 }

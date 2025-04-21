@@ -3,7 +3,7 @@ import { clusterApiUrl } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import Joi from "joi";
 import { formatUri } from "../helpers/format";
-import { shuffle } from "../helpers/random";
+import { Seed } from "./seed";
 
 export type NodeEnv = "development" | "test" | "production";
 
@@ -58,7 +58,7 @@ const convertToDecimalFraction = (percent: string) =>
 const convertToMilliseconds = (seconds: string) =>
     new Decimal(seconds).mul(1_000).toDP(0, Decimal.ROUND_HALF_UP).toNumber();
 
-const generateFloatRange = (start: number, end: number, step = 0.01) => {
+const generateFloatRange = (start: number, end: number, step: number) => {
     const floatRange: number[] = [];
     for (let i = start; i <= end; i += step) {
         floatRange.push(parseFloat(i.toFixed(2)));
@@ -274,12 +274,14 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
             SNIPER_POOL_SHARE_PERCENTS: Joi.array()
                 .default(
                     Joi.ref("SNIPER_POOL_SHARE_RANGE_PERCENT", {
-                        adjust: (range: [number, number]) =>
-                            shuffle(
-                                generateFloatRange(range[0] * 100, range[1] * 100).map((value) =>
-                                    convertToDecimalFraction(value.toString())
+                        adjust: (range: [number, number]) => {
+                            const seed = new Seed(process.env.NODE_ENV, process.env.TOKEN_SYMBOL);
+                            return seed.shuffle(
+                                generateFloatRange(range[0] * 100, range[1] * 100, 0.01).map(
+                                    (value) => convertToDecimalFraction(value.toString())
                                 )
-                            ),
+                            );
+                        },
                     })
                 )
                 .cast("set")

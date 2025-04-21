@@ -4,8 +4,14 @@ export class Seed {
     private seed: string;
     private counter: number;
 
-    constructor(seed: string) {
-        this.seed = seed;
+    constructor(...inputs: (string | undefined)[]) {
+        for (const input of inputs) {
+            if (!input) {
+                throw new Error("Missed seed input");
+            }
+        }
+
+        this.seed = inputs.join(":");
         this.counter = 0;
     }
 
@@ -20,6 +26,18 @@ export class Seed {
 
     public generateRandomBoolean(trueBiasPercent: number): boolean {
         return this.hashToNumber(this.next(), 0, 100) < trueBiasPercent;
+    }
+
+    public shuffle<T>(items: T[]): T[] {
+        return items.length < 2
+            ? items
+            : items
+                  .map((value) => ({
+                      value,
+                      sort: this.hashToNumber(this.next(), 0, 0xffff_ffff),
+                  }))
+                  .sort((a, b) => a.sort - b.sort)
+                  .map(({ value }) => value);
     }
 
     private hashToNumber(hash: string, min: number, max: number): number {

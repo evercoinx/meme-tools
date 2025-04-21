@@ -81,9 +81,7 @@ export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_
 
 export const pyth = new Pyth(connectionPool, envVars.RPC_CLUSTER);
 
-export const seed = new Seed(
-    `${envVars.NODE_ENV}:${envVars.SNIPER_POOL_SHARE_PERCENTS.size}:${envVars.TRADER_COUNT}`
-);
+export const seed = new Seed(envVars.NODE_ENV, envVars.TOKEN_SYMBOL);
 
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 
