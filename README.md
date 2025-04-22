@@ -14,7 +14,13 @@
 
         - `TOKEN_SYMBOL=TOKEN`
 
-3. Optionally, set the following environment variables in the _.env.production_ file:
+3. Run this command to check the current configuration:
+
+    ```bash
+    yarn get-config
+    ```
+
+4. Optionally, adjust the following environment variables in the _.env.production_ file:
 
     - Common:
 
@@ -58,12 +64,6 @@
         - `SWAPPER_GROUP_SIZE` (Defaults to _1_)
         - `SWAPPER_TRADE_DELAY_RANGE_SEC`
 
-4. Run this command to check the current configuration:
-
-    ```bash
-    yarn get-config
-    ```
-
 5. Run this command to grind the _main_ keypairs:
 
     ```bash
@@ -82,31 +82,33 @@
     yarn distribute-funds:dry-run
     ```
 
-8. Swap some transferred SOL to USDC on the _collector_ account.
+8. Swap the reported USDC to SOL on the _collector_ account.
 
-9. Transfer the reported USDC from the _collector_ account on Solana to the one on Base using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=BASE&token=USDC).
+9. Transfer the reported USDC from the _collector_ account on Solana to the _one_ on Base via [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=BASE&token=USDC).
 
-10. Transfer USDC from the _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana using [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=BASE&chainOut=SOLANA&token=USDC).
+10. Transfer USDC from the _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana via [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=BASE&chainOut=SOLANA&token=USDC).
 
-11. Swap the transferred USDC to SOL for the _dev_ and _sniper distributor_ accounts.
+11. Swap the transferred USDC to SOL on the _dev_ and _sniper distributor_ accounts.
 
 12. Transfer SOL from _collector_ account to the _trader distributor_ account.
 
-13. Run this command again to make sure that all the _main_ accounts have sufficient SOL:
+13. Run this command to make sure that all the _main_ accounts have the sufficient SOL balance:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-14. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_ and _trader_ accounts:
+14. Write down the transferred SOL into the PnL table.
+
+15. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_ and _trader_ accounts:
 
     ```bash
     yarn distribute-funds && yarn get-funds
     ```
 
-15. Check that the _collector_ account has the balance of at least 400 USDC.
+16. Check that the _collector_ account has the balance of at least 400 USDC. If not, swap SOL to top it up with the missing USDC.
 
-16. Check that the account on [Graming](https://graming.com/usd/) has the balance of at least 20 USD.
+17. Check that the Graming account has the balance of at least 20 USD. If not, swap SOL to top it up with the missing USDC on [Graming](https://graming.com/usd/).
 
 # Token Pre Launch Phase
 
@@ -115,9 +117,8 @@
     - [Discord](https://discord.com/channels/1329183129604198490)
     - [Dex Screener](https://dexscreener.com/1h?rankBy=trendingScoreH1&order=desc)
     - [Dex Tools](https://www.dextools.io/app/en/trending)
-    - [Defined](https://www.defined.fi/tokens/discover?createdAt=hour1&rankingBy=volume&rankingDirection=DESC)
 
-2. Run this command to make sure that the _production_ environment is set correctly:
+2. Run this command to make sure that the _production_ environment is activated:
 
     ```bash
     yarn getenv
@@ -158,19 +159,22 @@
 
     ```bash
     yarn get-config
+
     ```
 
-8. Set up the social channels:
+8. Run these commands to rename the key pair and storage files for the token:
+
+    ```bash
+    yarn rename-token-files && yarn get-funds:main
+    ```
+
+9. Set up the social channels:
 
     - The X.com profile (avatar, wallpaper, description)
 
     - The Telegram channel and group (configuration, bots)
 
-9. Run these commands to rename the key pair and storage files for the token:
-
-    ```bash
-    yarn rename-token-files && yarn get-funds:main
-    ```
+10. Publish and pin the meme greeting posts on the X account and the Telegram group.
 
 # Token Launch Phase
 
@@ -180,13 +184,9 @@
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-2. Add the token mint address to the X account and the Telegram group
+2. Add the token mint address to the X profile.
 
-3. Start social hype about the token launch on the X account and the Telegram group:
-
-    - Publish and pin the meme greeting posts
-
-    - Publish and pin meme launch posts
+3. Publish and pin posts about the token launch on the X account and the Telegram group.
 
 4. Run this command to open a Raydium CPMM pool:
 
@@ -200,7 +200,7 @@
     yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
-6. Start social hype about the token information update on Dex Screener:
+6. Update the token information on Dex Screener:
 
     - Update the token information for 299 USD on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
 
@@ -208,7 +208,7 @@
 
     - Raid it on the Telegram group
 
-7. Start social hype about the token boost on Dex Screener:
+7. Boost the token on Dex Screener:
 
     - Buy the boost 10x pack for 99 USD on [Dex Screener](https://dexscreener.com)
 
@@ -230,11 +230,10 @@
 
 - [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana&boosted=1&profile=1)
 - [Dex Tools](https://www.dextools.io/app/en/solana/trending)
-- [Defined](https://www.defined.fi/tokens/discover?network=sol&createdAt=hour4&rankingBy=volume&rankingDirection=DESC)
 
 # Token Post Launch Phase
 
-1. Start social hype about reaching 500 reactions on Dex Screener:
+1. Reach 500 reactions on Dex Screener:
 
     - Publish and pin posts on the X account and the Telegram group
 
@@ -262,15 +261,15 @@
 
 4. If the `$TRADER_COUNT` variable is adjusted up:
 
-    - Run this command to estimate USD to transfer to the _trader distributor_ account:
+    - Run this command to estimate SOL to transfer to the _trader distributor_ account:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-    - Transfer USD from the _collector_ account to the _trader distributor_ account.
+    - Transfer the reported SOL from the _collector_ account to the _trader distributor_ account.
 
-    - Run this command again to make sure that the _trader distributor_ account has sufficient balance:
+    - Run this command to make sure that the _trader distributor_ account has the sufficient SOL balance:
 
     ```bash
     yarn distribute-funds:dry-run
@@ -290,7 +289,7 @@
     yarn trade:raydium
     ```
 
-6. Optionally, start social hype about the token information update on Dex Tools:
+6. Optionally, update the token information on Dex Tools:
 
     - Update the token information for 295 USD on [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
 
@@ -313,3 +312,5 @@
     ```
 
 3. Transfer the SOL from the _main_ accounts to the _collector_ account.
+
+4. Write down the transferred SOL into the PnL table.
