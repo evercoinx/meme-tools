@@ -168,7 +168,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .required()
                 .trim()
                 .uppercase()
-                .alphanum()
+                .pattern(/^[A-Z0-9-_.]+$/)
                 .max(20)
                 .description("Token symbol"),
             TOKEN_NAME: Joi.string().optional().trim().allow("").max(40).description("Token name"),
