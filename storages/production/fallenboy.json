@@ -313,6 +313,11 @@
     },
     { "key": "trader_count", "value": { "previous": 106, "current": 106 } },
     {
+        "key": "mint_image_uri",
+        "value": "https://lavender-elaborate-anaconda-136.mypinata.cloud/ipfs/bafkreiczcjezigmz77fvarqt25peas52bhijvytchtuqyl5lrch27yeaau"
+    },
+    { "key": "raydium_pool_id", "value": "DetTtfYgEroCrKstGHgGKpaoeFMuyYPvthbHdB7WWrya" },
+    {
         "key": "sniper_3_secret_key",
         "value": "encrypted:nt9Tqze34KwfDNI4cpV0K/HuR+1AKTovHfiTcBOUPqwX5ktrf5vI3JfyxMhRiwVRMqR0oZ3x/RfSYtu/yaZ7XkwI8ukV2GyvdeNyeJe7ysdfLQL40ijHkCxOC2mQD5kGpzPJQlYKba9ervR3g6FAH3zA0p7GZ0tVCj8GKw17vsakeGPFACWUaT8QSkeEWCou"
     },
@@ -432,6 +437,7 @@
         "key": "trader_100_secret_key",
         "value": "encrypted:UgfMZrZQ3lYwuPGmM6KeElt5+WskYHiTqBthfm7rv4zYbwuoWdUIYaI/nDeZIwk+zfu7rB+1dYnrwLqm1zzSlmFaMUf7a9moQrZ58bOupvp08zOr1sitx3fDlMEutF0AuAbzsZlnvjIPnwZExwnGsH1q8pa4D9vGFMw5CJJed3Bz2engg6O98apcVocIQmWg"
     },
+    { "key": "raydium_pool_trading_cycle", "value": 3 },
     {
         "key": "sniper_6_secret_key",
         "value": "encrypted:B8cIMKpOrcPfFVW6jeFLekhNyIjz56V8aWxJn2UpG09KFP57Us46AAdTk5WGNyI+Ec3hIWjEDAuNSaLr0di8uDYhVl9Ggnxj++UPzq+ErZA3Jec95hmBwJDqIyW42Co+qQDs5PuJmdfARULEEzFRxSW3w0o1nnUNR8sYiMcdsQvjdXl2jfnAZzp8jcSYDPpg"
@@ -592,5 +598,27 @@
     {
         "key": "trader_105_secret_key",
         "value": "encrypted:SHQ5UAlOoSkwTDrFZZR6PTXqndn0CDfz3avtrUSkc02aWPOfIxzp8H1yB3osDgq0tt22PH01bopWK+EqwU8et+EB9PrIoIt4jLOv15nbqjFEO/A81VujB1QrkwVkPvo99BUh2LfwH8R9+m6/QnoKjVHt7CiiidB0LaaZgnv1wr5OEkvv79jdOWtgtXc5PlYV"
-    }
+    },
+    {
+        "key": "mint_secret_key",
+        "value": "encrypted:oR97z3kUCkn4F7vIEdDtZlmIG8wfXaiE6X8e4DiGMb/vQ8cl108QgbyhUJqUaCU1Km4emYiDBUb3YTkmDHVUl2SfN1fOgWfTaclj1IUVwUuxvg/qlH3P16YJAnrpil3DbbkeghPqtxqlDMAUxx6V+2ltdyGqgmPucptKZw7rRVemI5bPhZAuQHsnY/eaOP3v"
+    },
+    {
+        "key": "mint_metadata",
+        "value": {
+            "symbol": "FALLENBOY",
+            "name": "FALLENBOY",
+            "description": "Fallen Boy on Solana",
+            "decimals": 6,
+            "image": "https://lavender-elaborate-anaconda-136.mypinata.cloud/ipfs/bafkreiczcjezigmz77fvarqt25peas52bhijvytchtuqyl5lrch27yeaau",
+            "social_links": {
+                "twitter": "https://x.com/FallenBoyMeme",
+                "telegram": "https://t.me/FallenBoyMeme"
+            },
+            "tags": ["meme", "fun"],
+            "external_url": "https://vm.tiktok.com/ZMBtuYYEs/",
+            "uri": "https://lavender-elaborate-anaconda-136.mypinata.cloud/ipfs/bafkreih2ghcl3vhthpnjdqv5lzimpbs254uejetpj4tfswc5hi5dfsmda4"
+        }
+    },
+    { "key": "raydium_lp_mint", "value": "CwrFQZyJk3iuAdRPW15TCa19TJc914UVMA9x8fLnxjLB" }
 ]
