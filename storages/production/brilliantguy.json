@@ -345,6 +345,11 @@
     },
     { "key": "trader_count", "value": { "previous": 86, "current": 86 } },
     {
+        "key": "mint_image_uri",
+        "value": "https://lavender-elaborate-anaconda-136.mypinata.cloud/ipfs/bafkreifjwzyizcd6pgvgfddfypksolsbbfd6idf5doxlk5rrozkgzg3qim"
+    },
+    { "key": "raydium_pool_id", "value": "8vYHg23rnZCM18c29paigSKYA2V7gmCKgy8gPASzKR7t" },
+    {
         "key": "sniper_3_secret_key",
         "value": "encrypted:fld6wZ+JUPbbELr16jenPoqphpfGsKcMi22yr+4Jtb8wXhWHoCIzRXMS7XSmKpvkf3HEHDhJD5kWDH3UsOVW6oOOwPv0LphgcxYfcHALrxOT6Tp8tUdWxhMj8J0VmainQNukrQ/DqwazIpLDKzaszEMzViJAbC/Urmrfqj6QyUS7M/zuvvd8ug/dp2SKAHSf"
     },
@@ -444,6 +449,7 @@
         "key": "trader_82_secret_key",
         "value": "encrypted:vqfz/opRB/Pckj6I5mw/h/P7e9zk9JjqUYwS4fNDI4WVQURD7es2IPoqlSdZtZRnsyr5lFOrCBhIQiAZZpLDDUURweeua4tKUfOT3uKwRrO13oponpHoKnk1M1NbRFu76wM2kWWhqlzepcAW5swzmkTPxVb9eANVVvrT226MuzMdLoZGmoKoNIq5/VfNvSjS"
     },
+    { "key": "raydium_pool_trading_cycle", "value": 2 },
     {
         "key": "sniper_6_secret_key",
         "value": "encrypted:esirG35plwzpVU1BnE5occLB59LnpLkoD7ooZVOlzW+O/jwUD3J/+Euw9pvdaQTvnSSmkwDllvuDgxE5qovt5xMDwvPldNkXLzsx5yCgkGce+XeiNAnFIPYzDM68RDaPUEwLTNnHLJNzyIz0GdOntIybzesGcvomjw6MpIAnkRV83S0E0uUUAv9tH1nxR+2/"
@@ -580,5 +586,27 @@
     {
         "key": "trader_85_secret_key",
         "value": "encrypted:fgWanT/0lcQVEQl3vKRWCSZC/8U0OKlU7+ag92HWt12bouAmD0JQeiNlyKNFk8yYWQzGkTGSUcID82+/xXb78S7AMbNAL/cZWgXdPd+i9M3baEVyuKnEzc8cpsTv/Qt7OabJT5SENMA0HzdcnvrImab8zIrbAPjp97F0QpdAokye6BcK9lnvBCD9hN+Ze3Cn"
-    }
+    },
+    {
+        "key": "mint_secret_key",
+        "value": "encrypted:HB0fW56kCqabykXB8vI4xbFbFuw37/HE1vhRguwHlwOdZc/8o1K8r5RH3pov6mb6A9DLOcBV0cUv01PBimu1aH9S2grdNEp6tjUI5bY3AjN8uRnYsOuzxGUC/XcVrqkZ5MqLMzTql/mTJMq9EBSJe5UANEAR/kyoKf2c5Uf8BoxFZQQNgyedNaS9h5S2aluB"
+    },
+    {
+        "key": "mint_metadata",
+        "value": {
+            "symbol": "BRILLIANTGUY",
+            "name": "Brilliant Guy",
+            "description": "Brilliant Guy on Solana",
+            "decimals": 6,
+            "image": "https://lavender-elaborate-anaconda-136.mypinata.cloud/ipfs/bafkreifjwzyizcd6pgvgfddfypksolsbbfd6idf5doxlk5rrozkgzg3qim",
+            "social_links": {
+                "twitter": "https://x.com/BrilliantGuySol",
+                "telegram": "https://t.me/BrilliantGuySol"
+            },
+            "tags": ["meme", "celebrity"],
+            "external_url": "https://x.com/elonmusk/status/1915357695965839642",
+            "uri": "https://lavender-elaborate-anaconda-136.mypinata.cloud/ipfs/bafkreiapp42ruek62l53g55xgqr2dzr4laalu4z4nsuombt3ogvjfe3qgi"
+        }
+    },
+    { "key": "raydium_lp_mint", "value": "4KPTT8HfJdsbzBXuA5xHhp1okbbhWG7e8oXfVntTwcRy" }
 ]
