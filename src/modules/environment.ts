@@ -197,6 +197,12 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .trim()
                 .allow("")
                 .uri()
+                .custom((uri: string) => {
+                    if (uri.startsWith("https://x.com") || uri.startsWith("https://t.me")) {
+                        throw new Error(`Unexpected website URI: ${formatUri(uri)}`);
+                    }
+                    return uri;
+                })
                 .description("Token website URI"),
             TOKEN_TWITTER_URI: Joi.string()
                 .required()
@@ -265,7 +271,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Pool trading with only new traders"),
             SNIPER_POOL_SHARE_RANGE_PERCENT: Joi.array()
                 .required()
-                .items(Joi.number().min(0.5).max(3).custom(convertToDecimalFraction))
+                .items(Joi.number().min(0.5).max(1.5).custom(convertToDecimalFraction))
                 .unique()
                 .sort({ order: "ascending" })
                 .min(2)
