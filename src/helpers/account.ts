@@ -3,7 +3,7 @@ import { basename, join } from "node:path";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { encryption, envVars, KEYPAIR_DIR, logger, storage } from "../modules";
+import { encryption, envVars, KEYPAIR_DIR, logger, storage, ZERO_DECIMAL } from "../modules";
 import { Pool } from "../modules/pool";
 import {
     STORAGE_MINT_SECRET_KEY,
@@ -268,8 +268,8 @@ export async function getTokenAccountInfo(
     account: Keypair,
     mint: PublicKey,
     splTokenProgram: PublicKey
-): Promise<[PublicKey, Decimal | undefined]> {
-    const tokenAccount = getAssociatedTokenAddressSync(
+): Promise<[PublicKey, Decimal, boolean]> {
+    const tokenAddress = getAssociatedTokenAddressSync(
         mint,
         account.publicKey,
         false,
@@ -278,40 +278,37 @@ export async function getTokenAccountInfo(
     );
 
     try {
-        return [tokenAccount, await getTokenAccountBalance(connectionPool.current(), tokenAccount)];
+        const balance = await getTokenAccountBalance(connectionPool.current(), tokenAddress);
+        return [tokenAddress, balance, true];
     } catch (err: unknown) {
         if (err instanceof Error && err.message.includes("could not find account")) {
-            return [tokenAccount, undefined];
+            return [tokenAddress, ZERO_DECIMAL, false];
         }
 
         logger.warn(
             "Failed to get balance for %s ATA (%s) of account (%s). Attempt: 1/2",
             envVars.TOKEN_SYMBOL,
-            formatPublicKey(tokenAccount),
+            formatPublicKey(tokenAddress),
             formatPublicKey(account.publicKey)
         );
 
         try {
-            return [
-                tokenAccount,
-                await getTokenAccountBalance(connectionPool.next(), tokenAccount),
-            ];
+            const balance = await getTokenAccountBalance(connectionPool.next(), tokenAddress);
+            return [tokenAddress, balance, true];
         } catch (err: unknown) {
             if (err instanceof Error && err.message.includes("could not find account")) {
-                return [tokenAccount, undefined];
+                return [tokenAddress, ZERO_DECIMAL, false];
             }
 
             logger.warn(
                 "Failed to get balance for %s ATA (%s) of account (%s). Attempt: 2/2",
                 envVars.TOKEN_SYMBOL,
-                formatPublicKey(tokenAccount),
+                formatPublicKey(tokenAddress),
                 formatPublicKey(account.publicKey)
             );
 
-            return [
-                tokenAccount,
-                await getTokenAccountBalance(connectionPool.next(), tokenAccount),
-            ];
+            const balance = await getTokenAccountBalance(connectionPool.next(), tokenAddress);
+            return [tokenAddress, balance, true];
         }
     }
 }
@@ -319,7 +316,7 @@ export async function getTokenAccountInfo(
 async function getTokenAccountBalance(
     connection: Connection,
     publicKey: PublicKey
-): Promise<Decimal | undefined> {
+): Promise<Decimal> {
     const {
         value: { amount },
     } = await connection.getTokenAccountBalance(publicKey);

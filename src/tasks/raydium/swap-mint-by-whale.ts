@@ -21,7 +21,6 @@ import {
     logger,
     storage,
     SWAPPER_SLIPPAGE_PERCENT,
-    UNITS_PER_MINT,
     ZERO_DECIMAL,
 } from "../../modules";
 import {
@@ -54,10 +53,10 @@ enum SwapType {
                 },
             },
         });
-        if (!index || parseInt(index)) {
+        if (!index || parseInt(index, 10)) {
             throw new Error(`Invalid whale index: ${index}`);
         }
-        const parsedIndex = parseInt(index);
+        const parsedIndex = parseInt(index, 10);
 
         if (!swapType || ![SwapType.Buy, SwapType.Sell].includes(swapType as SwapType)) {
             throw new Error(`Invalid swap type: ${swapType}`);
@@ -133,14 +132,14 @@ async function sellMint(
     account: Keypair,
     mint: Keypair
 ): Promise<Promise<TransactionSignature | undefined>[] | undefined> {
-    const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+    const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] = await getTokenAccountInfo(
         connectionPool,
         account,
         mint.publicKey,
         TOKEN_2022_PROGRAM_ID
     );
 
-    if (!mintTokenBalance) {
+    if (!mintTokenInitialized) {
         logger.warn(
             "Whale (%s) has uninitialized %s ATA (%s)",
             formatPublicKey(account.publicKey),
@@ -151,11 +150,10 @@ async function sellMint(
     }
     if (mintTokenBalance.lte(ZERO_DECIMAL)) {
         logger.warn(
-            "Whale (%s) has insufficient balance on ATA (%s): %s %s",
+            "Whale (%s) has zero balance on %s ATA (%s)",
             formatPublicKey(account.publicKey),
-            formatPublicKey(mintTokenAccount),
-            formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
-            envVars.TOKEN_SYMBOL
+            envVars.TOKEN_SYMBOL,
+            formatPublicKey(mintTokenAccount)
         );
         return;
     }

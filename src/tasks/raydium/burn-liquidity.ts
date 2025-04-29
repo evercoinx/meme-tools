@@ -8,7 +8,7 @@ import {
     KeypairKind,
 } from "../../helpers/account";
 import { checkFileExists } from "../../helpers/filesystem";
-import { formatDecimal, formatError, formatPublicKey } from "../../helpers/format";
+import { formatError, formatPublicKey } from "../../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -21,7 +21,6 @@ import {
     storage,
     ZERO_DECIMAL,
 } from "../../modules";
-import { RAYDIUM_LP_MINT_DECIMALS } from "../../modules/raydium";
 import { STORAGE_RAYDIUM_LP_MINT } from "../../modules/storage";
 
 (async () => {
@@ -60,13 +59,10 @@ async function burnPoolLiquidity(
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
 
-    const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
-        connectionPool,
-        dev,
-        lpMint,
-        TOKEN_PROGRAM_ID
-    );
-    if (!lpMintTokenBalance) {
+    const [lpMintTokenAccount, lpMintTokenBalance, lpMintTokenInitialized] =
+        await getTokenAccountInfo(connectionPool, dev, lpMint, TOKEN_PROGRAM_ID);
+
+    if (!lpMintTokenInitialized) {
         logger.warn(
             "Dev (%s) has uninitialized %s ATA (%s)",
             formatPublicKey(dev.publicKey),
@@ -77,14 +73,10 @@ async function burnPoolLiquidity(
     }
     if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
         logger.warn(
-            "Dev (%s) has insufficient balance on ATA (%s): %s LP-%s",
+            "Dev (%s) has zero balance on %s ATA (%s)",
             formatPublicKey(dev.publicKey),
-            formatPublicKey(lpMintTokenAccount),
-            formatDecimal(
-                lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
-                RAYDIUM_LP_MINT_DECIMALS
-            ),
-            envVars.TOKEN_SYMBOL
+            envVars.TOKEN_SYMBOL,
+            formatPublicKey(lpMintTokenAccount)
         );
         return;
     }

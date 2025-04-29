@@ -467,14 +467,15 @@ async function findLamportsToBuy(
         }
 
         if (keypairKind === KeypairKind.Trader && envVars.POOL_TRADING_ONLY_NEW_TRADERS) {
-            const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
-                connectionPool,
-                swapper,
-                mint.publicKey,
-                TOKEN_2022_PROGRAM_ID
-            );
+            const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] =
+                await getTokenAccountInfo(
+                    connectionPool,
+                    swapper,
+                    mint.publicKey,
+                    TOKEN_2022_PROGRAM_ID
+                );
 
-            if (mintTokenBalance && mintTokenBalance.gt(ZERO_DECIMAL)) {
+            if (mintTokenInitialized && mintTokenBalance.gt(ZERO_DECIMAL)) {
                 lamportsToBuy[i] = null;
                 logger.warn(
                     "%s (%s) already bought token on ATA (%s): %s %s",
@@ -503,14 +504,15 @@ async function findUnitsToSell(
     const isSniper = keypairKind === KeypairKind.Sniper;
 
     for (const [i, swapper] of swappers.entries()) {
-        const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
-            connectionPool,
-            swapper,
-            mint.publicKey,
-            TOKEN_2022_PROGRAM_ID
-        );
+        const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] =
+            await getTokenAccountInfo(
+                connectionPool,
+                swapper,
+                mint.publicKey,
+                TOKEN_2022_PROGRAM_ID
+            );
 
-        if (!mintTokenBalance) {
+        if (!mintTokenInitialized) {
             unitsToSell[i] = null;
             logger.warn(
                 "%s (%s) has uninitialized %s ATA (%s)",
@@ -524,19 +526,18 @@ async function findUnitsToSell(
         if (mintTokenBalance.lte(ZERO_DECIMAL)) {
             unitsToSell[i] = null;
             logger.warn(
-                "%s (%s) has insufficient balance on ATA (%s): %s %s",
+                "%s (%s) has zero balance on %s ATA (%s)",
                 capitalize(keypairKind),
                 formatPublicKey(swapper.publicKey),
-                formatPublicKey(mintTokenAccount),
-                formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
-                envVars.TOKEN_SYMBOL
+                envVars.TOKEN_SYMBOL,
+                formatPublicKey(mintTokenAccount)
             );
             continue;
         }
         if (envVars.POOL_TRADING_ONLY_NEW_TRADERS && mintTokenBalance.gt(ZERO_DECIMAL)) {
             unitsToSell[i] = null;
             logger.warn(
-                "%s (%s) already bought token on ATA (%s): %s %s",
+                "%s (%s) already bought mint from ATA (%s): %s %s",
                 capitalize(keypairKind),
                 formatPublicKey(swapper.publicKey),
                 formatPublicKey(mintTokenAccount),

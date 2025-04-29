@@ -99,14 +99,15 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
     const snipersToBuy: (Keypair | null)[] = [];
 
     for (const [i, sniper] of snipers.entries()) {
-        const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
-            connectionPool,
-            sniper,
-            mint.publicKey,
-            TOKEN_2022_PROGRAM_ID
-        );
+        const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] =
+            await getTokenAccountInfo(
+                connectionPool,
+                sniper,
+                mint.publicKey,
+                TOKEN_2022_PROGRAM_ID
+            );
 
-        if (mintTokenBalance && mintTokenBalance.gt(ZERO_DECIMAL)) {
+        if (mintTokenInitialized && mintTokenBalance.gt(ZERO_DECIMAL)) {
             snipersToBuy[i] = null;
             logger.warn(
                 "Sniper (%s) has sufficient balance on ATA (%s): %s %s",

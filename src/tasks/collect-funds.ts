@@ -139,22 +139,30 @@ async function closeTokenAccounts(
         const isDev = i === 0;
 
         if (mint && !isDev) {
-            const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
-                connectionPool,
-                account,
-                mint.publicKey,
-                TOKEN_2022_PROGRAM_ID
-            );
+            const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] =
+                await getTokenAccountInfo(
+                    connectionPool,
+                    account,
+                    mint.publicKey,
+                    TOKEN_2022_PROGRAM_ID
+                );
 
-            if (!mintTokenBalance) {
+            if (!mintTokenInitialized) {
                 logger.warn(
                     "Account (%s) has uninitialized %s ATA (%s)",
                     formatPublicKey(account.publicKey),
                     envVars.TOKEN_SYMBOL,
                     formatPublicKey(mintTokenAccount)
                 );
+            } else if (mintTokenBalance.lte(ZERO_DECIMAL)) {
+                logger.warn(
+                    "Account (%s) has zero balance on %s ATA (%s)",
+                    formatPublicKey(dev.publicKey),
+                    envVars.TOKEN_SYMBOL,
+                    formatPublicKey(mintTokenAccount)
+                );
             } else {
-                if (mintTokenBalance.gt(ZERO_DECIMAL) && mintTokenBalance.lte(MINT_DUST_UNITS)) {
+                if (mintTokenBalance.lte(MINT_DUST_UNITS)) {
                     instructions.push(
                         createBurnInstruction(
                             mintTokenAccount,
@@ -188,13 +196,10 @@ async function closeTokenAccounts(
         }
 
         if (lpMint && isDev) {
-            const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
-                connectionPool,
-                dev,
-                lpMint,
-                TOKEN_PROGRAM_ID
-            );
-            if (!lpMintTokenBalance) {
+            const [lpMintTokenAccount, lpMintTokenBalance, lpMintTokenInitialized] =
+                await getTokenAccountInfo(connectionPool, dev, lpMint, TOKEN_PROGRAM_ID);
+
+            if (!lpMintTokenInitialized) {
                 logger.warn(
                     "Dev (%s) has uninitialized LP mint ATA (%s)",
                     formatPublicKey(dev.publicKey),

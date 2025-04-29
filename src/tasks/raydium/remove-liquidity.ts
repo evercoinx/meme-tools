@@ -5,7 +5,7 @@ import BN from "bn.js";
 import { PriorityLevel } from "helius-sdk";
 import { getTokenAccountInfo, importKeypairFromFile, KeypairKind } from "../../helpers/account";
 import { checkFileExists } from "../../helpers/filesystem";
-import { formatDecimal, formatError, formatPublicKey } from "../../helpers/format";
+import { formatError, formatPublicKey } from "../../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -19,12 +19,7 @@ import {
     ZERO_BN,
     ZERO_DECIMAL,
 } from "../../modules";
-import {
-    createRaydium,
-    loadRaydiumCpmmPool,
-    RAYDIUM_LP_MINT_DECIMALS,
-    RaydiumCpmmPool,
-} from "../../modules/raydium";
+import { createRaydium, loadRaydiumCpmmPool, RaydiumCpmmPool } from "../../modules/raydium";
 import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
 
 (async () => {
@@ -70,14 +65,10 @@ async function removePoolLiquidity(
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
 
-    const [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
-        connectionPool,
-        dev,
-        lpMint,
-        TOKEN_PROGRAM_ID
-    );
+    const [lpMintTokenAccount, lpMintTokenBalance, lpMintTokenInitialized] =
+        await getTokenAccountInfo(connectionPool, dev, lpMint, TOKEN_PROGRAM_ID);
 
-    if (!lpMintTokenBalance) {
+    if (!lpMintTokenInitialized) {
         logger.warn(
             "Dev (%s) has uninitialized %s ATA (%s)",
             formatPublicKey(dev.publicKey),
@@ -88,14 +79,10 @@ async function removePoolLiquidity(
     }
     if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
         logger.warn(
-            "Dev (%s) has insufficient balance on ATA (%s): %s LP-%s",
+            "Dev (%s) has zero balance on LP-%s ATA (%s)",
             formatPublicKey(dev.publicKey),
-            formatPublicKey(lpMintTokenAccount),
-            formatDecimal(
-                lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
-                RAYDIUM_LP_MINT_DECIMALS
-            ),
-            envVars.TOKEN_SYMBOL
+            envVars.TOKEN_SYMBOL,
+            formatPublicKey(lpMintTokenAccount)
         );
         return Promise.resolve(undefined);
     }

@@ -10,7 +10,7 @@ import {
     KeypairKind,
 } from "../../helpers/account";
 import { checkFileExists } from "../../helpers/filesystem";
-import { capitalize, formatDecimal, formatError, formatPublicKey } from "../../helpers/format";
+import { capitalize, formatError, formatPublicKey } from "../../helpers/format";
 import {
     connectionPool,
     envVars,
@@ -18,7 +18,6 @@ import {
     logger,
     storage,
     SWAPPER_SLIPPAGE_PERCENT,
-    UNITS_PER_MINT,
     ZERO_DECIMAL,
 } from "../../modules";
 import { createRaydium, loadRaydiumCpmmPool, swapMintToSol } from "../../modules/raydium";
@@ -103,14 +102,15 @@ async function findUnitsToSell(
     const unitsToSell: (BN | null)[] = [];
 
     for (const [i, account] of accounts.entries()) {
-        const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
-            connectionPool,
-            account,
-            mint.publicKey,
-            TOKEN_2022_PROGRAM_ID
-        );
+        const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] =
+            await getTokenAccountInfo(
+                connectionPool,
+                account,
+                mint.publicKey,
+                TOKEN_2022_PROGRAM_ID
+            );
 
-        if (!mintTokenBalance) {
+        if (!mintTokenInitialized) {
             unitsToSell[i] = null;
             logger.warn(
                 "%s (%s) has uninitialized %s ATA (%s)",
@@ -124,12 +124,11 @@ async function findUnitsToSell(
         if (mintTokenBalance.lte(ZERO_DECIMAL)) {
             unitsToSell[i] = null;
             logger.warn(
-                "%s (%s) has insufficient balance on ATA (%s): %s %s",
+                "%s (%s) has zero balance on %s ATA (%s)",
                 capitalize(keypairKind),
                 formatPublicKey(account.publicKey),
-                formatPublicKey(mintTokenAccount),
-                formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
-                envVars.TOKEN_SYMBOL
+                envVars.TOKEN_SYMBOL,
+                formatPublicKey(mintTokenAccount)
             );
             continue;
         }

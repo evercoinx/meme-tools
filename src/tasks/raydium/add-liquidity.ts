@@ -10,7 +10,7 @@ import {
     KeypairKind,
 } from "../../helpers/account";
 import { checkFileExists } from "../../helpers/filesystem";
-import { formatDecimal, formatError, formatPublicKey } from "../../helpers/format";
+import { formatError, formatPublicKey } from "../../helpers/format";
 import {
     getComputeBudgetInstructions,
     sendAndConfirmVersionedTransaction,
@@ -22,7 +22,6 @@ import {
     logger,
     storage,
     ZERO_DECIMAL,
-    UNITS_PER_MINT,
     ZERO_BN,
 } from "../../modules";
 import { createRaydium, loadRaydiumCpmmPool } from "../../modules/raydium";
@@ -65,17 +64,17 @@ async function addPoolLiquidity(
 ): Promise<Promise<TransactionSignature | undefined>> {
     const connection = connectionPool.current();
     const heliusClient = heliusClientPool.current();
-
     const raydium = await createRaydium(connection, dev);
     const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, poolId);
 
-    const [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+    const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] = await getTokenAccountInfo(
         connectionPool,
         dev,
         mint.publicKey,
         TOKEN_2022_PROGRAM_ID
     );
-    if (!mintTokenBalance) {
+
+    if (!mintTokenInitialized) {
         logger.warn(
             "Dev (%s) has uninitialized %s ATA (%s)",
             formatPublicKey(dev.publicKey),
@@ -86,11 +85,10 @@ async function addPoolLiquidity(
     }
     if (mintTokenBalance.lte(ZERO_DECIMAL)) {
         logger.warn(
-            "Dev (%s) has insufficient balance on ATA (%s): %s %s",
+            "Dev (%s) has zero balance on %s ATA (%s)",
             formatPublicKey(dev.publicKey),
-            formatPublicKey(mintTokenAccount),
-            formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
-            envVars.TOKEN_SYMBOL
+            envVars.TOKEN_SYMBOL,
+            formatPublicKey(mintTokenAccount)
         );
         return;
     }

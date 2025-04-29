@@ -88,8 +88,10 @@ async function getMainFunds(
 
         let mintTokenAccount: PublicKey | undefined;
         let mintTokenBalance: Decimal | undefined;
+        let mintTokenInitialized: boolean | undefined;
+
         if (mint) {
-            [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+            [mintTokenAccount, mintTokenBalance, mintTokenInitialized] = await getTokenAccountInfo(
                 connectionPool,
                 account,
                 mint.publicKey,
@@ -103,7 +105,7 @@ async function getMainFunds(
             mintTokenAccount
                 ? formatPublicKey(mintTokenAccount, "long")
                 : OUTPUT_UNKNOWN_PUBLIC_KEY,
-            mintTokenBalance
+            mintTokenInitialized && mintTokenBalance !== undefined
                 ? formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS)
                 : OUTPUT_UNKNOWN_VALUE,
             envVars.TOKEN_SYMBOL,
@@ -112,15 +114,17 @@ async function getMainFunds(
         if (i === 0) {
             let lpMintTokenAccount: PublicKey | undefined;
             let lpMintTokenBalance: Decimal | undefined;
+            let lpMintTokenInitialized: boolean | undefined;
 
             const lpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
             if (lpMint) {
-                [lpMintTokenAccount, lpMintTokenBalance] = await getTokenAccountInfo(
-                    connectionPool,
-                    account,
-                    new PublicKey(lpMint),
-                    TOKEN_PROGRAM_ID
-                );
+                [lpMintTokenAccount, lpMintTokenBalance, lpMintTokenInitialized] =
+                    await getTokenAccountInfo(
+                        connectionPool,
+                        account,
+                        new PublicKey(lpMint),
+                        TOKEN_PROGRAM_ID
+                    );
             }
 
             logger.info(
@@ -129,7 +133,7 @@ async function getMainFunds(
                 lpMintTokenAccount
                     ? formatPublicKey(lpMintTokenAccount, "long")
                     : OUTPUT_UNKNOWN_PUBLIC_KEY,
-                lpMintTokenBalance
+                lpMintTokenInitialized && lpMintTokenBalance !== undefined
                     ? formatDecimal(
                           lpMintTokenBalance.div(10 ** RAYDIUM_LP_MINT_DECIMALS),
                           RAYDIUM_LP_MINT_DECIMALS
@@ -154,11 +158,12 @@ async function getSwapperFunds(
 ): Promise<void> {
     for (const [i, account] of accounts.entries()) {
         const solBalance = await getSolBalance(connectionPool, account);
-
         let mintTokenAccount: PublicKey | undefined;
         let mintTokenBalance: Decimal | undefined;
+        let mintTokenInitialized: boolean | undefined;
+
         if (mint) {
-            [mintTokenAccount, mintTokenBalance] = await getTokenAccountInfo(
+            [mintTokenAccount, mintTokenBalance, mintTokenInitialized] = await getTokenAccountInfo(
                 connectionPool,
                 account,
                 mint.publicKey,
@@ -175,7 +180,7 @@ async function getSwapperFunds(
             mintTokenAccount
                 ? formatPublicKey(mintTokenAccount, "long")
                 : OUTPUT_UNKNOWN_PUBLIC_KEY,
-            mintTokenBalance
+            mintTokenInitialized && mintTokenBalance !== undefined
                 ? formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS)
                 : OUTPUT_UNKNOWN_VALUE,
             envVars.TOKEN_SYMBOL
