@@ -66,8 +66,13 @@
         - `WHALE_BALANCE_SOL`
 
     - Swapper:
+
         - `SWAPPER_GROUP_SIZE` (Defaults to _1_)
         - `SWAPPER_TRADE_DELAY_RANGE_SEC`
+
+    - Collector:
+
+        - `COLLECTOR_ADDRESS` (Defaults to _""_)
 
 5. Run this command to grind the _main_ keypairs:
 
@@ -75,39 +80,31 @@
     yarn grind-keypairs
     ```
 
-6. Run these commands to list the _main_ accounts and import their secret keys into the _Phantom_ wallet on Solana:
-
-    ```bash
-    yarn get-accounts:main
-    ```
-
-7. Run this command to estimate how much SOL should be transferred to the _dev_ and _sniper distributor_ accounts:
+6. Run this command to estimate how much SOL should be transferred to the _dev_ and _sniper distributor_ accounts:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-8. Transfer the reported SOL from the _collector_ account on Solana to the _one_ on Base via [Mayan Bridge](https://swap.mayan.finance).
+7. Transfer the reported SOL from the _collector_ account on Solana to the _one_ on Base via [Mayan Bridge](https://swap.mayan.finance).
 
-9. Transfer SOL from the _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana via [Mayan Bridge](https://swap.mayan.finance).
+8. Transfer SOL from the _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana via [Mayan Bridge](https://swap.mayan.finance).
 
-10. Transfer SOL from _collector_ account to the _trader distributor_ and _whale distributor_ accounts.
+9. Transfer SOL from _collector_ account to the _trader distributor_ and _whale distributor_ accounts.
 
-11. Run this command to make sure that all the _main_ accounts have the sufficient SOL balance:
+10. Run this command to make sure that all the _main_ accounts have the sufficient SOL balance:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-12. Write down the transferred SOL into the PnL table.
-
-13. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_ and _trader_ accounts:
+11. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_ and _trader_ accounts:
 
     ```bash
     yarn distribute-funds && yarn get-funds
     ```
 
-14. Check that the _collector_ account has the balance of at least 400 USDC. If not, swap SOL to top it up with the missing USDC.
+12. Check that the _collector_ account has the balance of at least 400 USDC. If not, swap SOL to top it up with the missing USDC.
 
 # Token Pre Launch Phase
 
@@ -304,12 +301,8 @@
     yarn close-pool:raydium
     ```
 
-2. Run these commands to collect funds on the _main_ accounts:
+2. Run these commands to collect funds on the _main_ accounts and to transfer them to the _collector_ account:
 
     ```bash
     yarn collect-funds && yarn get-funds
     ```
-
-3. Transfer the SOL from the _main_ accounts to the _collector_ account.
-
-4. Write down the transferred SOL into the PnL table.

@@ -22,7 +22,13 @@ import {
     KeypairKind,
 } from "../helpers/account";
 import { checkFileExists } from "../helpers/filesystem";
-import { capitalize, formatDecimal, formatError, formatPublicKey } from "../helpers/format";
+import {
+    capitalize,
+    formatDecimal,
+    formatError,
+    formatMilliseconds,
+    formatPublicKey,
+} from "../helpers/format";
 import {
     calculateFee,
     getComputeBudgetInstructions,
@@ -40,17 +46,24 @@ import {
 } from "../modules";
 import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 
+const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
+
 (async () => {
     try {
+        if (envVars.NODE_ENV === "production" && !envVars.COLLECTOR_ADDRESS) {
+            logger.warn("Collector address must be set for production environment");
+            process.exit(0);
+        }
+
         await checkFileExists(storage.cacheFilePath);
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
         const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
-        const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
         const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
+        const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
         const snipers = importSwapperKeypairs(KeypairKind.Sniper);
-        const whales = importSwapperKeypairs(KeypairKind.Whale);
         const traders = importSwapperKeypairs(KeypairKind.Trader);
+        const whales = importSwapperKeypairs(KeypairKind.Whale);
 
         const mint = importMintKeypair();
         const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
@@ -65,24 +78,44 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 
         const sendCollectSniperFundsTransactions = await collectFunds(
             snipers,
-            sniperDistributor,
+            sniperDistributor.publicKey,
             KeypairKind.Sniper
-        );
-        const sendCollectWhaleFundsTransactions = await collectFunds(
-            whales,
-            whaleDistributor,
-            KeypairKind.Whale
         );
         const sendCollectTraderFundsTransactions = await collectFunds(
             traders,
-            traderDistributor,
+            traderDistributor.publicKey,
             KeypairKind.Trader
+        );
+        const sendCollectWhaleFundsTransactions = await collectFunds(
+            whales,
+            whaleDistributor.publicKey,
+            KeypairKind.Whale
         );
         await Promise.all([
             ...sendCollectSniperFundsTransactions,
-            ...sendCollectWhaleFundsTransactions,
             ...sendCollectTraderFundsTransactions,
+            ...sendCollectWhaleFundsTransactions,
         ]);
+
+        logger.warn(
+            "Waiting collect funds from main accounts: %s sec",
+            formatMilliseconds(MAIN_FUNDS_COLLECTION_INTERVAL_MS)
+        );
+        await new Promise((resolve) => setTimeout(resolve, MAIN_FUNDS_COLLECTION_INTERVAL_MS));
+
+        const sendCollectMainFundsTransactions =
+            envVars.NODE_ENV === "production"
+                ? await collectFunds(
+                      [dev, sniperDistributor, traderDistributor, whaleDistributor],
+                      new PublicKey(envVars.COLLECTOR_ADDRESS),
+                      KeypairKind.Main
+                  )
+                : await collectFunds(
+                      [sniperDistributor, traderDistributor, whaleDistributor],
+                      dev.publicKey,
+                      KeypairKind.Dev
+                  );
+        await Promise.all(sendCollectMainFundsTransactions);
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
@@ -213,7 +246,7 @@ async function closeTokenAccounts(
 
 async function collectFunds(
     accounts: Keypair[],
-    distributor: Keypair,
+    recipient: PublicKey,
     keypairKind: KeypairKind
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
@@ -237,7 +270,7 @@ async function collectFunds(
         const testInstructions = [
             SystemProgram.transfer({
                 fromPubkey: account.publicKey,
-                toPubkey: distributor.publicKey,
+                toPubkey: recipient,
                 lamports: 1,
             }),
         ];
@@ -267,7 +300,7 @@ async function collectFunds(
         const instructions = [
             SystemProgram.transfer({
                 fromPubkey: account.publicKey,
-                toPubkey: distributor.publicKey,
+                toPubkey: recipient,
                 lamports: residualLamports.toNumber(),
             }),
         ];
@@ -277,7 +310,7 @@ async function collectFunds(
                 connection,
                 [...computeBudgetInstructions, ...instructions],
                 [account],
-                `to transfer ${formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} (${formatPublicKey(account.publicKey)}) to distributor (${formatPublicKey(distributor.publicKey)})`
+                `to transfer ${formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} (${formatPublicKey(account.publicKey)}) to account (${formatPublicKey(recipient)})`
             )
         );
 

@@ -50,6 +50,7 @@ interface EnvironmentSchema {
     WHALE_BALANCE_SOL: number;
     SWAPPER_GROUP_SIZE: number;
     SWAPPER_TRADE_DELAY_RANGE_SEC: [number, number];
+    COLLECTOR_ADDRESS: string;
 }
 
 const ARRAY_SEPARATOR = ",";
@@ -403,6 +404,13 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(2)
                 .max(2)
                 .description("Trader swap delay range (in seconds)"),
+            COLLECTOR_ADDRESS: Joi.string()
+                .optional()
+                .allow("")
+                .alphanum()
+                .length(44)
+                .trim()
+                .description("Collector address"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 

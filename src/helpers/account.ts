@@ -22,19 +22,17 @@ export enum KeypairKind {
     SniperDistributor = "sniperDistributor",
     TraderDistributor = "traderDistributor",
     WhaleDistributor = "whaleDistributor",
+    Main = "main",
     Sniper = "sniper",
     Trader = "trader",
     Whale = "whale",
 }
 
-const KEYPAIR_MASKS: Record<KeypairKind, [string, string] | null> = {
+const KEYPAIR_MASKS: Record<string, [string, string] | null> = {
     [KeypairKind.Dev]: ["dE", "V"],
     [KeypairKind.SniperDistributor]: ["sN", "D"],
     [KeypairKind.TraderDistributor]: ["tR", "D"],
     [KeypairKind.WhaleDistributor]: ["wH", "D"],
-    [KeypairKind.Sniper]: null,
-    [KeypairKind.Trader]: null,
-    [KeypairKind.Whale]: null,
 };
 
 export async function importKeypairFromFile(keypairKind: KeypairKind): Promise<Keypair> {
