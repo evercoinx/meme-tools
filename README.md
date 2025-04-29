@@ -76,39 +76,33 @@
     yarn get-accounts:main
     ```
 
-7. Run this command to estimate how much USDC should be transferred to the _dev_ and _sniper distributor_ accounts:
+7. Run this command to estimate how much SOL should be transferred to the _dev_ and _sniper distributor_ accounts:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-8. Swap the reported USDC to SOL on the _collector_ account.
+8. Transfer the reported SOL from the _collector_ account on Solana to the _one_ on Base via [Mayan Bridge](https://swap.mayan.finance).
 
-9. Transfer the reported USDC from the _collector_ account on Solana to the _one_ on Base via [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=SOLANA&chainOut=BASE&token=USDC).
+9. Transfer SOL from the _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana via [Mayan Bridge](https://swap.mayan.finance).
 
-10. Transfer USDC from the _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana via [Rhino Bridge](https://app.rhino.fi/bridge?mode=receive&chainIn=BASE&chainOut=SOLANA&token=USDC).
+10. Transfer SOL from _collector_ account to the _trader distributor_ account.
 
-11. Swap the transferred USDC to SOL on the _dev_ and _sniper distributor_ accounts.
-
-12. Transfer SOL from _collector_ account to the _trader distributor_ account.
-
-13. Run this command to make sure that all the _main_ accounts have the sufficient SOL balance:
+11. Run this command to make sure that all the _main_ accounts have the sufficient SOL balance:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-14. Write down the transferred SOL into the PnL table.
+12. Write down the transferred SOL into the PnL table.
 
-15. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_ and _trader_ accounts:
+13. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_ and _trader_ accounts:
 
     ```bash
     yarn distribute-funds && yarn get-funds
     ```
 
-16. Check that the _collector_ account has the balance of at least 400 USDC. If not, swap SOL to top it up with the missing USDC.
-
-17. Check that the Graming account has the balance of at least 20 USD. If not, swap SOL to top it up with the missing USDC on [Graming](https://graming.com/usd/).
+14. Check that the _collector_ account has the balance of at least 400 USDC. If not, swap SOL to top it up with the missing USDC.
 
 # Token Pre Launch Phase
 
