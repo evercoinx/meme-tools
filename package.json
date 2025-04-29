@@ -12,7 +12,7 @@
         "format:fix": "prettier --write .",
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
-        "test:raydium": "yarn setenv:test && yarn start:raydium && yarn add-liquidity:raydium && yarn trade:raydium && yarn finish:raydium && yarn setenv:dev",
+        "test:raydium": "yarn setenv:test && yarn start:raydium && yarn add-liquidity:raydium && yarn trade:raydium && yarn buy-mint:whale1 && yarn sell-mint:whale1 && yarn finish:raydium && yarn setenv:dev",
         "start:raydium": "yarn get-config && yarn cleanup && yarn distribute-funds && yarn create-mint && yarn open-pool:raydium && yarn get-pool:raydium && yarn get-funds:main",
         "finish:raydium": "yarn close-pool:raydium && yarn collect-funds && yarn remove-liquidity:raydium && yarn get-funds",
         "cleanup": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/cleanup.ts",

@@ -46,8 +46,10 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
         const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
+        const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
         const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
         const snipers = importSwapperKeypairs(KeypairKind.Sniper);
+        const whales = importSwapperKeypairs(KeypairKind.Whale);
         const traders = importSwapperKeypairs(KeypairKind.Trader);
 
         const mint = importMintKeypair();
@@ -55,8 +57,7 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 
         const sendCloseTokenAccountsTransactions = await closeTokenAccounts(
             dev,
-            snipers,
-            traders,
+            [...snipers, ...whales, ...traders],
             mint,
             raydiumLpMint ? new PublicKey(raydiumLpMint) : undefined
         );
@@ -67,6 +68,11 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
             sniperDistributor,
             KeypairKind.Sniper
         );
+        const sendCollectWhaleFundsTransactions = await collectFunds(
+            whales,
+            whaleDistributor,
+            KeypairKind.Whale
+        );
         const sendCollectTraderFundsTransactions = await collectFunds(
             traders,
             traderDistributor,
@@ -74,6 +80,7 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
         );
         await Promise.all([
             ...sendCollectSniperFundsTransactions,
+            ...sendCollectWhaleFundsTransactions,
             ...sendCollectTraderFundsTransactions,
         ]);
         process.exit(0);
@@ -85,8 +92,7 @@ import { STORAGE_RAYDIUM_LP_MINT } from "../modules/storage";
 
 async function closeTokenAccounts(
     dev: Keypair,
-    snipers: Keypair[],
-    traders: Keypair[],
+    accounts: Keypair[],
     mint?: Keypair,
     lpMint?: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>[]> {
@@ -94,7 +100,7 @@ async function closeTokenAccounts(
     let connection = connectionPool.current();
     let heliusClient = heliusClientPool.current();
 
-    for (const [i, account] of [dev, ...snipers, ...traders].entries()) {
+    for (const [i, account] of [dev, ...accounts].entries()) {
         const instructions: TransactionInstruction[] = [];
         const computeBudgetInstructions: TransactionInstruction[] = [];
         const isDev = i === 0;

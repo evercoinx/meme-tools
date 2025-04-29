@@ -356,7 +356,7 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Trader count"),
             TRADER_BALANCE_SOL: Joi.number()
                 .required()
-                .min(0.005)
+                .min(0.01)
                 .max(0.1)
                 .description("Trader balance (in SOL)"),
             TRADER_BUY_AMOUNT_RANGE_SOL: Joi.array()
@@ -383,9 +383,10 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .default([])
                 .description("Whale amounts (in SOL)"),
             WHALE_BALANCE_SOL: Joi.number()
-                .required()
+                .optional()
                 .min(0.005)
                 .max(0.1)
+                .default(0.005)
                 .description("Whale balance (in SOL)"),
             SWAPPER_GROUP_SIZE: Joi.number()
                 .optional()

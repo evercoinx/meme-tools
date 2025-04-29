@@ -60,6 +60,11 @@
         - `TRADER_BUY_AMOUNT_RANGE_SOL`
         - `TRADER_SELL_AMOUNT_RANGE_PERCENT`
 
+    - Whale:
+
+        - `WHALE_AMOUNTS_SOL`
+        - `WHALE_BALANCE_SOL`
+
     - Swapper:
         - `SWAPPER_GROUP_SIZE` (Defaults to _1_)
         - `SWAPPER_TRADE_DELAY_RANGE_SEC`
