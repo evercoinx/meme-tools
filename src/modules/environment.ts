@@ -1,4 +1,3 @@
-import { parseArgs } from "node:util";
 import { clusterApiUrl } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import Joi from "joi";
@@ -68,21 +67,6 @@ const generateFloatRange = (start: number, end: number, step: number) => {
     }
     return floatRange;
 };
-
-export function isDryRun(): boolean {
-    const {
-        values: { "dry-run": dryRun },
-    } = parseArgs({
-        options: {
-            "dry-run": {
-                type: "boolean",
-                default: false,
-            },
-        },
-    });
-
-    return dryRun;
-}
 
 export function extractEnvironmentVariables(): EnvironmentSchema {
     const envSchema = Joi.object()

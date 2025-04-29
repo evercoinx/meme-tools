@@ -1,3 +1,4 @@
+import { parseArgs } from "node:util";
 import {
     Keypair,
     LAMPORTS_PER_SOL,
@@ -33,7 +34,6 @@ import {
     seed,
     ZERO_DECIMAL,
 } from "../modules";
-import { isDryRun } from "../modules/environment";
 
 const DEV_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
 const DEV_GAS_FEE_SOL = 0.1;
@@ -43,7 +43,17 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
     try {
         let groupSize: number;
 
-        const dryRun = isDryRun();
+        const {
+            values: { "dry-run": dryRun },
+        } = parseArgs({
+            options: {
+                "dry-run": {
+                    type: "boolean",
+                    default: false,
+                },
+            },
+        });
+
         const usdPrice = await pyth.getUsdPriceForSol();
 
         if (dryRun) {

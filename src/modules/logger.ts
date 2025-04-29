@@ -1,6 +1,6 @@
 import { join } from "node:path";
+import { parseArgs } from "node:util";
 import pino, { Logger, stdTimeFunctions, TransportTargetOptions } from "pino";
-import { isDryRun } from "./environment";
 
 export interface LogEntry {
     level: number;
@@ -32,7 +32,18 @@ export function createLogger(
         },
     ];
 
-    if (name && !/^(cleanup|generate|get|grind|rename|replay)/i.test(name) && !isDryRun()) {
+    const {
+        values: { "dry-run": dryRun },
+    } = parseArgs({
+        options: {
+            "dry-run": {
+                type: "boolean",
+                default: false,
+            },
+        },
+    });
+
+    if (name && !/^(cleanup|generate|get|grind|rename|replay)/i.test(name) && !dryRun) {
         targets.push({
             target: "pino/file",
             level: "info",
