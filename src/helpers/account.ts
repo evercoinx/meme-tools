@@ -230,9 +230,9 @@ function getStorageCountKey(keypairKind: KeypairKind): string {
             return STORAGE_TRADER_COUNT;
         case KeypairKind.Whale:
             return STORAGE_WHALE_COUNT;
-        default:
-            throw new Error(`Storage key not found for keypair: ${keypairKind}`)
     }
+
+    throw new Error(`Storage key not found for keypair: ${keypairKind}`);
 }
 
 export async function getSolBalance(

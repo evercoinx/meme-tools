@@ -219,7 +219,7 @@ async function collectFunds(
 
     for (const account of accounts) {
         const solBalance = await getSolBalance(connectionPool, account);
-        if (solBalance.eq(ZERO_DECIMAL)) {
+        if (solBalance.lte(ZERO_DECIMAL)) {
             logger.warn(
                 "%s (%s) has zero balance on wallet",
                 capitalize(keypairKind),

@@ -75,7 +75,6 @@ export function isDryRun(): boolean {
         options: {
             "dry-run": {
                 type: "boolean",
-                short: "d",
                 default: false,
             },
         },
@@ -378,9 +377,9 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .description("Trader sell amount range (in percent)"),
             WHALE_AMOUNTS_SOL: Joi.array()
                 .optional()
-                .items(Joi.number().min(1).max(10))
+                .items(Joi.number().min(1).max(5))
                 .min(0)
-                .max(10)
+                .max(5)
                 .default([])
                 .description("Whale amounts (in SOL)"),
             WHALE_BALANCE_SOL: Joi.number()
