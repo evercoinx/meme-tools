@@ -9,6 +9,7 @@ import {
     STORAGE_MINT_SECRET_KEY,
     STORAGE_SNIPER_COUNT,
     STORAGE_TRADER_COUNT,
+    STORAGE_WHALE_COUNT,
     SwapperCount,
 } from "../modules/storage";
 import { findFileNames } from "./filesystem";
@@ -20,16 +21,20 @@ export enum KeypairKind {
     Dev = "dev",
     SniperDistributor = "sniperDistributor",
     TraderDistributor = "traderDistributor",
+    WhaleDistributor = "whaleDistributor",
     Sniper = "sniper",
     Trader = "trader",
+    Whale = "whale",
 }
 
 const KEYPAIR_MASKS: Record<KeypairKind, [string, string] | null> = {
-    [KeypairKind.Dev]: ["De", "V"],
-    [KeypairKind.SniperDistributor]: ["Ds", "N"],
-    [KeypairKind.TraderDistributor]: ["Dt", "R"],
+    [KeypairKind.Dev]: ["dE", "V"],
+    [KeypairKind.SniperDistributor]: ["sN", "D"],
+    [KeypairKind.TraderDistributor]: ["tR", "D"],
+    [KeypairKind.WhaleDistributor]: ["wH", "D"],
     [KeypairKind.Sniper]: null,
     [KeypairKind.Trader]: null,
+    [KeypairKind.Whale]: null,
 };
 
 export async function importKeypairFromFile(keypairKind: KeypairKind): Promise<Keypair> {
@@ -103,7 +108,7 @@ export function generateOrImportSwapperKeypairs(
     keypairKind: KeypairKind,
     dryRun = false
 ): Keypair[] {
-    if (![KeypairKind.Sniper, KeypairKind.Trader].includes(keypairKind)) {
+    if (![KeypairKind.Sniper, KeypairKind.Trader, KeypairKind.Whale].includes(keypairKind)) {
         throw new Error(`Unexpected key pair kind: ${formatText(keypairKind)}`);
     }
 
@@ -150,12 +155,11 @@ export function generateOrImportSwapperKeypairs(
     }
 
     if (!dryRun) {
-        const storageSwapperCountKey =
-            keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
-        const savedSwapperCount = storage.get<SwapperCount | undefined>(storageSwapperCountKey);
+        const storageCountKey = getStorageCountKey(keypairKind);
+        const savedSwapperCount = storage.get<SwapperCount | undefined>(storageCountKey);
 
         if (savedSwapperCount === undefined || swapperCount > savedSwapperCount.current) {
-            storage.set(storageSwapperCountKey, {
+            storage.set(storageCountKey, {
                 previous: savedSwapperCount?.current ?? swapperCount,
                 current: swapperCount,
             });
@@ -172,20 +176,18 @@ export function generateOrImportSwapperKeypairs(
 }
 
 export function importSwapperKeypairs(keypairKind: KeypairKind): Keypair[] {
-    if (![KeypairKind.Sniper, KeypairKind.Trader].includes(keypairKind)) {
+    if (![KeypairKind.Sniper, KeypairKind.Trader, KeypairKind.Whale].includes(keypairKind)) {
         throw new Error(`Unexpected key pair kind: ${formatText(keypairKind)}`);
     }
 
-    const storageCountKey =
-        keypairKind === KeypairKind.Sniper ? STORAGE_SNIPER_COUNT : STORAGE_TRADER_COUNT;
-
+    const storageCountKey = getStorageCountKey(keypairKind);
     const swapperCount = storage.get<SwapperCount | undefined>(storageCountKey);
     if (swapperCount === undefined) {
         throw new Error(`${capitalize(keypairKind)} count not loaded from storage`);
     }
 
-    const swappers: Keypair[] = [];
     const storageSecretKeys = generateStorageSecretKeys(swapperCount.current, keypairKind);
+    const swappers: Keypair[] = [];
 
     for (let i = 0; i < swapperCount.current; i++) {
         const encryptedSecretKey = storage.get<string>(storageSecretKeys[i]);
@@ -218,6 +220,19 @@ function generateStorageSecretKeys(
         secretKeyRecord[i] = `${keypairKind}_${i}_secret_key`;
     }
     return secretKeyRecord;
+}
+
+function getStorageCountKey(keypairKind: KeypairKind): string {
+    switch (keypairKind) {
+        case KeypairKind.Sniper:
+            return STORAGE_SNIPER_COUNT;
+        case KeypairKind.Trader:
+            return STORAGE_TRADER_COUNT;
+        case KeypairKind.Whale:
+            return STORAGE_WHALE_COUNT;
+        default:
+            throw new Error(`Storage key not found for keypair: ${keypairKind}`)
+    }
 }
 
 export async function getSolBalance(

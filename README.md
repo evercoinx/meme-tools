@@ -86,7 +86,7 @@
 
 9. Transfer SOL from the _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana via [Mayan Bridge](https://swap.mayan.finance).
 
-10. Transfer SOL from _collector_ account to the _trader distributor_ account.
+10. Transfer SOL from _collector_ account to the _trader distributor_ and _whale distributor_ accounts.
 
 11. Run this command to make sure that all the _main_ accounts have the sufficient SOL balance:
 

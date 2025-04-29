@@ -15,6 +15,7 @@ export const STORAGE_RAYDIUM_POOL_ID = "raydium_pool_id";
 export const STORAGE_RAYDIUM_POOL_TRADING_CYCLE = "raydium_pool_trading_cycle";
 export const STORAGE_SNIPER_COUNT = "sniper_count";
 export const STORAGE_TRADER_COUNT = "trader_count";
+export const STORAGE_WHALE_COUNT = "whale_count";
 
 export const STORAGE_FILE_EXTENSION = ".json";
 

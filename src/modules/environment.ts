@@ -46,6 +46,8 @@ interface EnvironmentSchema {
     TRADER_BALANCE_SOL: number;
     TRADER_BUY_AMOUNT_RANGE_SOL: [number, number];
     TRADER_SELL_AMOUNT_RANGE_PERCENT: [number, number];
+    WHALE_AMOUNTS_SOL: number[];
+    WHALE_BALANCE_SOL: number;
     SWAPPER_GROUP_SIZE: number;
     SWAPPER_TRADE_DELAY_RANGE_SEC: [number, number];
 }
@@ -374,6 +376,18 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .min(2)
                 .max(2)
                 .description("Trader sell amount range (in percent)"),
+            WHALE_AMOUNTS_SOL: Joi.array()
+                .optional()
+                .items(Joi.number().min(1).max(10))
+                .min(0)
+                .max(10)
+                .default([])
+                .description("Whale amounts (in SOL)"),
+            WHALE_BALANCE_SOL: Joi.number()
+                .required()
+                .min(0.005)
+                .max(0.1)
+                .description("Whale balance (in SOL)"),
             SWAPPER_GROUP_SIZE: Joi.number()
                 .optional()
                 .integer()
@@ -413,6 +427,9 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 process.env.TRADER_BUY_AMOUNT_RANGE_SOL?.split(ARRAY_SEPARATOR),
             TRADER_SELL_AMOUNT_RANGE_PERCENT:
                 process.env.TRADER_SELL_AMOUNT_RANGE_PERCENT?.split(ARRAY_SEPARATOR),
+            WHALE_AMOUNTS_SOL: process.env.WHALE_AMOUNTS_SOL
+                ? process.env.WHALE_AMOUNTS_SOL.split(ARRAY_SEPARATOR)
+                : [],
             SWAPPER_TRADE_DELAY_RANGE_SEC:
                 process.env.SWAPPER_TRADE_DELAY_RANGE_SEC?.split(ARRAY_SEPARATOR),
         });

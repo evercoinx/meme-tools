@@ -89,79 +89,26 @@ const TRANSFER_MIN_NATIVE_USD = 1;
             swapperGroupSize = 20;
         }
 
-        const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
-        const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
-
-        const snipers = generateOrImportSwapperKeypairs(
-            envVars.SNIPER_POOL_SHARE_PERCENTS.size,
-            KeypairKind.Sniper,
+        const sendDistrubuteSniperFundsTransactions = await sendDistributeSniperFunds(
+            swapperGroupSize,
+            usdPrice,
             dryRun
         );
-        const traders = generateOrImportSwapperKeypairs(
-            envVars.TRADER_COUNT,
-            KeypairKind.Trader,
+        const sendDistrubuteTraderFundsTransactions = await sendDistributeTraderFunds(
+            swapperGroupSize,
+            usdPrice,
             dryRun
         );
-
-        const sniperLamports = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
-            (poolSharePercent) =>
-                new Decimal(envVars.POOL_LIQUIDITY_SOL)
-                    .mul(poolSharePercent)
-                    .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
-                    .add(seed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
-                    .add(envVars.SNIPER_BALANCE_SOL)
-                    .mul(LAMPORTS_PER_SOL)
-                    .trunc()
+        const sendDistrubuteWhaleFundsTransactions = await sendDistributeWhaleFunds(
+            swapperGroupSize,
+            usdPrice,
+            dryRun
         );
-
-        const traderLamports = new Array(envVars.TRADER_COUNT)
-            .fill(0)
-            .map(() =>
-                new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
-                    .mul(envVars.POOL_TRADING_CYCLE_COUNT)
-                    .add(seed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
-                    .add(envVars.TRADER_BALANCE_SOL)
-                    .mul(LAMPORTS_PER_SOL)
-                    .trunc()
-            );
-
-        const sendDistrubuteSniperFundsTransactions = [];
-        for (let i = 0; i < snipers.length; i += swapperGroupSize) {
-            const sniperGroup = snipers.slice(i, i + swapperGroupSize);
-            const sniperGroupLamports = sniperLamports.slice(i, i + swapperGroupSize);
-
-            sendDistrubuteSniperFundsTransactions.push(
-                await distributeSwapperFunds(
-                    sniperDistributor,
-                    sniperGroup,
-                    sniperGroupLamports,
-                    KeypairKind.Sniper,
-                    usdPrice,
-                    dryRun
-                )
-            );
-        }
-
-        const sendDistrubuteTraderFundsTransactions = [];
-        for (let i = 0; i < traders.length; i += swapperGroupSize) {
-            const traderGroup = traders.slice(i, i + swapperGroupSize);
-            const traderGroupLamports = traderLamports.slice(i, i + swapperGroupSize);
-
-            sendDistrubuteTraderFundsTransactions.push(
-                await distributeSwapperFunds(
-                    traderDistributor,
-                    traderGroup,
-                    traderGroupLamports,
-                    KeypairKind.Trader,
-                    usdPrice,
-                    dryRun
-                )
-            );
-        }
 
         await Promise.all([
             ...sendDistrubuteSniperFundsTransactions,
             ...sendDistrubuteTraderFundsTransactions,
+            ...sendDistrubuteWhaleFundsTransactions,
         ]);
         process.exit(0);
     } catch (error: unknown) {
@@ -169,6 +116,127 @@ const TRANSFER_MIN_NATIVE_USD = 1;
         process.exit(1);
     }
 })();
+
+async function sendDistributeSniperFunds(
+    swapperGroupSize: number,
+    usdPrice: Decimal,
+    dryRun: boolean
+): Promise<(TransactionSignature | undefined)[]> {
+    const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
+    const snipers = generateOrImportSwapperKeypairs(
+        envVars.SNIPER_POOL_SHARE_PERCENTS.size,
+        KeypairKind.Sniper,
+        dryRun
+    );
+
+    const sniperLamports = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map((poolSharePercent) =>
+        new Decimal(envVars.POOL_LIQUIDITY_SOL)
+            .mul(poolSharePercent)
+            .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
+            .add(seed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
+            .add(envVars.SNIPER_BALANCE_SOL)
+            .mul(LAMPORTS_PER_SOL)
+            .trunc()
+    );
+    const sendDistrubuteSniperFundsTransactions = [];
+
+    for (let i = 0; i < snipers.length; i += swapperGroupSize) {
+        const sniperGroup = snipers.slice(i, i + swapperGroupSize);
+        const sniperGroupLamports = sniperLamports.slice(i, i + swapperGroupSize);
+
+        sendDistrubuteSniperFundsTransactions.push(
+            await distributeSwapperFunds(
+                sniperDistributor,
+                sniperGroup,
+                sniperGroupLamports,
+                KeypairKind.Sniper,
+                usdPrice,
+                dryRun
+            )
+        );
+    }
+
+    return sendDistrubuteSniperFundsTransactions;
+}
+
+async function sendDistributeTraderFunds(
+    swapperGroupSize: number,
+    usdPrice: Decimal,
+    dryRun: boolean
+): Promise<(TransactionSignature | undefined)[]> {
+    const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
+    const traders = generateOrImportSwapperKeypairs(
+        envVars.TRADER_COUNT,
+        KeypairKind.Trader,
+        dryRun
+    );
+
+    const traderLamports = new Array(envVars.TRADER_COUNT)
+        .fill(0)
+        .map(() =>
+            new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
+                .mul(envVars.POOL_TRADING_CYCLE_COUNT)
+                .add(seed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
+                .add(envVars.TRADER_BALANCE_SOL)
+                .mul(LAMPORTS_PER_SOL)
+                .trunc()
+        );
+    const sendDistrubuteTraderFundsTransactions = [];
+
+    for (let i = 0; i < traders.length; i += swapperGroupSize) {
+        const traderGroup = traders.slice(i, i + swapperGroupSize);
+        const traderGroupLamports = traderLamports.slice(i, i + swapperGroupSize);
+
+        sendDistrubuteTraderFundsTransactions.push(
+            await distributeSwapperFunds(
+                traderDistributor,
+                traderGroup,
+                traderGroupLamports,
+                KeypairKind.Trader,
+                usdPrice,
+                dryRun
+            )
+        );
+    }
+
+    return sendDistrubuteTraderFundsTransactions;
+}
+
+async function sendDistributeWhaleFunds(
+    swapperGroupSize: number,
+    usdPrice: Decimal,
+    dryRun: boolean
+): Promise<(TransactionSignature | undefined)[]> {
+    const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
+    const whales = generateOrImportSwapperKeypairs(
+        envVars.WHALE_AMOUNTS_SOL.length,
+        KeypairKind.Trader,
+        dryRun
+    );
+
+    const whaleLamports = Array.from(envVars.WHALE_AMOUNTS_SOL).map((amount) =>
+        new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
+    );
+    const sendDistrubuteWhaleFundsTransactions = [];
+
+    for (let i = 0; i < whales.length; i += swapperGroupSize) {
+        const whaleGroup = whales.slice(i, i + swapperGroupSize);
+        const whaleGroupLamports = whaleLamports.slice(i, i + swapperGroupSize);
+
+        sendDistrubuteWhaleFundsTransactions.push(
+            await distributeSwapperFunds(
+                whaleDistributor,
+                whaleGroup,
+                whaleGroupLamports,
+                KeypairKind.Whale,
+                usdPrice,
+                dryRun
+            )
+        );
+    }
+
+    return sendDistrubuteWhaleFundsTransactions;
+}
 
 async function distributeSwapperFunds(
     distributor: Keypair,
@@ -211,11 +279,10 @@ async function distributeSwapperFunds(
         heliusClient = heliusClientPool.next();
     }
 
-    const distributorKind = keypairKind === KeypairKind.Sniper ? "sniper" : "trader";
     if (instructions.length === 0) {
         logger.warn(
             "%s distributor (%s) already distributed funds among %s %ss",
-            capitalize(distributorKind),
+            capitalize(keypairKind),
             formatPublicKey(distributor.publicKey, "long"),
             formatInteger(swappers.length),
             keypairKind
@@ -233,7 +300,7 @@ async function distributeSwapperFunds(
             const residualAmount = amount.sub(solBalance).div(LAMPORTS_PER_SOL);
             logger.info(
                 "%s distributor (%s) has %s balance: %s SOL. Transfer %s SOL (%s USD) to distribute among %s %ss",
-                capitalize(distributorKind),
+                capitalize(keypairKind),
                 formatPublicKey(distributor.publicKey, "long"),
                 formatError("insufficient"),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
@@ -251,7 +318,7 @@ async function distributeSwapperFunds(
         } else {
             logger.info(
                 "%s distributor (%s) has sufficient balance: %s SOL and must distribute %s SOL to %s %ss",
-                capitalize(distributorKind),
+                capitalize(keypairKind),
                 formatPublicKey(distributor.publicKey, "long"),
                 formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
                 formatDecimal(totalLamports.div(LAMPORTS_PER_SOL)),
@@ -276,6 +343,6 @@ async function distributeSwapperFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from ${distributorKind} distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedSwappers)} ${keypairKind}s`
+        `to distribute ${formatDecimal(totalLamports.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedSwappers)} ${keypairKind}s`
     );
 }
