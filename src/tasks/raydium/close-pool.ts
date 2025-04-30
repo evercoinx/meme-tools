@@ -37,18 +37,20 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
             throw new Error("Raydium pool id not loaded from storage");
         }
 
-        const dev = await importKeypairFromFile(KeypairKind.Dev);
         const snipers = importSwapperKeypairs(KeypairKind.Sniper);
+        const whales = importSwapperKeypairs(KeypairKind.Whale);
+        const dev = await importKeypairFromFile(KeypairKind.Dev);
         const traders = importSwapperKeypairs(KeypairKind.Trader);
+
+        const sniperUnitsToSell = await findUnitsToSell(snipers, mint, KeypairKind.Sniper);
+        const whaleUnitsToSell = await findUnitsToSell(whales, mint, KeypairKind.Whale);
+        const devUnitsToSell = await findUnitsToSell([dev], mint, KeypairKind.Dev);
+        const traderUnitsToSell = await findUnitsToSell(traders, mint, KeypairKind.Trader);
 
         const raydium = await createRaydium(connectionPool.current(), dev);
         const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
-        const sniperUnitsToSell = await findUnitsToSell(snipers, mint, KeypairKind.Sniper);
-        const devUnitsToSell = await findUnitsToSell([dev], mint, KeypairKind.Dev);
-        const traderUnitsToSell = await findUnitsToSell(traders, mint, KeypairKind.Trader);
-
-        const sendSniperSwapMintToSolTransactions = await swapMintToSol(
+        const sendSniperSellMintTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
             raydium,
@@ -59,7 +61,18 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
             PriorityLevel.HIGH,
             { skipPreflight: true }
         );
-        const sendDevSwapMintToSolTransactions = await swapMintToSol(
+        const sendWhaleSellMintTransactions = await swapMintToSol(
+            connectionPool,
+            heliusClientPool,
+            raydium,
+            cpmmPool,
+            whales,
+            whaleUnitsToSell,
+            SWAPPER_SLIPPAGE_PERCENT,
+            PriorityLevel.HIGH,
+            { skipPreflight: true }
+        );
+        const sendDevSellMintTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
             raydium,
@@ -70,7 +83,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
             PriorityLevel.HIGH,
             { skipPreflight: true }
         );
-        const sendTraderSwapMintToSolTransactions = await swapMintToSol(
+        const sendTraderSellMintTransactions = await swapMintToSol(
             connectionPool,
             heliusClientPool,
             raydium,
@@ -83,9 +96,10 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
         );
 
         await Promise.all([
-            ...sendSniperSwapMintToSolTransactions,
-            ...sendDevSwapMintToSolTransactions,
-            ...sendTraderSwapMintToSolTransactions,
+            ...sendSniperSellMintTransactions,
+            ...sendWhaleSellMintTransactions,
+            ...sendDevSellMintTransactions,
+            ...sendTraderSellMintTransactions,
         ]);
         process.exit(0);
     } catch (error: unknown) {
