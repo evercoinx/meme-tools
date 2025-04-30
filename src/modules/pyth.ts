@@ -12,7 +12,7 @@ export class Pyth {
 
     constructor(connectionPool: Pool<Connection>, rpcCluster: RpcCluster) {
         const pythPublicKey = getPythProgramKeyForCluster(rpcCluster);
-        this.pythClient = new PythHttpClient(connectionPool.current(), pythPublicKey);
+        this.pythClient = new PythHttpClient(connectionPool.get(), pythPublicKey);
     }
 
     async getUsdPriceForSol(): Promise<Decimal> {
@@ -24,7 +24,7 @@ export class Pyth {
 
         const symbolPrice = data.productPrice.get(SYMBOL_SOL_TO_USD);
         if (!symbolPrice?.aggregate) {
-            throw new Error(`Failed to fetch price for ${formatText(SYMBOL_SOL_TO_USD)}`);
+            throw new Error(`Unable to fetch price for ${formatText(SYMBOL_SOL_TO_USD)}`);
         }
 
         const { price, confidence, status } = symbolPrice.aggregate;

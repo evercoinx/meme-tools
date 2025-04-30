@@ -55,8 +55,7 @@ async function lockPoolLiquidity(
     dev: Keypair,
     lpMint: PublicKey
 ): Promise<void> {
-    const connection = connectionPool.current();
-
+    const connection = connectionPool.get();
     const raydium = await createRaydium(connection, dev);
     const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, poolId);
 

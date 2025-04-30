@@ -71,7 +71,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../../modules/
                 )
         );
 
-        const raydium = await createRaydium(connectionPool.current(), dev);
+        const raydium = await createRaydium(connectionPool.get(), dev);
         const [sendCreatePoolTransaction, cpmmPool] = await createPool(raydium, dev, mint);
         await Promise.all([sendCreatePoolTransaction]);
 
@@ -130,8 +130,8 @@ async function createPool(
     dev: Keypair,
     mint: Keypair
 ): Promise<[Promise<TransactionSignature | undefined>, RaydiumCpmmPool]> {
-    const connection = connectionPool.current();
-    const heliusClient = heliusClientPool.current();
+    const connection = connectionPool.get();
+    const heliusClient = heliusClientPool.get();
 
     const savedPoolId = storage.get<string | undefined>(STORAGE_RAYDIUM_POOL_ID);
     if (savedPoolId) {

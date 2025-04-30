@@ -30,7 +30,7 @@ import {
     envVars,
     heliusClientPool,
     logger,
-    pyth,
+    pythClient,
     tokenSeed,
     ZERO_DECIMAL,
 } from "../modules";
@@ -54,7 +54,7 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
             },
         });
 
-        const usdPrice = await pyth.getUsdPriceForSol();
+        const usdPrice = await pythClient.getUsdPriceForSol();
 
         if (dryRun) {
             logger.warn("Dry run mode enabled");
@@ -287,10 +287,10 @@ async function distributeFunds(
     dryRun: boolean
 ): Promise<Promise<TransactionSignature | undefined>> {
     const instructions: TransactionInstruction[] = [];
+    const connection = connectionPool.get();
+    const heliusClient = heliusClientPool.get();
     let totalFundedLamports = ZERO_DECIMAL;
     let totalFundedAccounts = 0;
-    let connection = connectionPool.current();
-    let heliusClient = heliusClientPool.current();
 
     for (const [i, account] of accounts.entries()) {
         const solBalance = await getSolBalance(connectionPool, account);
@@ -313,9 +313,6 @@ async function distributeFunds(
             totalFundedLamports = totalFundedLamports.add(lamports[i]);
             totalFundedAccounts++;
         }
-
-        connection = connectionPool.next();
-        heliusClient = heliusClientPool.next();
     }
 
     if (instructions.length === 0) {

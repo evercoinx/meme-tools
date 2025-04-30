@@ -54,8 +54,8 @@ async function collectPoolFees(
     dev: Keypair,
     nftMint: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>> {
-    const connection = connectionPool.current();
-    const heliusClient = heliusClientPool.current();
+    const connection = connectionPool.get();
+    const heliusClient = heliusClientPool.get();
 
     const raydium = await createRaydium(connection, dev);
     const { poolInfo, poolKeys } = await loadRaydiumCpmmPool(raydium, poolId);

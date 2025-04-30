@@ -35,6 +35,7 @@ export function createLogger(
     const {
         values: { "dry-run": dryRun },
     } = parseArgs({
+        strict: false,
         options: {
             "dry-run": {
                 type: "boolean",

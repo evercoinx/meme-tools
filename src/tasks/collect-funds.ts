@@ -130,10 +130,11 @@ async function closeTokenAccounts(
     lpMint?: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
-    let connection = connectionPool.current();
-    let heliusClient = heliusClientPool.current();
 
     for (const [i, account] of [dev, ...accounts].entries()) {
+        const connection = connectionPool.get();
+        const heliusClient = heliusClientPool.get();
+
         const instructions: TransactionInstruction[] = [];
         const computeBudgetInstructions: TransactionInstruction[] = [];
         const isDev = i === 0;
@@ -240,9 +241,6 @@ async function closeTokenAccounts(
                     `to close ATAs for account (${formatPublicKey(account.publicKey)})`
                 )
             );
-
-            connection = connectionPool.next();
-            heliusClient = heliusClientPool.next();
         }
     }
 
@@ -256,12 +254,12 @@ async function collectFunds(
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     const computeBudgetInstructions: TransactionInstruction[] = [];
-
-    let connection = connectionPool.current();
-    let heliusClient = heliusClientPool.current();
     let fee: number | undefined;
 
     for (const account of accounts) {
+        const connection = connectionPool.get();
+        const heliusClient = heliusClientPool.get();
+
         const solBalance = await getSolBalance(connectionPool, account);
         if (solBalance.lte(ZERO_DECIMAL)) {
             logger.warn(
@@ -318,9 +316,6 @@ async function collectFunds(
                 `to transfer ${formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} (${formatPublicKey(account.publicKey)}) to account (${formatPublicKey(recipient)})`
             )
         );
-
-        connection = connectionPool.next();
-        heliusClient = heliusClientPool.next();
     }
 
     return sendTransactions;

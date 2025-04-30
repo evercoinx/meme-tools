@@ -102,7 +102,7 @@ const SWAPPER_MIN_BALANCE_DIVISOR = 2;
 
         const snipers = importSwapperKeypairs(KeypairKind.Sniper);
         const traders = importSwapperKeypairs(KeypairKind.Trader);
-        const raydium = await createRaydium(connectionPool.current());
+        const raydium = await createRaydium(connectionPool.get());
         const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
         const maxFailedTradeAttempts = new Decimal(snipers.length)

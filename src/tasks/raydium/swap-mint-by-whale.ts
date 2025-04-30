@@ -78,7 +78,7 @@ enum SwapType {
         }
         const whale = whales[parsedIndex];
 
-        const raydium = await createRaydium(connectionPool.current(), whale);
+        const raydium = await createRaydium(connectionPool.get(), whale);
         const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
         const sendSwapTransaction =

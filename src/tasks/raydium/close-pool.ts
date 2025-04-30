@@ -47,7 +47,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
         const devUnitsToSell = await findUnitsToSell([dev], mint, KeypairKind.Dev);
         const traderUnitsToSell = await findUnitsToSell(traders, mint, KeypairKind.Trader);
 
-        const raydium = await createRaydium(connectionPool.current(), dev);
+        const raydium = await createRaydium(connectionPool.get(), dev);
         const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
         const sendSniperSellMintTransactions = await swapMintToSol(

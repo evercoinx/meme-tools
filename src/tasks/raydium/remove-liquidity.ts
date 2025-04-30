@@ -38,7 +38,7 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../../modules/
             throw new Error("Raydium LP mint not loaded from storage");
         }
 
-        const raydium = await createRaydium(connectionPool.current(), dev);
+        const raydium = await createRaydium(connectionPool.get(), dev);
         const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
         const sendRemovePoolLiquidityTransaction = await removePoolLiquidity(
@@ -62,8 +62,8 @@ async function removePoolLiquidity(
     dev: Keypair,
     lpMint: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>> {
-    const connection = connectionPool.current();
-    const heliusClient = heliusClientPool.current();
+    const connection = connectionPool.get();
+    const heliusClient = heliusClientPool.get();
 
     const [lpMintTokenAccount, lpMintTokenBalance, lpMintTokenInitialized] =
         await getTokenAccountInfo(connectionPool, dev, lpMint, TOKEN_PROGRAM_ID);

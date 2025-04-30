@@ -56,8 +56,8 @@ async function burnPoolLiquidity(
     dev: Keypair,
     lpMint: PublicKey
 ): Promise<Promise<TransactionSignature | undefined>> {
-    const connection = connectionPool.current();
-    const heliusClient = heliusClientPool.current();
+    const connection = connectionPool.get();
+    const heliusClient = heliusClientPool.get();
 
     const [lpMintTokenAccount, lpMintTokenBalance, lpMintTokenInitialized] =
         await getTokenAccountInfo(connectionPool, dev, lpMint, TOKEN_PROGRAM_ID);

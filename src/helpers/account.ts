@@ -237,30 +237,25 @@ export async function getSolBalance(
     connectionPool: Pool<Connection>,
     account: Keypair
 ): Promise<Decimal> {
-    try {
-        return getBalance(connectionPool.current(), account.publicKey);
-    } catch {
-        logger.warn(
-            "Failed to get SOL balance of account (%s). Attempt: 1/2",
-            formatPublicKey(account.publicKey)
-        );
+    const maxAttempts = connectionPool.size();
 
+    for (let i = 1; i <= maxAttempts; i++) {
         try {
-            return getBalance(connectionPool.next(), account.publicKey);
+            const connection = connectionPool.get();
+            const balance = await connection.getBalance(account.publicKey);
+            return new Decimal(balance);
         } catch {
             logger.warn(
-                "Failed to get SOL balance of account (%s). Attempt: 2/2",
-                formatPublicKey(account.publicKey)
+                "Unable to get SOL balance of account (%s). Attempt: %s/%s",
+                formatPublicKey(account.publicKey),
+                formatInteger(i),
+                formatInteger(maxAttempts)
             );
-            connectionPool.next();
-
-            return getBalance(connectionPool.next(), account.publicKey);
+            continue;
         }
     }
-}
 
-async function getBalance(connection: Connection, publicKey: PublicKey): Promise<Decimal> {
-    return new Decimal(await connection.getBalance(publicKey));
+    throw new Error(`Unable to get SOL balance of account (${account.publicKey})`);
 }
 
 export async function getTokenAccountInfo(
@@ -276,49 +271,33 @@ export async function getTokenAccountInfo(
         splTokenProgram,
         ASSOCIATED_TOKEN_PROGRAM_ID
     );
+    const maxAttempts = connectionPool.size();
 
-    try {
-        const balance = await getTokenAccountBalance(connectionPool.current(), tokenAddress);
-        return [tokenAddress, balance, true];
-    } catch (err: unknown) {
-        if (err instanceof Error && err.message.includes("could not find account")) {
-            return [tokenAddress, ZERO_DECIMAL, false];
-        }
-
-        logger.warn(
-            "Failed to get balance for %s ATA (%s) of account (%s). Attempt: 1/2",
-            envVars.TOKEN_SYMBOL,
-            formatPublicKey(tokenAddress),
-            formatPublicKey(account.publicKey)
-        );
-
+    for (let i = 1; i <= maxAttempts; i++) {
         try {
-            const balance = await getTokenAccountBalance(connectionPool.next(), tokenAddress);
-            return [tokenAddress, balance, true];
-        } catch (err: unknown) {
-            if (err instanceof Error && err.message.includes("could not find account")) {
+            const connection = connectionPool.get();
+            const {
+                value: { amount },
+            } = await connection.getTokenAccountBalance(account.publicKey);
+            return [tokenAddress, new Decimal(amount), true];
+        } catch (error: unknown) {
+            if (error instanceof Error && error.message.includes("could not find account")) {
                 return [tokenAddress, ZERO_DECIMAL, false];
             }
 
             logger.warn(
-                "Failed to get balance for %s ATA (%s) of account (%s). Attempt: 2/2",
+                "Unable to get balance for %s ATA (%s) of account (%s). Attempt: %s/%s",
                 envVars.TOKEN_SYMBOL,
                 formatPublicKey(tokenAddress),
-                formatPublicKey(account.publicKey)
+                formatPublicKey(account.publicKey),
+                formatInteger(i),
+                formatInteger(maxAttempts)
             );
-
-            const balance = await getTokenAccountBalance(connectionPool.next(), tokenAddress);
-            return [tokenAddress, balance, true];
+            continue;
         }
     }
-}
 
-async function getTokenAccountBalance(
-    connection: Connection,
-    publicKey: PublicKey
-): Promise<Decimal> {
-    const {
-        value: { amount },
-    } = await connection.getTokenAccountBalance(publicKey);
-    return new Decimal(amount.toString());
+    throw new Error(
+        `Unable to get balance for ${envVars.TOKEN_SYMBOL} ATA (${formatPublicKey(tokenAddress)}) of account (${formatPublicKey(account.publicKey)})`
+    );
 }

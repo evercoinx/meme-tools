@@ -270,24 +270,20 @@ async function createMint(
     dev: Keypair,
     mint: Keypair
 ): Promise<Promise<TransactionSignature | undefined>> {
+    const connection = connectionPool.get();
+    const heliusClient = heliusClientPool.get();
     let mintInfo: Mint | undefined;
+
     try {
-        mintInfo = await getMint(
-            connectionPool.next(),
-            mint.publicKey,
-            "confirmed",
-            TOKEN_2022_PROGRAM_ID
-        );
+        mintInfo = await getMint(connection, mint.publicKey, "confirmed", TOKEN_2022_PROGRAM_ID);
     } catch {
-        // Ignore NotFound error
+        // Ignore MintNotFound error
     }
+
     if (mintInfo) {
         logger.warn("Mint (%s) already created", mint.publicKey.toBase58());
         return Promise.resolve(undefined);
     }
-
-    const connection = connectionPool.current();
-    const heliusClient = heliusClientPool.current();
 
     const metadata: TokenMetadata = {
         mint: mint.publicKey,

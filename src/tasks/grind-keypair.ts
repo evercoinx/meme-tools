@@ -95,5 +95,5 @@ async function grindKeypair(
         return;
     }
 
-    throw new Error(`Failed to grind keypair. Attempts: ${formatInteger(attempts)}`);
+    throw new Error(`Unable to grind keypair. Attempts: ${formatInteger(attempts)}`);
 }

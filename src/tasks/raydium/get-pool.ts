@@ -35,7 +35,7 @@ import { STORAGE_RAYDIUM_POOL_ID } from "../../modules/storage";
 })();
 
 async function getPool(poolId: PublicKey): Promise<void> {
-    const raydium = await createRaydium(connectionPool.current());
+    const raydium = await createRaydium(connectionPool.get());
     const { poolInfo } = await loadRaydiumCpmmPool(raydium, poolId);
 
     const {

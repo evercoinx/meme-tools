@@ -20,7 +20,10 @@ export const SWAPPER_SLIPPAGE_PERCENT = 1;
 export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
-export const envVars = extractEnvironmentVariables();
+export const tokenSeed = new Seed(process.env.NODE_ENV, process.env.TOKEN_SYMBOL);
+export const timeSeed = new Seed(process.env.NODE_ENV, Date.now().toString());
+
+export const envVars = extractEnvironmentVariables(tokenSeed);
 export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
 export const MINT_DUST_UNITS = new Decimal(100).mul(UNITS_PER_MINT);
 export const MINT_IMAGE_TYPE = "jpg";
@@ -31,7 +34,6 @@ const currentWorkingDir = process.cwd();
 export const IMAGE_DIR = join(currentWorkingDir, "images", envVars.NODE_ENV);
 export const LOG_DIR = join(currentWorkingDir, "logs", envVars.NODE_ENV);
 export const STORAGE_DIR = join(currentWorkingDir, "storages", envVars.NODE_ENV);
-
 export const KEYPAIR_DIR = join(
     homedir(),
     ".config",
@@ -48,6 +50,7 @@ export const logger = createLogger(
 );
 
 export const connectionPool = new Pool(
+    tokenSeed,
     Array.from(envVars.RPC_URIS).map(
         (rpcUri) =>
             new Connection(rpcUri, {
@@ -64,27 +67,21 @@ export const connectionPool = new Pool(
             })
     )
 );
-
 export const heliusClientPool = new Pool(
+    tokenSeed,
     Array.from(envVars.RPC_URIS).map((rpcUri) => createHeliusClient(rpcUri, envVars.RPC_CLUSTER))
 );
+
+export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
+export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY_URI);
+export const pythClient = new Pyth(connectionPool, envVars.RPC_CLUSTER);
+
 
 export const encryption = new Encryption(
     "aes-256-cbc",
     envVars.KEYPAIR_ENCRYPTION_SECRET,
     "encrypted"
 );
-
-export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
-
-export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY_URI);
-
-export const pyth = new Pyth(connectionPool, envVars.RPC_CLUSTER);
-
-export const tokenSeed = new Seed(envVars.NODE_ENV, envVars.TOKEN_SYMBOL);
-
-export const timeSeed = new Seed(envVars.NODE_ENV, Date.now().toString());
-
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 
 const MAX_FETCH_ATTEMTPS = 5;

@@ -118,8 +118,8 @@ export async function swapSolToMint(
             continue;
         }
 
-        const connection = connectionPool.next();
-        const heliusClient = heliusClientPool.next();
+        const connection = connectionPool.get();
+        const heliusClient = heliusClientPool.get();
 
         let swapResult: SwapResult | null;
         try {
@@ -220,8 +220,8 @@ export async function swapMintToSol(
             continue;
         }
 
-        const connection = connectionPool.next();
-        const heliusClient = heliusClientPool.next();
+        const connection = connectionPool.get();
+        const heliusClient = heliusClientPool.get();
 
         let swapResult: SwapResult | null;
         try {
