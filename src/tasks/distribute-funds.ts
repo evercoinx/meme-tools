@@ -35,14 +35,12 @@ import {
     ZERO_DECIMAL,
 } from "../modules";
 
-const DEV_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
-const DEV_GAS_FEE_SOL = 0.1;
-const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
+const DEV_BALANCE_SOL = 0.1;
+const DISTRIBUTOR_BALANCE_SOL = 0.01;
+const RAYDIUM_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
 
 (async () => {
     try {
-        let groupSize: number;
-
         const {
             values: { "dry-run": dryRun },
         } = parseArgs({
@@ -54,29 +52,28 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
             },
         });
 
-        const usdPrice = await pythClient.getUsdPriceForSol();
+        const usdPriceForSol = await pythClient.getUsdPriceForSol();
+        let groupSize = 20;
 
         if (dryRun) {
             logger.warn("Dry run mode enabled");
-            await showDistributeDevFunds(usdPrice);
+            await showDistributeDevFunds(usdPriceForSol);
             groupSize = Number.MAX_SAFE_INTEGER;
-        } else {
-            groupSize = 20;
         }
 
         const sendDistributeFundsTransactions = await sendDistributeSniperFunds(
             groupSize,
-            usdPrice,
+            usdPriceForSol,
             dryRun
         );
         const sendDistrubuteTraderFundsTransactions = await sendDistributeTraderFunds(
             groupSize,
-            usdPrice,
+            usdPriceForSol,
             dryRun
         );
         const sendDistrubuteWhaleFundsTransactions = await sendDistributeWhaleFunds(
             groupSize,
-            usdPrice,
+            usdPriceForSol,
             dryRun
         );
 
@@ -92,61 +89,50 @@ const DISTRIBUTOR_GAS_FEE_SOL = 0.01;
     }
 })();
 
-async function showDistributeDevFunds(usdPrice: Decimal): Promise<void> {
+async function showDistributeDevFunds(usdPriceForSol: Decimal): Promise<void> {
     const dev = await importKeypairFromFile(KeypairKind.Dev);
-    const amount = new Decimal(envVars.POOL_LIQUIDITY_SOL)
-        .plus(DEV_POOL_CREATION_FEE_SOL)
-        .plus(DEV_GAS_FEE_SOL)
+    const lamportsToDistribute = new Decimal(envVars.POOL_LIQUIDITY_SOL)
+        .plus(DEV_BALANCE_SOL)
+        .plus(RAYDIUM_POOL_CREATION_FEE_SOL)
         .mul(LAMPORTS_PER_SOL)
         .trunc();
 
     const solBalance = await getSolBalance(connectionPool, dev);
-    if (solBalance.lt(amount)) {
-        const residualAmount = amount.sub(solBalance).div(LAMPORTS_PER_SOL);
+    if (solBalance.gte(lamportsToDistribute)) {
         logger.info(
-            "Dev (%s) has %s balance: %s SOL. Transfer %s SOL (%s USD)",
-            formatPublicKey(dev.publicKey, "long"),
-            formatError("insufficient"),
-            formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            formatDecimal(residualAmount),
-            formatDecimal(residualAmount.mul(usdPrice).toDP(2, Decimal.ROUND_CEIL))
-        );
-    } else {
-        logger.info(
-            "Dev (%s) has sufficient balance: %s SOL and must spend %s SOL",
+            "Dev (%s) has sufficient balance: %s SOL. He must spend %s SOL",
             formatPublicKey(dev.publicKey, "long"),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            formatDecimal(amount.div(LAMPORTS_PER_SOL))
+            formatDecimal(lamportsToDistribute.div(LAMPORTS_PER_SOL))
         );
     }
+
+    const solToDistribute = lamportsToDistribute.sub(solBalance).div(LAMPORTS_PER_SOL);
+    logger.info(
+        "Dev (%s) has %s balance: %s SOL. Transfer %s SOL ($%s)",
+        formatPublicKey(dev.publicKey, "long"),
+        formatError("insufficient"),
+        formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
+        formatDecimal(solToDistribute),
+        formatDecimal(solToDistribute.mul(usdPriceForSol).toDP(2, Decimal.ROUND_CEIL))
+    );
 }
 
 async function showDistributeDistributorFunds(
     account: Keypair,
     fundedLamports: Decimal,
     fundedAccountCount: number,
-    usdPrice: Decimal,
+    usdPriceForSol: Decimal,
     keypairKind: KeypairKind
 ): Promise<void> {
     const solBalance = await getSolBalance(connectionPool, account);
-    const amount = new Decimal(DISTRIBUTOR_GAS_FEE_SOL).mul(LAMPORTS_PER_SOL).plus(fundedLamports);
+    const lamportsToDistribute = new Decimal(DISTRIBUTOR_BALANCE_SOL)
+        .mul(LAMPORTS_PER_SOL)
+        .plus(fundedLamports);
 
-    if (solBalance.lt(amount)) {
-        const residualAmount = amount.sub(solBalance).div(LAMPORTS_PER_SOL);
+    if (solBalance.gte(lamportsToDistribute)) {
         logger.info(
-            "%s distributor (%s) has %s balance: %s SOL. Transfer %s SOL (%s USD) to distribute among %s %ss",
-            capitalize(keypairKind),
-            formatPublicKey(account.publicKey, "long"),
-            formatError("insufficient"),
-            formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            formatDecimal(residualAmount),
-            formatDecimal(residualAmount.mul(usdPrice).toDP(2, Decimal.ROUND_CEIL)),
-            formatInteger(fundedAccountCount),
-            keypairKind
-        );
-    } else {
-        logger.info(
-            "%s distributor (%s) has sufficient balance: %s SOL and must distribute %s SOL to %s %ss",
+            "%s distributor (%s) has sufficient balance: %s SOL. He must distribute %s SOL to %s %ss",
             capitalize(keypairKind),
             formatPublicKey(account.publicKey, "long"),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
@@ -155,11 +141,24 @@ async function showDistributeDistributorFunds(
             keypairKind
         );
     }
+
+    const solToDistribute = lamportsToDistribute.sub(solBalance).div(LAMPORTS_PER_SOL);
+    logger.info(
+        "%s distributor (%s) has %s balance: %s SOL. Transfer %s SOL ($%s) to distribute among %s %ss",
+        capitalize(keypairKind),
+        formatPublicKey(account.publicKey, "long"),
+        formatError("insufficient"),
+        formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
+        formatDecimal(solToDistribute),
+        formatDecimal(solToDistribute.mul(usdPriceForSol).toDP(2, Decimal.ROUND_CEIL)),
+        formatInteger(fundedAccountCount),
+        keypairKind
+    );
 }
 
 async function sendDistributeSniperFunds(
     groupSize: number,
-    usdPrice: Decimal,
+    usdPriceForSol: Decimal,
     dryRun: boolean
 ): Promise<(TransactionSignature | undefined)[]> {
     const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
@@ -169,39 +168,31 @@ async function sendDistributeSniperFunds(
         dryRun
     );
 
-    const sniperLamports = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map((poolSharePercent) =>
-        new Decimal(envVars.POOL_LIQUIDITY_SOL)
-            .mul(poolSharePercent)
-            .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
-            .add(tokenSeed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
-            .add(envVars.SNIPER_BALANCE_SOL)
-            .mul(LAMPORTS_PER_SOL)
-            .trunc()
+    const lamportsToDistribute = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
+        (poolSharePercent) =>
+            new Decimal(envVars.POOL_LIQUIDITY_SOL)
+                .mul(poolSharePercent)
+                .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
+                .add(tokenSeed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
+                .add(envVars.SNIPER_BALANCE_SOL)
+                .mul(LAMPORTS_PER_SOL)
+                .trunc()
     );
-    const sendDistributeFundsTransactions = [];
 
-    for (let i = 0; i < snipers.length; i += groupSize) {
-        const sniperGroup = snipers.slice(i, i + groupSize);
-        const sniperGroupLamports = sniperLamports.slice(i, i + groupSize);
-
-        sendDistributeFundsTransactions.push(
-            await distributeFunds(
-                sniperDistributor,
-                sniperGroup,
-                sniperGroupLamports,
-                KeypairKind.Sniper,
-                usdPrice,
-                dryRun
-            )
-        );
-    }
-
-    return sendDistributeFundsTransactions;
+    return await getSendDistrbiteFundsTransactions(
+        snipers,
+        sniperDistributor,
+        KeypairKind.Sniper,
+        groupSize,
+        lamportsToDistribute,
+        usdPriceForSol,
+        dryRun
+    );
 }
 
 async function sendDistributeTraderFunds(
     groupSize: number,
-    usdPrice: Decimal,
+    usdPriceForSol: Decimal,
     dryRun: boolean
 ): Promise<(TransactionSignature | undefined)[]> {
     const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
@@ -211,7 +202,7 @@ async function sendDistributeTraderFunds(
         dryRun
     );
 
-    const traderLamports = new Array(envVars.TRADER_COUNT)
+    const lamportsToDistribute = new Array(envVars.TRADER_COUNT)
         .fill(0)
         .map(() =>
             new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
@@ -221,61 +212,73 @@ async function sendDistributeTraderFunds(
                 .mul(LAMPORTS_PER_SOL)
                 .trunc()
         );
-    const sendDistrubuteFundsTransactions = [];
 
-    for (let i = 0; i < traders.length; i += groupSize) {
-        const traderGroup = traders.slice(i, i + groupSize);
-        const traderGroupLamports = traderLamports.slice(i, i + groupSize);
-
-        sendDistrubuteFundsTransactions.push(
-            await distributeFunds(
-                traderDistributor,
-                traderGroup,
-                traderGroupLamports,
-                KeypairKind.Trader,
-                usdPrice,
-                dryRun
-            )
-        );
-    }
-
-    return sendDistrubuteFundsTransactions;
+    return await getSendDistrbiteFundsTransactions(
+        traders,
+        traderDistributor,
+        KeypairKind.Trader,
+        groupSize,
+        lamportsToDistribute,
+        usdPriceForSol,
+        dryRun
+    );
 }
 
 async function sendDistributeWhaleFunds(
     groupSize: number,
-    usdPrice: Decimal,
+    usdPriceForSol: Decimal,
     dryRun: boolean
 ): Promise<(TransactionSignature | undefined)[]> {
     const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
     const whales = generateOrImportSwapperKeypairs(
         envVars.WHALE_AMOUNTS_SOL.length,
-        KeypairKind.Trader,
+        KeypairKind.Whale,
         dryRun
     );
 
-    const whaleLamports = Array.from(envVars.WHALE_AMOUNTS_SOL).map((amount) =>
+    const lamportsToDistribute = Array.from(envVars.WHALE_AMOUNTS_SOL).map((amount) =>
         new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
     );
-    const sendDistrubuteFundsTransactions = [];
 
-    for (let i = 0; i < whales.length; i += groupSize) {
-        const whaleGroup = whales.slice(i, i + groupSize);
-        const whaleGroupLamports = whaleLamports.slice(i, i + groupSize);
+    return await getSendDistrbiteFundsTransactions(
+        whales,
+        whaleDistributor,
+        KeypairKind.Whale,
+        groupSize,
+        lamportsToDistribute,
+        usdPriceForSol,
+        dryRun
+    );
+}
 
-        sendDistrubuteFundsTransactions.push(
+async function getSendDistrbiteFundsTransactions(
+    accounts: Keypair[],
+    distributor: Keypair,
+    keypairKind: KeypairKind,
+    groupSize: number,
+    lamports: Decimal[],
+    usdPriceForSol: Decimal,
+    dryRun: boolean
+) {
+    const sendDistributeFundsTransactions = [];
+
+    for (let i = 0; i < accounts.length; i += groupSize) {
+        const group = accounts.slice(i, i + groupSize);
+        const groupLamports = lamports.slice(i, i + groupSize);
+
+        sendDistributeFundsTransactions.push(
             await distributeFunds(
-                whaleDistributor,
-                whaleGroup,
-                whaleGroupLamports,
-                KeypairKind.Whale,
-                usdPrice,
+                distributor,
+                group,
+                groupLamports,
+                keypairKind,
+                usdPriceForSol,
                 dryRun
             )
         );
     }
 
-    return sendDistrubuteFundsTransactions;
+    return sendDistributeFundsTransactions;
 }
 
 async function distributeFunds(
@@ -283,14 +286,14 @@ async function distributeFunds(
     accounts: Keypair[],
     lamports: Decimal[],
     keypairKind: KeypairKind,
-    usdPrice: Decimal,
+    usdPriceForSol: Decimal,
     dryRun: boolean
 ): Promise<Promise<TransactionSignature | undefined>> {
     const instructions: TransactionInstruction[] = [];
     const connection = connectionPool.get();
     const heliusClient = heliusClientPool.get();
-    let totalFundedLamports = ZERO_DECIMAL;
-    let totalFundedAccounts = 0;
+    let fundedLamportsTotal = ZERO_DECIMAL;
+    let fundedAccountCount = 0;
 
     for (const [i, account] of accounts.entries()) {
         const solBalance = await getSolBalance(connectionPool, account);
@@ -310,8 +313,8 @@ async function distributeFunds(
                 })
             );
 
-            totalFundedLamports = totalFundedLamports.add(lamports[i]);
-            totalFundedAccounts++;
+            fundedLamportsTotal = fundedLamportsTotal.add(lamports[i]);
+            fundedAccountCount++;
         }
     }
 
@@ -329,9 +332,9 @@ async function distributeFunds(
     if (dryRun) {
         showDistributeDistributorFunds(
             distributor,
-            totalFundedLamports,
-            totalFundedAccounts,
-            usdPrice,
+            fundedLamportsTotal,
+            fundedAccountCount,
+            usdPriceForSol,
             keypairKind
         );
         return Promise.resolve(undefined);
@@ -350,6 +353,6 @@ async function distributeFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute ${formatDecimal(totalFundedLamports.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(totalFundedAccounts)} ${keypairKind}s`
+        `to distribute ${formatDecimal(fundedLamportsTotal.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(fundedAccountCount)} ${keypairKind}s`
     );
 }
