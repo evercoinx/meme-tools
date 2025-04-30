@@ -7,7 +7,7 @@ export class Seed {
     constructor(...inputs: (string | undefined)[]) {
         for (const input of inputs) {
             if (!input) {
-                throw new Error("Missed seed input");
+                throw new Error("Empty seed input");
             }
         }
 

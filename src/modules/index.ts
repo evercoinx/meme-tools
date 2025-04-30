@@ -81,7 +81,9 @@ export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_
 
 export const pyth = new Pyth(connectionPool, envVars.RPC_CLUSTER);
 
-export const seed = new Seed(envVars.NODE_ENV, envVars.TOKEN_SYMBOL);
+export const tokenSeed = new Seed(envVars.NODE_ENV, envVars.TOKEN_SYMBOL);
+
+export const timeSeed = new Seed(envVars.NODE_ENV, Date.now().toString());
 
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 

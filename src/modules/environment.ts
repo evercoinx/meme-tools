@@ -267,8 +267,11 @@ export function extractEnvironmentVariables(): EnvironmentSchema {
                 .default(
                     Joi.ref("SNIPER_POOL_SHARE_RANGE_PERCENT", {
                         adjust: (range: [number, number]) => {
-                            const seed = new Seed(process.env.NODE_ENV, process.env.TOKEN_SYMBOL);
-                            return seed.shuffle(
+                            const tokenSeed = new Seed(
+                                process.env.NODE_ENV,
+                                process.env.TOKEN_SYMBOL
+                            );
+                            return tokenSeed.shuffle(
                                 generateFloatRange(range[0] * 100, range[1] * 100, 0.01).map(
                                     (value) => convertToDecimalFraction(value.toString())
                                 )

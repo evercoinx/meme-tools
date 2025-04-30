@@ -31,7 +31,7 @@ import {
     heliusClientPool,
     logger,
     pyth,
-    seed,
+    tokenSeed,
     ZERO_DECIMAL,
 } from "../modules";
 
@@ -173,7 +173,7 @@ async function sendDistributeSniperFunds(
         new Decimal(envVars.POOL_LIQUIDITY_SOL)
             .mul(poolSharePercent)
             .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
-            .add(seed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
+            .add(tokenSeed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
             .add(envVars.SNIPER_BALANCE_SOL)
             .mul(LAMPORTS_PER_SOL)
             .trunc()
@@ -216,7 +216,7 @@ async function sendDistributeTraderFunds(
         .map(() =>
             new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
                 .mul(envVars.POOL_TRADING_CYCLE_COUNT)
-                .add(seed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
+                .add(tokenSeed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
                 .add(envVars.TRADER_BALANCE_SOL)
                 .mul(LAMPORTS_PER_SOL)
                 .trunc()

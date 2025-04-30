@@ -24,18 +24,13 @@ import {
     OUTPUT_SEPARATOR_SINGLE,
 } from "../../helpers/format";
 import {
-    generateRandomBoolean,
-    generateRandomFloat,
-    generateRandomInteger,
-    shuffle,
-} from "../../helpers/random";
-import {
     connectionPool,
     envVars,
     heliusClientPool,
     logger,
     storage,
     SWAPPER_SLIPPAGE_PERCENT,
+    timeSeed,
     UNITS_PER_MINT,
     ZERO_DECIMAL,
 } from "../../modules";
@@ -206,8 +201,8 @@ async function executeTradingCycles(
         }
 
         const activeTraders = envVars.POOL_TRADING_ONLY_NEW_TRADERS
-            ? shuffle(traders.slice(traderStartIndex, envVars.TRADER_COUNT))
-            : shuffle(traders).slice(0, envVars.TRADER_COUNT);
+            ? timeSeed.shuffle(traders.slice(traderStartIndex, envVars.TRADER_COUNT))
+            : timeSeed.shuffle(traders).slice(0, envVars.TRADER_COUNT);
 
         await executeTraderCycle(
             raydium,
@@ -226,7 +221,7 @@ function getActiveSnipers(snipers: Keypair[], percent: number): Keypair[] {
         .mul(snipers.length)
         .toDP(0, Decimal.ROUND_HALF_UP)
         .toNumber();
-    return shuffle(snipers).slice(0, sniperRepeatableCount);
+    return timeSeed.shuffle(snipers).slice(0, sniperRepeatableCount);
 }
 
 async function executeSniperCycle(
@@ -306,7 +301,7 @@ async function executeTraderCycle(
     for (let i = 0; i < traders.length; i += traderGroupSize) {
         const traderGroup = traders.slice(i, i + traderGroupSize);
 
-        if (poolTradingCycle === 0 || generateRandomBoolean(normalizedBiasPercent)) {
+        if (poolTradingCycle === 0 || timeSeed.generateRandomBoolean(normalizedBiasPercent)) {
             await pumpPool(
                 raydium,
                 cpmmPool,
@@ -370,7 +365,7 @@ async function pumpPool(
     await Promise.all(sendSwapSolToMintTransactions);
 
     await new Promise((resolve) => {
-        const delay = generateRandomInteger(envVars.SWAPPER_TRADE_DELAY_RANGE_SEC);
+        const delay = timeSeed.generateRandomInteger(envVars.SWAPPER_TRADE_DELAY_RANGE_SEC);
         logger.info(
             "Cycle: %s. Trade: %s/%s. Buy transactions executed: %s. Pausing: %s sec",
             formatInteger(poolTradingCycle),
@@ -417,7 +412,7 @@ async function dumpPool(
     await Promise.all(sendSwapMintToSolTransactions);
 
     await new Promise((resolve) => {
-        const delay = generateRandomInteger(envVars.SWAPPER_TRADE_DELAY_RANGE_SEC);
+        const delay = timeSeed.generateRandomInteger(envVars.SWAPPER_TRADE_DELAY_RANGE_SEC);
         logger.info(
             "Cycle: %s. Trade: %s/%s. Sell transactions executed: %s. Pausing: %s sec",
             formatInteger(poolTradingCycle),
@@ -441,7 +436,7 @@ async function findLamportsToBuy(
     for (const [i, swapper] of swappers.entries()) {
         const solBalance = await getSolBalance(connectionPool, swapper);
         const buyAmount = new Decimal(
-            generateRandomFloat(
+            timeSeed.generateRandomFloat(
                 isSniper
                     ? envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL
                     : envVars.TRADER_BUY_AMOUNT_RANGE_SOL
@@ -547,7 +542,7 @@ async function findUnitsToSell(
             continue;
         }
 
-        const sellPercent = generateRandomFloat(
+        const sellPercent = timeSeed.generateRandomFloat(
             isSniper
                 ? envVars.SNIPER_REPEATABLE_SELL_AMOUNT_RANGE_PERCENT
                 : envVars.TRADER_SELL_AMOUNT_RANGE_PERCENT

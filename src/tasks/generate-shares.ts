@@ -1,7 +1,6 @@
 import { parseArgs } from "node:util";
 import { formatDecimal, formatError, formatInteger } from "../helpers/format";
-import { generateRandomFloat } from "../helpers/random";
-import { logger } from "../modules";
+import { logger, timeSeed } from "../modules";
 
 const MAX_ATTEMPTS = 500_000;
 
@@ -72,7 +71,7 @@ function generateShares(
     const targetExcess = totalSum - count * min;
 
     for (let i = 0; i < attempts; i++) {
-        const randoms = Array.from({ length: count }, () => generateRandomFloat([0, 1]));
+        const randoms = Array.from({ length: count }, () => timeSeed.generateRandomFloat([0, 1]));
         const randomSum = sumNumbers(randoms);
 
         const excesses = randoms.map((random) => (random / randomSum) * targetExcess);
