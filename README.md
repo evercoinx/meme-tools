@@ -14,15 +14,9 @@
 
         - `TOKEN_SYMBOL=TOKEN`
 
-3. Run this command to check the current configuration:
+3. Optionally, adjust the following environment variables in the _.env.production_ file:
 
-    ```bash
-    yarn get-config
-    ```
-
-4. Optionally, adjust the following environment variables in the _.env.production_ file:
-
-    - Common:
+    - General:
 
         - `LOG_LEVEL`
         - `PINATA_JWT`
@@ -74,13 +68,19 @@
 
         - `COLLECTOR_ADDRESS` (Defaults to _""_)
 
+4. Run this command to check the current configuration:
+
+    ```bash
+    yarn get-config
+    ```
+
 5. Run this command to grind the _main_ keypairs:
 
     ```bash
     yarn grind-keypairs
     ```
 
-6. Run this command to estimate how much SOL should be transferred to the _dev_ and _sniper distributor_ accounts:
+6. Run this command to estimate how much SOL should be transferred to the _main_ accounts:
 
     ```bash
     yarn distribute-funds:dry-run
@@ -90,37 +90,43 @@
 
 8. Transfer SOL from the _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana via [Mayan Bridge](https://swap.mayan.finance).
 
-9. Transfer SOL from _collector_ account to the _trader distributor_ and _whale distributor_ accounts.
+9. Transfer SOL from _collector_ account on Solana to the _trader distributor_ and _whale distributor_ accounts.
 
-10. Run this command to make sure that all the _main_ accounts have the sufficient SOL balance:
+10. Run this command to make sure that all the _main_ accounts have the sufficient SOL balances:
 
     ```bash
     yarn distribute-funds:dry-run
     ```
 
-11. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_ and _trader_ accounts:
+11. Run these commands to distribute funds from the _distributor_ accounts to all the _sniper_, _trader_ and _whale_ accounts:
 
     ```bash
     yarn distribute-funds && yarn get-funds
     ```
 
-12. Check that the _collector_ account has the balance of at least 400 USDC. If not, swap SOL to top it up with the missing USDC.
+12. Check that the _collector_ account has the balance of at least 800 USDC. If not, swap SOL to top it up with the missing USDC.
 
 # Token Pre Launch Phase
 
-1. Find a meta using the following platforms:
+1. Discover meta using the following platforms:
 
     - [Discord](https://discord.com/channels/1329183129604198490)
     - [Dex Screener](https://dexscreener.com/1h?rankBy=trendingScoreH1&order=desc)
     - [Dex Tools](https://www.dextools.io/app/en/trending)
 
-2. Run this command to make sure that the _production_ environment is activated:
+2. Create the following meme images via [Midjourney](https://www.midjourney.com) and/or [ChatGPT](https://chatgpt.com):
+
+    - The token image with the size of 200x200. Save it as the _$TOKEN_SYMBOL.jpg_ in the _images/production_ folder
+
+    - The banner image with the size of 600x200. Save it as _$TOKEN_SYMBOL-banner.jpg_ in the _images/production_ folder
+
+3. Run this command to make sure that the _production_ environment is set:
 
     ```bash
     yarn getenv
     ```
 
-3. Set these environment variables in the _.env.production_ file:
+4. Set the following environment variables in the _.env.production_ file:
 
     - Token:
 
@@ -128,15 +134,23 @@
         - `TOKEN_NAME` (Defaults to _"Official $TOKEN_NAME $TOKEN_TAGS0"_)
         - `TOKEN_DESCRIPTION` (Defaults to _"$TOKEN_NAME" on Solana"_)
         - `TOKEN_WEBSITE_URI` (Defaults to _""_)
+        - `TOKEN_TWITTER_URI`
+        - `TOKEN_TELEGRAM_URI`
         - `TOKEN_TAGS` (Defaults to _"meme"_)
 
-4. Create these two meme images via [Midjourney](https://www.midjourney.com) and/or [ChatGPT](https://chatgpt.com):
+5. Run this command to check the current configuration:
 
-    - The token image with the size of 200x200. Save it as the _$TOKEN_SYMBOL.jpg_ in the _images/production_ folder
+    ```bash
+    yarn get-config
+    ```
 
-    - The banner image with the size of 600x200. Save it as _$TOKEN_SYMBOL-banner.jpg_ in the _images/production_ folder
+6. Run these commands to rename the key pair and storage files for the token:
 
-5. Create the following social channels:
+    ```bash
+    yarn rename-token-files && yarn get-funds:main
+    ```
+
+7. Create the following social media channels:
 
     - Create a temporary email on [Adguard](https://adguard.com/en/adguard-temp-mail/overview.html)
 
@@ -144,33 +158,11 @@
 
     - Create a public channel and a private group on [Telegram](https://telegram.org) protected with [Safeguard bot](https://t.me/Safeguard)
 
-6. Set these environment variables in the _.env.production_ file:
+8. Set up the social media channels:
 
-    - Token:
+    - The X.com profile (avatar, wallpaper, description, a greeting post etc)
 
-        - `TOKEN_TWITTER_URI`
-        - `TOKEN_TELEGRAM_URI`
-
-7. Run this command to check the current configuration:
-
-    ```bash
-    yarn get-config
-
-    ```
-
-8. Run these commands to rename the key pair and storage files for the token:
-
-    ```bash
-    yarn rename-token-files && yarn get-funds:main
-    ```
-
-9. Set up the social channels:
-
-    - The X.com profile (avatar, wallpaper, description)
-
-    - The Telegram channel and group (configuration, bots)
-
-10. Publish and pin the meme greeting posts on the X account and the Telegram group.
+    - The Telegram channel and group (configuration, bots, a greeting message etc)
 
 # Token Launch Phase
 
@@ -180,66 +172,39 @@
     yarn create-mint && yarn get-mint && yarn get-funds:main
     ```
 
-2. Add the token mint address to the X profile.
+2. Add the token mint address to the X profile and the Telegram greeting message.
 
-3. Publish and pin posts about the token launch on the X account and the Telegram group.
-
-4. Run this command to open a Raydium CPMM pool:
+3. Run this command to open a Raydium CPMM pool:
 
     ```bash
     yarn open-pool:raydium
     ```
 
-5. Shortly after the previous step, run these commands to burn liquidity in this pool:
+4. Shortly after the previous step, run these commands to burn liquidity in this pool:
 
     ```bash
     yarn burn-liquidity:raydium && yarn get-pool:raydium && yarn get-funds:main
     ```
 
+5. Publish and pin posts about the token launch on the X account and the Telegram group.
+
 6. Update the token information on Dex Screener:
 
-    - Update the token information for 299 USD on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
+    - Update the token information for 299 USDC on [Dex Screener](https://marketplace.dexscreener.com/product/token-info/order)
 
     - Publish and pin posts on the X account and the Telegram group
 
     - Raid it on the Telegram group
 
-7. Boost the token on Dex Screener:
-
-    - Buy the boost 10x pack for 99 USD on [Dex Screener](https://dexscreener.com)
-
-    - Publish and pin posts on the X account and the Telegram group
-
-    - Raid it on the Telegram group
-
-8. Order the following promotion on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener):
-
-    - _500 Dex Screener reactions_ (10 USD)
-
-9. Run this command to trade in this pool:
+7. Run this command to trade in the liquidity pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-10. Monitor token trending on these platforms:
+# Token Post Launch Phase (Day 1)
 
-- [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana&boosted=1&profile=1)
-- [Dex Tools](https://www.dextools.io/app/en/solana/trending)
-
-# Token Post Launch Phase
-
-1. Reach 500 reactions on Dex Screener:
-
-    - Publish and pin posts on the X account and the Telegram group
-
-    - Raid it on the Telegram group
-
-2. Optionally, order the following promotions for the X account:
-
-    - 500 Followers (9.50 USD) on [Graming](https://graming.com/buy-twitter-x-followers/)
-
-3. Optionally, adjust these environment variables in the _.env.production_ file:
+1. Optionally, adjust the following environment variables in the _.env.production_ file:
 
     - Pool:
 
@@ -255,39 +220,114 @@
 
         - `SWAPPER_TRADE_DELAY_RANGE_SEC`
 
-4. If the `$TRADER_COUNT` variable is adjusted up:
-
-    - Run this command to estimate SOL to transfer to the _trader distributor_ account:
-
-    ```bash
-    yarn distribute-funds:dry-run
-    ```
-
-    - Transfer the reported SOL from the _collector_ account to the _trader distributor_ account.
-
-    - Run this command to make sure that the _trader distributor_ account has the sufficient SOL balance:
-
-    ```bash
-    yarn distribute-funds:dry-run
-    ```
-
-    - Run this command to distribute funds to the new _trader_ accounts:
-
-    ```bash
-    yarn distribute-funds
-    ```
-
-    - Set `$POOL_TRADING_ONLY_NEW_TRADERS` to `true`.
-
-5. Run this command to trade in this pool:
+2. Run this command to trade in the liquidity pool:
 
     ```bash
     yarn trade:raydium
     ```
 
-6. Optionally, update the token information on Dex Tools:
+3. Promote the token with Telegram channels and X.com influencers:
 
-    - Update the token information for 295 USD on [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
+    - Pay for the token promotion on public Telegram channels and X influencer accounts
+
+    - Publish and pin posts on the X account and the Telegram group after publishing it
+
+    - Raid it on the Telegram group after publishing it
+
+4. Run these commands to whale trade in the liquidity pool occasionally:
+
+    ```bash
+    buy-mint:whale1
+    buy-mint:whale2
+    buy-mint:whale3
+    buy-mint:whale4
+    buy-mint:whale5
+    ```
+
+    and
+
+    ```bash
+    sell-mint:whale1
+    sell-mint:whale2
+    sell-mint:whale3
+    sell-mint:whale4
+    sell-mint:whale5
+    ```
+
+5. Boost the token on Dex Screener:
+
+    - Buy the boost 10x pack for 99 USDC on [Dex Screener](https://dexscreener.com)
+
+    - Publish and pin posts on the X account and the Telegram group
+
+    - Raid it on the Telegram group
+
+6. Promote the token on public Telegram groups.
+
+7. If the `$TRADER_COUNT` variable is adjusted up:
+
+    - Run this command to estimate SOL to transfer to the _trader distributor_ account:
+
+        ```bash
+        yarn distribute-funds:dry-run
+        ```
+
+    - Transfer the reported SOL from the _collector_ account to the _trader distributor_ account
+
+    - Run this command to make sure that the _trader distributor_ account has the sufficient SOL balance:
+
+        ```bash
+        yarn distribute-funds:dry-run
+        ```
+
+    - Run this command to distribute funds to the new _trader_ accounts:
+
+        ```bash
+        yarn distribute-funds
+        ```
+
+    - Set `$POOL_TRADING_ONLY_NEW_TRADERS` to `true`
+
+    - Run this command to trade in the liquidity pool:
+
+        ```bash
+        yarn trade:raydium
+        ```
+
+8. Monitor the token trending on the following platforms:
+
+- [Dex Screener](https://dexscreener.com/6h?rankBy=trendingScoreH6&order=desc&chainIds=solana&boosted=1&profile=1)
+- [Dex Tools](https://www.dextools.io/app/en/solana/trending)
+
+# Token Post Launch Phase (Day 2)
+
+1. Reach 500 reactions on Dex Screener:
+
+    - Order the _500 Dex Screener reactions_ promotion for 10 USD on [Fiverr](https://www.fiverr.com/seo_roy2/do-increase-and-boost-react-for-your-dexscreener)
+
+    - Publish and pin posts on the X account and the Telegram group after reaching it
+
+    - Raid it on the Telegram group after reaching it
+
+2. Reach 500 followers on the X account:
+
+    - Order the 500 Followers promotion for 9.50 USDC on [Graming](https://graming.com/buy-twitter-x-followers/)
+
+    - Publish and pin posts on the X account and the Telegram group after reaching it
+
+    - Raid it on the Telegram group after reaching it
+
+3. Update the token information on Dex Tools:
+
+    - Update the token information for 295 USDC on [Dex Tools](https://www.dextools.io/marketplace/en/create-socials)
+
+    - Publish and pin posts on the X account and the Telegram group
+
+    - Raid it on the Telegram group
+
+4. Boost the token on Dex Screener:
+
+    - Buy the boost 30x pack for 199 USDC on [Dex Screener](https://dexscreener.com)
 
     - Publish and pin posts on the X account and the Telegram group
 
