@@ -59,9 +59,9 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../../modules/
             throw new Error("Mint not loaded from storage");
         }
 
-        const snipersToBuy = await findSnipersToBuy(snipers, mint);
+        const snipersToSwap = await findSnipersToSwap(snipers, mint);
 
-        const lamportsToBuy = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
+        const lamports = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
             (poolSharePercent) =>
                 new BN(
                     new Decimal(envVars.POOL_LIQUIDITY_SOL)
@@ -80,8 +80,8 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../../modules/
             heliusClientPool,
             raydium,
             cpmmPool,
-            snipersToBuy,
-            lamportsToBuy,
+            snipersToSwap,
+            lamports,
             SWAPPER_SLIPPAGE_PERCENT,
             PriorityLevel.HIGH,
             { skipPreflight: true }
@@ -95,8 +95,8 @@ import { STORAGE_RAYDIUM_LP_MINT, STORAGE_RAYDIUM_POOL_ID } from "../../modules/
     }
 })();
 
-async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Keypair | null)[]> {
-    const snipersToBuy: (Keypair | null)[] = [];
+async function findSnipersToSwap(snipers: Keypair[], mint: Keypair): Promise<(Keypair | null)[]> {
+    const snipersToSwap: (Keypair | null)[] = [];
 
     for (const [i, sniper] of snipers.entries()) {
         const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] =
@@ -108,7 +108,7 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
             );
 
         if (mintTokenInitialized && mintTokenBalance.gt(ZERO_DECIMAL)) {
-            snipersToBuy[i] = null;
+            snipersToSwap[i] = null;
             logger.warn(
                 "Sniper (%s) has sufficient balance on ATA (%s): %s %s",
                 formatPublicKey(sniper.publicKey),
@@ -119,10 +119,10 @@ async function findSnipersToBuy(snipers: Keypair[], mint: Keypair): Promise<(Key
             continue;
         }
 
-        snipersToBuy[i] = sniper;
+        snipersToSwap[i] = sniper;
     }
 
-    return snipersToBuy;
+    return snipersToSwap;
 }
 
 async function createPool(

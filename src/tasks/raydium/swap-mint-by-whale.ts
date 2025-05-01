@@ -101,11 +101,11 @@ async function buyMint(
     account: Keypair
 ): Promise<Promise<TransactionSignature | undefined>[] | undefined> {
     const solBalance = await getSolBalance(connectionPool, account);
-    const lamportsToSwap = solBalance.sub(
+    const lamports = solBalance.sub(
         new Decimal(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
     );
 
-    if (lamportsToSwap.lte(ZERO_DECIMAL)) {
+    if (lamports.lte(ZERO_DECIMAL)) {
         logger.warn(
             "Whale (%s) has insufficient balance on wallet: %s SOL",
             formatPublicKey(account.publicKey),
@@ -120,7 +120,7 @@ async function buyMint(
         raydium,
         cpmmPool,
         [account],
-        [new BN(lamportsToSwap.toFixed(0))],
+        [new BN(lamports.toFixed(0))],
         SWAPPER_SLIPPAGE_PERCENT,
         PriorityLevel.DEFAULT
     );

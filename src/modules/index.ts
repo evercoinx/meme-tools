@@ -21,7 +21,7 @@ export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
 export const tokenSeed = new Seed(process.env.NODE_ENV, process.env.TOKEN_SYMBOL);
-export const timeSeed = new Seed(process.env.NODE_ENV, Date.now().toString());
+export const timeSeed = new Seed(process.env.NODE_ENV, process.env.TOKEN_SYMBOL, Date.now().toString());
 
 export const envVars = extractEnvironmentVariables(tokenSeed);
 export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
@@ -75,7 +75,6 @@ export const heliusClientPool = new Pool(
 export const explorer = new Explorer(envVars.EXPLORER_URI, envVars.RPC_CLUSTER);
 export const pinataClient = createPinataClient(envVars.PINATA_JWT, envVars.IPFS_GATEWAY_URI);
 export const pythClient = new Pyth(connectionPool, envVars.RPC_CLUSTER);
-
 
 export const encryption = new Encryption(
     "aes-256-cbc",
@@ -138,6 +137,6 @@ async function fetchUri(
     }
 
     throw new Error(
-        `Fetch failed after ${formatInteger(MAX_FETCH_ATTEMTPS)} attempts for ${formatUri(uri)}`
+        `Unable to fetch ${formatUri(uri)} after ${formatInteger(MAX_FETCH_ATTEMTPS)} attempts`
     );
 }
