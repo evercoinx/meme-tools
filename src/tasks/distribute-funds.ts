@@ -105,6 +105,7 @@ async function showDistributeDevFunds(usdPriceForSol: Decimal): Promise<void> {
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
             formatDecimal(lamportsToDistribute.div(LAMPORTS_PER_SOL))
         );
+        return;
     }
 
     const solToDistribute = lamportsToDistribute.sub(solBalance).div(LAMPORTS_PER_SOL);
@@ -140,6 +141,7 @@ async function showDistributeDistributorFunds(
             formatInteger(fundedAccountCount),
             keypairKind
         );
+        return;
     }
 
     const solToDistribute = lamportsToDistribute.sub(solBalance).div(LAMPORTS_PER_SOL);
@@ -236,9 +238,10 @@ async function sendDistributeWhaleFunds(
         dryRun
     );
 
-    const lamportsToDistribute = Array.from(envVars.WHALE_AMOUNTS_SOL).map((amount) =>
+    const lamportsToDistribute = envVars.WHALE_AMOUNTS_SOL.map((amount) =>
         new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
     );
+    console.log(lamportsToDistribute);
 
     return await getSendDistrbiteFundsTransactions(
         whales,
@@ -330,7 +333,7 @@ async function distributeFunds(
     }
 
     if (dryRun) {
-        showDistributeDistributorFunds(
+        await showDistributeDistributorFunds(
             distributor,
             fundedLamportsTotal,
             fundedAccountCount,

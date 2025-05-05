@@ -29,10 +29,10 @@ export enum KeypairKind {
 }
 
 const KEYPAIR_MASKS: Record<string, [string, string] | null> = {
-    [KeypairKind.Dev]: ["dE", "V"],
-    [KeypairKind.SniperDistributor]: ["sN", "D"],
-    [KeypairKind.TraderDistributor]: ["tR", "D"],
-    [KeypairKind.WhaleDistributor]: ["wH", "D"],
+    [KeypairKind.Dev]: ["De", "V"],
+    [KeypairKind.SniperDistributor]: ["Ds", "N"],
+    [KeypairKind.TraderDistributor]: ["Dt", "R"],
+    [KeypairKind.WhaleDistributor]: ["Dw", "H"],
 };
 
 export async function importKeypairFromFile(keypairKind: KeypairKind): Promise<Keypair> {

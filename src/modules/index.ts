@@ -21,7 +21,11 @@ export const ZERO_BN = new BN(0);
 export const ZERO_DECIMAL = new Decimal(0);
 
 export const tokenSeed = new Seed(process.env.NODE_ENV, process.env.TOKEN_SYMBOL);
-export const timeSeed = new Seed(process.env.NODE_ENV, process.env.TOKEN_SYMBOL, Date.now().toString());
+export const timeSeed = new Seed(
+    process.env.NODE_ENV,
+    process.env.TOKEN_SYMBOL,
+    Date.now().toString()
+);
 
 export const envVars = extractEnvironmentVariables(tokenSeed);
 export const UNITS_PER_MINT = 10 ** envVars.TOKEN_DECIMALS;
