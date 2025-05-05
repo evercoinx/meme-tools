@@ -54,6 +54,7 @@
         "get-accounts:main": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-accounts.ts --mode main",
         "get-accounts:sniper": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-accounts.ts --mode sniper",
         "get-accounts:trader": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-accounts.ts --mode trader",
+        "get-accounts:whale": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-accounts.ts --mode whale",
         "get-funds": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-funds.ts",
         "get-funds:main": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode main",
         "get-funds:sniper": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode sniper",

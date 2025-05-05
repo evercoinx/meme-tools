@@ -241,7 +241,6 @@ async function sendDistributeWhaleFunds(
     const lamportsToDistribute = envVars.WHALE_AMOUNTS_SOL.map((amount) =>
         new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
     );
-    console.log(lamportsToDistribute);
 
     return await getSendDistrbiteFundsTransactions(
         whales,

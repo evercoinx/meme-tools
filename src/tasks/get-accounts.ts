@@ -22,6 +22,7 @@ enum Mode {
     MAIN = "main",
     SNIPER = "sniper",
     TRADER = "trader",
+    WHALE = "whale",
 }
 
 (async () => {
@@ -37,11 +38,11 @@ enum Mode {
             },
         });
 
-        if (![Mode.ALL, Mode.MAIN, Mode.SNIPER, Mode.TRADER].includes(mode as Mode)) {
+        if (![Mode.ALL, Mode.MAIN, Mode.SNIPER, Mode.TRADER, Mode.WHALE].includes(mode as Mode)) {
             throw new Error(`Invalid mode: ${mode}`);
         }
 
-        if ([Mode.ALL, Mode.SNIPER, Mode.TRADER].includes(mode as Mode)) {
+        if ([Mode.ALL, Mode.SNIPER, Mode.TRADER, Mode.WHALE].includes(mode as Mode)) {
             await checkFileExists(storage.cacheFilePath);
         }
 
@@ -49,8 +50,9 @@ enum Mode {
             const dev = await importKeypairFromFile(KeypairKind.Dev);
             const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
             const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
+            const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
             const mint = importMintKeypair();
-            getMainAccounts(dev, sniperDistributor, traderDistributor, mint);
+            getMainAccounts(dev, sniperDistributor, traderDistributor, whaleDistributor, mint);
         }
 
         if ([Mode.ALL, Mode.SNIPER].includes(mode as Mode)) {
@@ -74,6 +76,7 @@ function getMainAccounts(
     dev: Keypair,
     sniperDistributor: Keypair,
     traderDistributor: Keypair,
+    whaleDistributor: Keypair,
     mint?: Keypair
 ): void {
     logger.info(
@@ -92,6 +95,12 @@ function getMainAccounts(
         "Trader distributor keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
         formatPublicKey(traderDistributor.publicKey, "long"),
         formatText(bs58.encode(traderDistributor.secretKey))
+    );
+
+    logger.info(
+        "Whale distributor keys\n\t\tPublic: %s\n\t\tSecret: %s\n",
+        formatPublicKey(whaleDistributor.publicKey, "long"),
+        formatText(bs58.encode(whaleDistributor.secretKey))
     );
 
     logger.info(
