@@ -1,4 +1,4 @@
-import { clusterApiUrl } from "@solana/web3.js";
+import { clusterApiUrl, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import Joi from "joi";
 import { formatUri } from "../helpers/format";
@@ -113,7 +113,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                             if (/mainnet/i.test(rpcUri)) {
                                 if (clusterApiUrl("mainnet-beta").includes(rpcUri)) {
                                     throw new Error(
-                                        `Public mainnet RPC forbidden: ${formatUri(rpcUri)}`
+                                        `Public mainnet RPC is forbidden: ${formatUri(rpcUri)}`
                                     );
                                 }
 
@@ -122,7 +122,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                                 counters.devnet++;
                             } else {
                                 throw new Error(
-                                    `Unknown RPC cluster for URI: ${formatUri(rpcUri)}`
+                                    `RPC cluster is unknown for URI: ${formatUri(rpcUri)}`
                                 );
                             }
                         }
@@ -185,7 +185,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .uri()
                 .custom((uri: string) => {
                     if (uri.startsWith("https://x.com") || uri.startsWith("https://t.me")) {
-                        throw new Error(`Unexpected website URI: ${formatUri(uri)}`);
+                        throw new Error(`Website URI is unexpected: ${formatUri(uri)}`);
                     }
                     return uri;
                 })
@@ -196,7 +196,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .uri()
                 .custom((uri: string) => {
                     if (!uri.startsWith("https://x.com")) {
-                        throw new Error(`Invalid Twitter URI: ${formatUri(uri)}`);
+                        throw new Error(`Twitter URI is invalid: ${formatUri(uri)}`);
                     }
                     return uri;
                 })
@@ -207,7 +207,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .uri()
                 .custom((uri: string) => {
                     if (!uri.startsWith("https://t.me")) {
-                        throw new Error(`Invalid Telegram URI: ${formatUri(uri)}`);
+                        throw new Error(`Telegram URI is invalid: ${formatUri(uri)}`);
                     }
                     return uri;
                 })
@@ -388,11 +388,16 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .max(2)
                 .description("Trader swap delay range (in seconds)"),
             COLLECTOR_ADDRESS: Joi.string()
-                .optional()
-                .allow("")
+                .required()
+                .trim()
                 .alphanum()
                 .length(44)
-                .trim()
+                .custom((address: string) => {
+                    if (!PublicKey.isOnCurve(address)) {
+                        throw new Error(`Solana address is invalid: ${address}`);
+                    }
+                    return address;
+                })
                 .description("Collector address"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;

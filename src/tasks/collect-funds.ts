@@ -103,18 +103,16 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
         );
         await new Promise((resolve) => setTimeout(resolve, MAIN_FUNDS_COLLECTION_INTERVAL_MS));
 
-        const sendCollectMainFundsTransactions =
-            envVars.NODE_ENV === "production"
-                ? await collectFunds(
-                      [dev, sniperDistributor, traderDistributor, whaleDistributor],
-                      new PublicKey(envVars.COLLECTOR_ADDRESS),
-                      KeypairKind.Main
-                  )
-                : await collectFunds(
-                      [sniperDistributor, traderDistributor, whaleDistributor],
-                      dev.publicKey,
-                      KeypairKind.Dev
-                  );
+        const accounts = [sniperDistributor, traderDistributor, whaleDistributor];
+        if (envVars.NODE_ENV === "production") {
+            accounts.push(dev);
+        }
+
+        const sendCollectMainFundsTransactions = await collectFunds(
+            accounts,
+            new PublicKey(envVars.COLLECTOR_ADDRESS),
+            KeypairKind.Main
+        );
         await Promise.all(sendCollectMainFundsTransactions);
         process.exit(0);
     } catch (error: unknown) {
