@@ -28,6 +28,7 @@ enum Mode {
     MAIN = "main",
     SNIPER = "sniper",
     TRADER = "trader",
+    WHALE = "whale",
 }
 
 (async () => {
@@ -43,11 +44,11 @@ enum Mode {
             },
         });
 
-        if (![Mode.ALL, Mode.MAIN, Mode.SNIPER, Mode.TRADER].includes(mode as Mode)) {
+        if (![Mode.ALL, Mode.MAIN, Mode.SNIPER, Mode.TRADER, Mode.WHALE].includes(mode as Mode)) {
             throw new Error(`Invalid mode: ${mode}`);
         }
 
-        if ([Mode.ALL, Mode.SNIPER, Mode.TRADER].includes(mode as Mode)) {
+        if ([Mode.ALL, Mode.SNIPER, Mode.TRADER, Mode.WHALE].includes(mode as Mode)) {
             await checkFileExists(storage.cacheFilePath);
         }
 
@@ -57,7 +58,8 @@ enum Mode {
             const dev = await importKeypairFromFile(KeypairKind.Dev);
             const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
             const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
-            await getMainFunds(dev, sniperDistributor, traderDistributor, mint);
+            const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
+            await getMainFunds(dev, sniperDistributor, traderDistributor, whaleDistributor, mint);
         }
 
         if ([Mode.ALL, Mode.SNIPER].includes(mode as Mode)) {
@@ -68,6 +70,11 @@ enum Mode {
         if ([Mode.ALL, Mode.TRADER].includes(mode as Mode)) {
             const traders = importSwapperKeypairs(KeypairKind.Trader);
             await getSwapperFunds(traders, KeypairKind.Trader, mint);
+        }
+
+        if ([Mode.ALL, Mode.WHALE].includes(mode as Mode)) {
+            const whales = importSwapperKeypairs(KeypairKind.Whale);
+            await getSwapperFunds(whales, KeypairKind.Whale, mint);
         }
 
         process.exit(0);
@@ -81,9 +88,15 @@ async function getMainFunds(
     dev: Keypair,
     sniperDistributor: Keypair,
     traderDistributor: Keypair,
+    whaleDistributor: Keypair,
     mint?: Keypair
 ): Promise<void> {
-    for (const [i, account] of [dev, sniperDistributor, traderDistributor].entries()) {
+    for (const [i, account] of [
+        dev,
+        sniperDistributor,
+        traderDistributor,
+        whaleDistributor,
+    ].entries()) {
         const solBalance = await getSolBalance(connectionPool, account);
 
         let mintTokenAccount: PublicKey | undefined;

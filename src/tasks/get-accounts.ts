@@ -65,6 +65,11 @@ enum Mode {
             getSwapperAccounts(traders, KeypairKind.Trader);
         }
 
+        if ([Mode.ALL, Mode.WHALE].includes(mode as Mode)) {
+            const traders = importSwapperKeypairs(KeypairKind.Whale);
+            getSwapperAccounts(traders, KeypairKind.Whale);
+        }
+
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));

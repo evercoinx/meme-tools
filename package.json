@@ -59,6 +59,7 @@
         "get-funds:main": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode main",
         "get-funds:sniper": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode sniper",
         "get-funds:trader": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode trader",
+        "get-funds:whale": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-funds.ts --mode whale",
         "get-mint": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/get-mint.ts",
         "get-pool:raydium": "NODE_ENV=$(yarn getenv) ts-node -r ./src/init.ts src/tasks/raydium/get-pool.ts",
         "generate-encryption-secret": "hexdump -vn16 -e'4/4 \"%08x\" 1 \"\n\"' /dev/urandom",
