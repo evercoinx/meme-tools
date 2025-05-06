@@ -81,7 +81,7 @@
     "packageManager": "yarn@4.9.1",
     "dependencies": {
         "@pythnetwork/client": "^2.22.1",
-        "@raydium-io/raydium-sdk-v2": "^0.1.128-alpha",
+        "@raydium-io/raydium-sdk-v2": "^0.1.132-alpha",
         "@solana/spl-token": "^0.4.13",
         "@solana/web3.js": "^1.98.2",
         "arweave": "^1.15.7",
@@ -105,17 +105,17 @@
         "@types/bn.js": "^5.1.6",
         "@types/decimal.js": "^7.4.3",
         "@types/minimist": "^1.2.5",
-        "@types/node": "^22.15.3",
+        "@types/node": "^22.15.12",
         "eslint": "^9.26.0",
         "eslint-config-prettier": "^10.1.2",
-        "eslint-plugin-prettier": "^5.3.1",
+        "eslint-plugin-prettier": "^5.4.0",
         "husky": "^9.1.7",
         "joi": "^17.13.3",
         "prettier": "^3.5.3",
         "source-map-support": "^0.5.21",
         "ts-node": "^10.9.2",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.31.1"
+        "typescript-eslint": "^8.32.0"
     },
     "resolutions": {
         "@solana/web3.js": "1.98.2"
