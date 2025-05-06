@@ -45,7 +45,7 @@ export async function createRaydium(connection: Connection, owner?: Keypair): Pr
     return Raydium.load({
         connection,
         cluster: envVars.RPC_CLUSTER === "mainnet-beta" ? "mainnet" : envVars.RPC_CLUSTER,
-        owner,
+        owner: owner ? owner.publicKey : undefined,
         disableFeatureCheck: true,
         disableLoadToken: true,
         blockhashCommitment: connection.commitment,
@@ -164,7 +164,7 @@ export async function swapSolToMint(
 
         const {
             transaction: { instructions },
-        } = await raydium.setOwner(account).cpmm.swap<TxVersion.LEGACY>({
+        } = await raydium.setOwner(account.publicKey).cpmm.swap<TxVersion.LEGACY>({
             poolInfo,
             poolKeys,
             inputAmount: lamportsToSwap[i],
@@ -267,7 +267,7 @@ export async function swapMintToSol(
 
         const {
             transaction: { instructions },
-        } = await raydium.setOwner(account).cpmm.swap<TxVersion.LEGACY>({
+        } = await raydium.setOwner(account.publicKey).cpmm.swap<TxVersion.LEGACY>({
             poolInfo,
             poolKeys,
             inputAmount: unitsToSwap[i],
