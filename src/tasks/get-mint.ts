@@ -32,7 +32,7 @@ import { connectionPool, envVars, explorer, logger, storage } from "../modules";
 
 async function getMint(mint: Keypair): Promise<void> {
     const mintInfo = await getMintInfo(
-        connectionPool.next(),
+        connectionPool.get(),
         mint.publicKey,
         "confirmed",
         TOKEN_2022_PROGRAM_ID
