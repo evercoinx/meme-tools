@@ -157,7 +157,7 @@ async function getMainFunds(
         } else {
             logger.info(
                 "%s distributor funds\n\t\t%s - %s SOL\n\t\t%s - %s %s\n",
-                i === 1 ? "Sniper" : "Trader",
+                i === 1 ? "Sniper" : i === 2 ? "Trader" : "Whale",
                 ...logParams
             );
         }

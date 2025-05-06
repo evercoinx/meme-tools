@@ -278,10 +278,10 @@ export async function getTokenAccountInfo(
             const connection = connectionPool.get();
             const {
                 value: { amount },
-            } = await connection.getTokenAccountBalance(account.publicKey);
+            } = await connection.getTokenAccountBalance(tokenAddress);
             return [tokenAddress, new Decimal(amount), true];
         } catch (error: unknown) {
-            if (error instanceof Error && error.message.toLowerCase().includes("not a token account")) {
+            if (error instanceof Error && error.message.toLowerCase().includes("could not find account")) {
                 return [tokenAddress, ZERO_DECIMAL, false];
             }
 
