@@ -81,12 +81,11 @@ enum SwapType {
         const raydium = await createRaydium(connectionPool.get(), whale);
         const cpmmPool = await loadRaydiumCpmmPool(raydium, new PublicKey(poolId));
 
-        const sendSwapTransaction =
-            swapType === SwapType.Buy
-                ? await buyMint(raydium, cpmmPool, whale)
-                : await sellMint(raydium, cpmmPool, whale, mint);
-
-        await Promise.all([sendSwapTransaction]);
+        if (swapType === SwapType.Buy) {
+            await buyMint(raydium, cpmmPool, whale);
+        } else {
+            await sellMint(raydium, cpmmPool, whale, mint);
+        }
 
         process.exit(0);
     } catch (error: unknown) {
@@ -99,7 +98,7 @@ async function buyMint(
     raydium: Raydium,
     cpmmPool: RaydiumCpmmPool,
     account: Keypair
-): Promise<Promise<TransactionSignature | undefined>[] | undefined> {
+): Promise<void> {
     const solBalance = await getSolBalance(connectionPool, account);
     const lamports = solBalance.sub(
         new Decimal(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
@@ -114,7 +113,7 @@ async function buyMint(
         return;
     }
 
-    return swapSolToMint(
+    const sendSwapSolToMintTransactions = await swapSolToMint(
         connectionPool,
         heliusClientPool,
         raydium,
@@ -124,6 +123,7 @@ async function buyMint(
         SWAPPER_SLIPPAGE_PERCENT,
         PriorityLevel.DEFAULT
     );
+    await Promise.all(sendSwapSolToMintTransactions);
 }
 
 async function sellMint(
@@ -131,7 +131,7 @@ async function sellMint(
     cpmmPool: RaydiumCpmmPool,
     account: Keypair,
     mint: Keypair
-): Promise<Promise<TransactionSignature | undefined>[] | undefined> {
+): Promise<void> {
     const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] = await getTokenAccountInfo(
         connectionPool,
         account,
@@ -158,7 +158,7 @@ async function sellMint(
         return;
     }
 
-    return swapMintToSol(
+    const sendSwapMintToSolTransactions = await swapMintToSol(
         connectionPool,
         heliusClientPool,
         raydium,
@@ -168,4 +168,5 @@ async function sellMint(
         SWAPPER_SLIPPAGE_PERCENT,
         PriorityLevel.DEFAULT
     );
+    await Promise.all(sendSwapMintToSolTransactions);
 }

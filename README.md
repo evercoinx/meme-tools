@@ -237,21 +237,21 @@
 4. Run these commands to whale trade in the liquidity pool occasionally:
 
     ```bash
-    buy-mint:whale1
-    buy-mint:whale2
-    buy-mint:whale3
-    buy-mint:whale4
-    buy-mint:whale5
+    yarn buy-mint:whale1
+    yarn buy-mint:whale2
+    yarn buy-mint:whale3
+    yarn buy-mint:whale4
+    yarn buy-mint:whale5
     ```
 
     and
 
     ```bash
-    sell-mint:whale1
-    sell-mint:whale2
-    sell-mint:whale3
-    sell-mint:whale4
-    sell-mint:whale5
+    yarn sell-mint:whale1
+    yarn sell-mint:whale2
+    yarn sell-mint:whale3
+    yarn sell-mint:whale4
+    yarn sell-mint:whale5
     ```
 
 5. Boost the token on Dex Screener:

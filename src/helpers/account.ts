@@ -281,7 +281,10 @@ export async function getTokenAccountInfo(
             } = await connection.getTokenAccountBalance(tokenAddress);
             return [tokenAddress, new Decimal(amount), true];
         } catch (error: unknown) {
-            if (error instanceof Error && error.message.toLowerCase().includes("could not find account")) {
+            if (
+                error instanceof Error &&
+                error.message.toLowerCase().includes("could not find account")
+            ) {
                 return [tokenAddress, ZERO_DECIMAL, false];
             }
 
