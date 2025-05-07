@@ -53,8 +53,8 @@ enum SwapType {
                 },
             },
         });
-        if (!index || parseInt(index, 10)) {
-            throw new Error(`Invalid whale index: ${index}`);
+        if (!index) {
+            throw new Error(`Whale index not defined: ${index}`);
         }
         const parsedIndex = parseInt(index, 10);
 

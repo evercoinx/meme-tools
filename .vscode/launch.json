@@ -165,7 +165,7 @@
             "type": "node",
             "request": "launch",
             "name": "Trade in Raydium pool",
-            "program": "${workspaceFolder}/src/tasks/raydium/swap-mint-by-whale.ts",
+            "program": "${workspaceFolder}/src/tasks/raydium/swap-whale-mint.ts",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "tsc: build - tsconfig.json",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
