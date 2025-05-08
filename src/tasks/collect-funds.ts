@@ -50,11 +50,6 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
 
 (async () => {
     try {
-        if (envVars.NODE_ENV === "production" && !envVars.COLLECTOR_ADDRESS) {
-            logger.warn("Collector address must be set for production environment");
-            process.exit(0);
-        }
-
         await checkFileExists(storage.cacheFilePath);
 
         const dev = await importKeypairFromFile(KeypairKind.Dev);
@@ -65,40 +60,49 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
         const traders = importSwapperKeypairs(KeypairKind.Trader);
         const whales = importSwapperKeypairs(KeypairKind.Whale);
 
-        const mint = importMintKeypair();
+        const sendcloseSwapperTokenAccountsTransactions: Promise<
+            TransactionSignature | undefined
+        >[] = [];
+
         const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
+        if (!raydiumLpMint) {
+            logger.warn("Raydium LP mint not loaded from storage");
+        } else {
+            sendcloseSwapperTokenAccountsTransactions.push(
+                ...(await closeDevTokenAccount(dev, new PublicKey(raydiumLpMint)))
+            );
+        }
 
-        const sendCloseTokenAccountsTransactions = await closeTokenAccounts(
-            dev,
-            [...snipers, ...whales, ...traders],
-            mint,
-            raydiumLpMint ? new PublicKey(raydiumLpMint) : undefined
-        );
-        await Promise.all(sendCloseTokenAccountsTransactions);
+        const mint = importMintKeypair();
+        if (!mint) {
+            logger.warn("Mint not loaded from storage");
+        } else {
+            sendcloseSwapperTokenAccountsTransactions.push(
+                ...(await closeSwapperTokenAccounts(snipers, KeypairKind.Sniper, mint))
+            );
+            sendcloseSwapperTokenAccountsTransactions.push(
+                ...(await closeSwapperTokenAccounts(whales, KeypairKind.Whale, mint))
+            );
+            sendcloseSwapperTokenAccountsTransactions.push(
+                ...(await closeSwapperTokenAccounts(traders, KeypairKind.Trader, mint))
+            );
+        }
+        await Promise.all(sendcloseSwapperTokenAccountsTransactions);
 
-        const sendCollectSniperFundsTransactions = await collectFunds(
-            snipers,
-            sniperDistributor.publicKey,
-            KeypairKind.Sniper
+        const sendCollectSwapperFundsTransactions: Promise<TransactionSignature | undefined>[] = [];
+        sendCollectSwapperFundsTransactions.push(
+            ...(await collectFunds(snipers, sniperDistributor.publicKey, KeypairKind.Sniper))
         );
-        const sendCollectTraderFundsTransactions = await collectFunds(
-            traders,
-            traderDistributor.publicKey,
-            KeypairKind.Trader
+        sendCollectSwapperFundsTransactions.push(
+            ...(await collectFunds(whales, whaleDistributor.publicKey, KeypairKind.Whale))
         );
-        const sendCollectWhaleFundsTransactions = await collectFunds(
-            whales,
-            whaleDistributor.publicKey,
-            KeypairKind.Whale
+        sendCollectSwapperFundsTransactions.push(
+            ...(await collectFunds(traders, traderDistributor.publicKey, KeypairKind.Trader))
         );
-        await Promise.all([
-            ...sendCollectSniperFundsTransactions,
-            ...sendCollectTraderFundsTransactions,
-            ...sendCollectWhaleFundsTransactions,
-        ]);
+        await Promise.all(sendCollectSwapperFundsTransactions);
 
         logger.warn(
-            "Waiting collect funds from main accounts: %s sec",
+            "Waiting %s sec to collect funds from main accounts",
             formatMilliseconds(MAIN_FUNDS_COLLECTION_INTERVAL_MS)
         );
         await new Promise((resolve) => setTimeout(resolve, MAIN_FUNDS_COLLECTION_INTERVAL_MS));
@@ -121,100 +125,130 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
     }
 })();
 
-async function closeTokenAccounts(
+async function closeDevTokenAccount(
     dev: Keypair,
+    lpMint: PublicKey
+): Promise<Promise<TransactionSignature | undefined>[]> {
+    const connection = connectionPool.get();
+    const heliusClient = heliusClientPool.get();
+    const instructions: TransactionInstruction[] = [];
+    const computeBudgetInstructions: TransactionInstruction[] = [];
+    const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
+
+    const [lpMintTokenAccount, lpMintTokenBalance, lpMintTokenInitialized] =
+        await getTokenAccountInfo(connectionPool, dev, lpMint, TOKEN_PROGRAM_ID);
+
+    if (!lpMintTokenInitialized) {
+        logger.warn(
+            "Dev (%s) has uninitialized LP mint ATA (%s)",
+            formatPublicKey(dev.publicKey),
+            formatPublicKey(lpMintTokenAccount)
+        );
+    } else if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
+        instructions.push(
+            createCloseAccountInstruction(
+                lpMintTokenAccount,
+                dev.publicKey,
+                dev.publicKey,
+                [],
+                TOKEN_PROGRAM_ID
+            )
+        );
+    }
+
+    if (instructions.length > 0) {
+        if (computeBudgetInstructions.length === 0) {
+            computeBudgetInstructions.push(
+                ...(await getComputeBudgetInstructions(
+                    connection,
+                    envVars.RPC_CLUSTER,
+                    heliusClient,
+                    PriorityLevel.DEFAULT,
+                    instructions,
+                    [dev]
+                ))
+            );
+        }
+
+        sendTransactions.push(
+            sendAndConfirmVersionedTransaction(
+                connection,
+                [...computeBudgetInstructions, ...instructions],
+                [dev],
+                `to close ATAs for dev (${formatPublicKey(dev.publicKey)})`
+            )
+        );
+    }
+
+    return sendTransactions;
+}
+
+async function closeSwapperTokenAccounts(
     accounts: Keypair[],
-    mint?: Keypair,
-    lpMint?: PublicKey
+    keypairKind: KeypairKind,
+    mint: Keypair
 ): Promise<Promise<TransactionSignature | undefined>[]> {
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
 
-    for (const [i, account] of [dev, ...accounts].entries()) {
+    for (const account of accounts) {
         const connection = connectionPool.get();
         const heliusClient = heliusClientPool.get();
-
         const instructions: TransactionInstruction[] = [];
         const computeBudgetInstructions: TransactionInstruction[] = [];
-        const isDev = i === 0;
 
-        if (mint && !isDev) {
-            const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] =
-                await getTokenAccountInfo(
-                    connectionPool,
-                    account,
-                    mint.publicKey,
-                    TOKEN_2022_PROGRAM_ID
-                );
+        const [mintTokenAccount, mintTokenBalance, mintTokenInitialized] =
+            await getTokenAccountInfo(
+                connectionPool,
+                account,
+                mint.publicKey,
+                TOKEN_2022_PROGRAM_ID
+            );
 
-            if (!mintTokenInitialized) {
-                logger.warn(
-                    "Account (%s) has uninitialized %s ATA (%s)",
-                    formatPublicKey(account.publicKey),
-                    envVars.TOKEN_SYMBOL,
-                    formatPublicKey(mintTokenAccount)
-                );
-            } else if (mintTokenBalance.lte(ZERO_DECIMAL)) {
-                logger.warn(
-                    "Account (%s) has zero balance on %s ATA (%s)",
-                    formatPublicKey(dev.publicKey),
-                    envVars.TOKEN_SYMBOL,
-                    formatPublicKey(mintTokenAccount)
-                );
-            } else {
-                if (mintTokenBalance.lte(MINT_DUST_UNITS)) {
-                    instructions.push(
-                        createBurnInstruction(
-                            mintTokenAccount,
-                            mint.publicKey,
-                            account.publicKey,
-                            mintTokenBalance.toNumber(),
-                            [],
-                            TOKEN_2022_PROGRAM_ID
-                        )
-                    );
-                    logger.warn(
-                        "Account (%s) has dust tokens on %s ATA (%s): %s %s",
-                        formatPublicKey(account.publicKey),
-                        envVars.TOKEN_SYMBOL,
-                        formatPublicKey(mintTokenAccount),
-                        formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
-                        envVars.TOKEN_SYMBOL
-                    );
-                }
-
+        if (!mintTokenInitialized) {
+            logger.warn(
+                "Account (%s) has uninitialized %s ATA (%s)",
+                formatPublicKey(account.publicKey),
+                envVars.TOKEN_SYMBOL,
+                formatPublicKey(mintTokenAccount)
+            );
+        } else if (mintTokenBalance.lte(ZERO_DECIMAL)) {
+            logger.warn(
+                "Account (%s) has zero balance on %s ATA (%s)",
+                formatPublicKey(account.publicKey),
+                envVars.TOKEN_SYMBOL,
+                formatPublicKey(mintTokenAccount)
+            );
+        } else {
+            if (mintTokenBalance.lte(MINT_DUST_UNITS)) {
                 instructions.push(
-                    createCloseAccountInstruction(
+                    createBurnInstruction(
                         mintTokenAccount,
+                        mint.publicKey,
                         account.publicKey,
-                        account.publicKey,
+                        mintTokenBalance.toNumber(),
                         [],
                         TOKEN_2022_PROGRAM_ID
                     )
                 );
-            }
-        }
-
-        if (lpMint && isDev) {
-            const [lpMintTokenAccount, lpMintTokenBalance, lpMintTokenInitialized] =
-                await getTokenAccountInfo(connectionPool, dev, lpMint, TOKEN_PROGRAM_ID);
-
-            if (!lpMintTokenInitialized) {
                 logger.warn(
-                    "Dev (%s) has uninitialized LP mint ATA (%s)",
-                    formatPublicKey(dev.publicKey),
-                    formatPublicKey(lpMintTokenAccount)
-                );
-            } else if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {
-                instructions.push(
-                    createCloseAccountInstruction(
-                        lpMintTokenAccount,
-                        dev.publicKey,
-                        dev.publicKey,
-                        [],
-                        TOKEN_PROGRAM_ID
-                    )
+                    "Account (%s) has dust tokens on %s ATA (%s): %s %s",
+                    formatPublicKey(account.publicKey),
+                    envVars.TOKEN_SYMBOL,
+                    formatPublicKey(mintTokenAccount),
+                    formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS),
+                    envVars.TOKEN_SYMBOL
                 );
             }
+
+            instructions.push(
+                createCloseAccountInstruction(
+                    mintTokenAccount,
+                    account.publicKey,
+                    account.publicKey,
+                    [],
+                    TOKEN_2022_PROGRAM_ID
+                )
+            );
         }
 
         if (instructions.length > 0) {
@@ -236,7 +270,7 @@ async function closeTokenAccounts(
                     connection,
                     [...computeBudgetInstructions, ...instructions],
                     [account],
-                    `to close ATAs for account (${formatPublicKey(account.publicKey)})`
+                    `to close ATAs for ${keypairKind} (${formatPublicKey(account.publicKey)})`
                 )
             );
         }
@@ -297,12 +331,12 @@ async function collectFunds(
             );
         }
 
-        const residualLamports = solBalance.sub(fee);
+        const lamportsToCollect = solBalance.sub(fee);
         const instructions = [
             SystemProgram.transfer({
                 fromPubkey: account.publicKey,
                 toPubkey: recipient,
-                lamports: residualLamports.toNumber(),
+                lamports: lamportsToCollect.toNumber(),
             }),
         ];
 
@@ -311,7 +345,7 @@ async function collectFunds(
                 connection,
                 [...computeBudgetInstructions, ...instructions],
                 [account],
-                `to transfer ${formatDecimal(residualLamports.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} (${formatPublicKey(account.publicKey)}) to account (${formatPublicKey(recipient)})`
+                `to transfer ${formatDecimal(lamportsToCollect.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} (${formatPublicKey(account.publicKey)}) to account (${formatPublicKey(recipient)})`
             )
         );
     }
