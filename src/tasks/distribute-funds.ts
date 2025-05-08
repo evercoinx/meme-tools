@@ -27,7 +27,6 @@ import {
 } from "../helpers/network";
 import {
     connectionPool,
-    DISTRIBUTOR_BALANCE_SOL,
     envVars,
     heliusClientPool,
     logger,
@@ -39,7 +38,7 @@ import {
 const DEV_BALANCE_SOL = 0.1;
 const RAYDIUM_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
 
-export const sniperLamportsToDistribute = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
+export const SNIPER_LAMPORTS_TO_DISTRIBUTE = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
     (poolSharePercent) =>
         new Decimal(envVars.POOL_LIQUIDITY_SOL)
             .mul(poolSharePercent)
@@ -50,7 +49,7 @@ export const sniperLamportsToDistribute = Array.from(envVars.SNIPER_POOL_SHARE_P
             .trunc()
 );
 
-export const traderLamportsToDistribute = new Array(envVars.TRADER_COUNT)
+export const TRADER_LAMPORTS_TO_DISTRIBUTE = new Array(envVars.TRADER_COUNT)
     .fill(0)
     .map(() =>
         new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
@@ -61,7 +60,7 @@ export const traderLamportsToDistribute = new Array(envVars.TRADER_COUNT)
             .trunc()
     );
 
-export const whaleLamportsToDistribute = envVars.WHALE_AMOUNTS_SOL.map((amount) =>
+export const WHALE_LAMPORTS_TO_DISTRIBUTE = envVars.WHALE_AMOUNTS_SOL.map((amount) =>
     new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
 );
 
@@ -83,22 +82,54 @@ export const whaleLamportsToDistribute = envVars.WHALE_AMOUNTS_SOL.map((amount) 
 
         if (dryRun) {
             logger.warn("Dry run mode enabled");
-            await showDistributeDevFunds(usdPriceForSol);
+            await estimateDevFunds(usdPriceForSol);
             groupSize = Number.MAX_SAFE_INTEGER;
         }
 
-        const sendDistributeFundsTransactions = await sendDistributeSniperFunds(
+        const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
+        const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
+        const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
+
+        const snipers = generateOrImportSwapperKeypairs(
+            envVars.SNIPER_POOL_SHARE_PERCENTS.size,
+            KeypairKind.Sniper,
+            dryRun
+        );
+        const traders = generateOrImportSwapperKeypairs(
+            envVars.TRADER_COUNT,
+            KeypairKind.Trader,
+            dryRun
+        );
+        const whales = generateOrImportSwapperKeypairs(
+            envVars.WHALE_AMOUNTS_SOL.length,
+            KeypairKind.Whale,
+            dryRun
+        );
+
+        const sendDistributeFundsTransactions = await getSendDistrbiteFundsTransactions(
+            snipers,
+            sniperDistributor,
+            KeypairKind.Sniper,
             groupSize,
+            SNIPER_LAMPORTS_TO_DISTRIBUTE,
             usdPriceForSol,
             dryRun
         );
-        const sendDistrubuteTraderFundsTransactions = await sendDistributeTraderFunds(
+        const sendDistrubuteTraderFundsTransactions = await getSendDistrbiteFundsTransactions(
+            traders,
+            traderDistributor,
+            KeypairKind.Trader,
             groupSize,
+            TRADER_LAMPORTS_TO_DISTRIBUTE,
             usdPriceForSol,
             dryRun
         );
-        const sendDistrubuteWhaleFundsTransactions = await sendDistributeWhaleFunds(
+        const sendDistrubuteWhaleFundsTransactions = await getSendDistrbiteFundsTransactions(
+            whales,
+            whaleDistributor,
+            KeypairKind.Whale,
             groupSize,
+            WHALE_LAMPORTS_TO_DISTRIBUTE,
             usdPriceForSol,
             dryRun
         );
@@ -115,7 +146,7 @@ export const whaleLamportsToDistribute = envVars.WHALE_AMOUNTS_SOL.map((amount) 
     }
 })();
 
-async function showDistributeDevFunds(usdPriceForSol: Decimal): Promise<void> {
+async function estimateDevFunds(usdPriceForSol: Decimal): Promise<void> {
     const dev = await importKeypairFromFile(KeypairKind.Dev);
     const lamportsToDistribute = new Decimal(envVars.POOL_LIQUIDITY_SOL)
         .plus(DEV_BALANCE_SOL)
@@ -126,10 +157,16 @@ async function showDistributeDevFunds(usdPriceForSol: Decimal): Promise<void> {
     const solBalance = await getSolBalance(connectionPool, dev);
     if (solBalance.gte(lamportsToDistribute)) {
         logger.info(
-            "Dev (%s) has sufficient balance: %s SOL. He must spend %s SOL",
+            "Dev (%s) has sufficient balance: %s SOL. He must spend %s SOL ($%s)",
             formatPublicKey(dev.publicKey, "long"),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            formatDecimal(lamportsToDistribute.div(LAMPORTS_PER_SOL))
+            formatDecimal(lamportsToDistribute.div(LAMPORTS_PER_SOL)),
+            formatDecimal(
+                lamportsToDistribute
+                    .div(LAMPORTS_PER_SOL)
+                    .mul(usdPriceForSol)
+                    .toDP(2, Decimal.ROUND_CEIL)
+            )
         );
         return;
     }
@@ -145,25 +182,27 @@ async function showDistributeDevFunds(usdPriceForSol: Decimal): Promise<void> {
     );
 }
 
-async function showDistributeDistributorFunds(
+async function estimateDistributorFunds(
     account: Keypair,
     keypairKind: KeypairKind,
-    fundedLamports: Decimal,
+    lamportsToDistribute: Decimal,
     fundedAccountCount: number,
     usdPriceForSol: Decimal
 ): Promise<void> {
     const solBalance = await getSolBalance(connectionPool, account);
-    const lamportsToDistribute = new Decimal(DISTRIBUTOR_BALANCE_SOL)
-        .mul(LAMPORTS_PER_SOL)
-        .plus(fundedLamports);
-
     if (solBalance.gte(lamportsToDistribute)) {
         logger.info(
-            "%s distributor (%s) has sufficient balance: %s SOL. He must distribute %s SOL to %s %ss",
+            "%s distributor (%s) has sufficient balance: %s SOL. He must distribute %s SOL ($%s) among %s %ss",
             capitalize(keypairKind),
             formatPublicKey(account.publicKey, "long"),
             formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-            formatDecimal(fundedLamports.div(LAMPORTS_PER_SOL)),
+            formatDecimal(lamportsToDistribute.div(LAMPORTS_PER_SOL)),
+            formatDecimal(
+                lamportsToDistribute
+                    .div(LAMPORTS_PER_SOL)
+                    .mul(usdPriceForSol)
+                    .toDP(2, Decimal.ROUND_CEIL)
+            ),
             formatInteger(fundedAccountCount),
             keypairKind
         );
@@ -181,75 +220,6 @@ async function showDistributeDistributorFunds(
         formatDecimal(solToDistribute.mul(usdPriceForSol).toDP(2, Decimal.ROUND_CEIL)),
         formatInteger(fundedAccountCount),
         keypairKind
-    );
-}
-
-async function sendDistributeSniperFunds(
-    groupSize: number,
-    usdPriceForSol: Decimal,
-    dryRun: boolean
-): Promise<(TransactionSignature | undefined)[]> {
-    const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
-    const snipers = generateOrImportSwapperKeypairs(
-        envVars.SNIPER_POOL_SHARE_PERCENTS.size,
-        KeypairKind.Sniper,
-        dryRun
-    );
-
-    return await getSendDistrbiteFundsTransactions(
-        snipers,
-        sniperDistributor,
-        KeypairKind.Sniper,
-        groupSize,
-        sniperLamportsToDistribute,
-        usdPriceForSol,
-        dryRun
-    );
-}
-
-async function sendDistributeTraderFunds(
-    groupSize: number,
-    usdPriceForSol: Decimal,
-    dryRun: boolean
-): Promise<(TransactionSignature | undefined)[]> {
-    const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
-    const traders = generateOrImportSwapperKeypairs(
-        envVars.TRADER_COUNT,
-        KeypairKind.Trader,
-        dryRun
-    );
-
-    return await getSendDistrbiteFundsTransactions(
-        traders,
-        traderDistributor,
-        KeypairKind.Trader,
-        groupSize,
-        traderLamportsToDistribute,
-        usdPriceForSol,
-        dryRun
-    );
-}
-
-async function sendDistributeWhaleFunds(
-    groupSize: number,
-    usdPriceForSol: Decimal,
-    dryRun: boolean
-): Promise<(TransactionSignature | undefined)[]> {
-    const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
-    const whales = generateOrImportSwapperKeypairs(
-        envVars.WHALE_AMOUNTS_SOL.length,
-        KeypairKind.Whale,
-        dryRun
-    );
-
-    return await getSendDistrbiteFundsTransactions(
-        whales,
-        whaleDistributor,
-        KeypairKind.Whale,
-        groupSize,
-        whaleLamportsToDistribute,
-        usdPriceForSol,
-        dryRun
     );
 }
 
@@ -294,7 +264,6 @@ async function distributeFunds(
     const instructions: TransactionInstruction[] = [];
     const connection = connectionPool.get();
     const heliusClient = heliusClientPool.get();
-    let fundedLamportsTotal = ZERO_DECIMAL;
     let fundedAccountCount = 0;
 
     for (const [i, account] of accounts.entries()) {
@@ -315,9 +284,20 @@ async function distributeFunds(
                 })
             );
 
-            fundedLamportsTotal = fundedLamportsTotal.add(lamports[i]);
             fundedAccountCount++;
         }
+    }
+
+    const totalLamportsToDistribute = lamports.reduce((sum, value) => sum.add(value), ZERO_DECIMAL);
+    if (dryRun) {
+        await estimateDistributorFunds(
+            distributor,
+            keypairKind,
+            totalLamportsToDistribute,
+            fundedAccountCount,
+            usdPriceForSol
+        );
+        return Promise.resolve(undefined);
     }
 
     if (instructions.length === 0) {
@@ -327,17 +307,6 @@ async function distributeFunds(
             formatPublicKey(distributor.publicKey, "long"),
             formatInteger(accounts.length),
             keypairKind
-        );
-        return Promise.resolve(undefined);
-    }
-
-    if (dryRun) {
-        await showDistributeDistributorFunds(
-            distributor,
-            keypairKind,
-            fundedLamportsTotal,
-            fundedAccountCount,
-            usdPriceForSol
         );
         return Promise.resolve(undefined);
     }
@@ -355,6 +324,6 @@ async function distributeFunds(
         connection,
         [...computeBudgetInstructions, ...instructions],
         [distributor],
-        `to distribute ${formatDecimal(fundedLamportsTotal.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(fundedAccountCount)} ${keypairKind}s`
+        `to distribute ${formatDecimal(totalLamportsToDistribute.div(LAMPORTS_PER_SOL))} SOL from ${keypairKind} distributor (${formatPublicKey(distributor.publicKey)}) to ${formatInteger(fundedAccountCount)} ${keypairKind}s`
     );
 }

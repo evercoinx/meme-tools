@@ -23,9 +23,9 @@ import {
     ZERO_DECIMAL,
 } from "../modules";
 import {
-    sniperLamportsToDistribute,
-    traderLamportsToDistribute,
-    whaleLamportsToDistribute,
+    SNIPER_LAMPORTS_TO_DISTRIBUTE,
+    TRADER_LAMPORTS_TO_DISTRIBUTE,
+    WHALE_LAMPORTS_TO_DISTRIBUTE,
 } from "./distribute-funds";
 
 (async () => {
@@ -40,15 +40,15 @@ import {
         const sendTransferFundsTransactions = await transferFunds(dev, [
             [
                 sniperDistributor,
-                sniperLamportsToDistribute.reduce((sum, value) => sum.add(value), ZERO_DECIMAL),
+                SNIPER_LAMPORTS_TO_DISTRIBUTE.reduce((sum, value) => sum.add(value), ZERO_DECIMAL),
             ],
             [
                 traderDistributor,
-                traderLamportsToDistribute.reduce((sum, value) => sum.add(value), ZERO_DECIMAL),
+                TRADER_LAMPORTS_TO_DISTRIBUTE.reduce((sum, value) => sum.add(value), ZERO_DECIMAL),
             ],
             [
                 whaleDistributor,
-                whaleLamportsToDistribute.reduce((sum, value) => sum.add(value), ZERO_DECIMAL),
+                WHALE_LAMPORTS_TO_DISTRIBUTE.reduce((sum, value) => sum.add(value), ZERO_DECIMAL),
             ],
         ]);
         await Promise.all(sendTransferFundsTransactions);
@@ -76,13 +76,12 @@ async function transferFunds(
         const heliusClient = heliusClientPool.get();
 
         const solBalance = await getSolBalance(connectionPool, recipient);
-        const lamportsToTransfer = solBalance.sub(lamports);
+        const lamportsToTransfer = lamports.sub(solBalance);
         if (lamportsToTransfer.lte(ZERO_DECIMAL)) {
             logger.info(
                 "Recipient (%s) has sufficient balance: %s SOL",
                 formatPublicKey(recipient.publicKey),
-                formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-                formatDecimal(lamportsToTransfer.div(LAMPORTS_PER_SOL))
+                formatDecimal(solBalance.div(LAMPORTS_PER_SOL))
             );
             continue;
         }

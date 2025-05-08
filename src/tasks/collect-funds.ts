@@ -206,14 +206,16 @@ async function closeSwapperTokenAccounts(
 
         if (!mintTokenInitialized) {
             logger.warn(
-                "Account (%s) has uninitialized %s ATA (%s)",
+                "%s (%s) has uninitialized %s ATA (%s)",
+                capitalize(keypairKind),
                 formatPublicKey(account.publicKey),
                 envVars.TOKEN_SYMBOL,
                 formatPublicKey(mintTokenAccount)
             );
         } else if (mintTokenBalance.lte(ZERO_DECIMAL)) {
             logger.warn(
-                "Account (%s) has zero balance on %s ATA (%s)",
+                "%s (%s) has zero balance on %s ATA (%s)",
+                capitalize(keypairKind),
                 formatPublicKey(account.publicKey),
                 envVars.TOKEN_SYMBOL,
                 formatPublicKey(mintTokenAccount)
@@ -231,7 +233,8 @@ async function closeSwapperTokenAccounts(
                     )
                 );
                 logger.warn(
-                    "Account (%s) has dust tokens on %s ATA (%s): %s %s",
+                    "%s (%s) has dust tokens on %s ATA (%s): %s %s",
+                    capitalize(keypairKind),
                     formatPublicKey(account.publicKey),
                     envVars.TOKEN_SYMBOL,
                     formatPublicKey(mintTokenAccount),
