@@ -27,6 +27,7 @@ import {
 } from "../helpers/network";
 import {
     connectionPool,
+    DISTRIBUTOR_BALANCE_SOL,
     envVars,
     heliusClientPool,
     logger,
@@ -36,8 +37,33 @@ import {
 } from "../modules";
 
 const DEV_BALANCE_SOL = 0.1;
-const DISTRIBUTOR_BALANCE_SOL = 0.01;
 const RAYDIUM_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
+
+export const sniperLamportsToDistribute = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
+    (poolSharePercent) =>
+        new Decimal(envVars.POOL_LIQUIDITY_SOL)
+            .mul(poolSharePercent)
+            .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
+            .add(tokenSeed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
+            .add(envVars.SNIPER_BALANCE_SOL)
+            .mul(LAMPORTS_PER_SOL)
+            .trunc()
+);
+
+export const traderLamportsToDistribute = new Array(envVars.TRADER_COUNT)
+    .fill(0)
+    .map(() =>
+        new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
+            .mul(envVars.POOL_TRADING_CYCLE_COUNT)
+            .add(tokenSeed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
+            .add(envVars.TRADER_BALANCE_SOL)
+            .mul(LAMPORTS_PER_SOL)
+            .trunc()
+    );
+
+export const whaleLamportsToDistribute = envVars.WHALE_AMOUNTS_SOL.map((amount) =>
+    new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
+);
 
 (async () => {
     try {
@@ -121,10 +147,10 @@ async function showDistributeDevFunds(usdPriceForSol: Decimal): Promise<void> {
 
 async function showDistributeDistributorFunds(
     account: Keypair,
+    keypairKind: KeypairKind,
     fundedLamports: Decimal,
     fundedAccountCount: number,
-    usdPriceForSol: Decimal,
-    keypairKind: KeypairKind
+    usdPriceForSol: Decimal
 ): Promise<void> {
     const solBalance = await getSolBalance(connectionPool, account);
     const lamportsToDistribute = new Decimal(DISTRIBUTOR_BALANCE_SOL)
@@ -170,23 +196,12 @@ async function sendDistributeSniperFunds(
         dryRun
     );
 
-    const lamportsToDistribute = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
-        (poolSharePercent) =>
-            new Decimal(envVars.POOL_LIQUIDITY_SOL)
-                .mul(poolSharePercent)
-                .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
-                .add(tokenSeed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
-                .add(envVars.SNIPER_BALANCE_SOL)
-                .mul(LAMPORTS_PER_SOL)
-                .trunc()
-    );
-
     return await getSendDistrbiteFundsTransactions(
         snipers,
         sniperDistributor,
         KeypairKind.Sniper,
         groupSize,
-        lamportsToDistribute,
+        sniperLamportsToDistribute,
         usdPriceForSol,
         dryRun
     );
@@ -204,23 +219,12 @@ async function sendDistributeTraderFunds(
         dryRun
     );
 
-    const lamportsToDistribute = new Array(envVars.TRADER_COUNT)
-        .fill(0)
-        .map(() =>
-            new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
-                .mul(envVars.POOL_TRADING_CYCLE_COUNT)
-                .add(tokenSeed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
-                .add(envVars.TRADER_BALANCE_SOL)
-                .mul(LAMPORTS_PER_SOL)
-                .trunc()
-        );
-
     return await getSendDistrbiteFundsTransactions(
         traders,
         traderDistributor,
         KeypairKind.Trader,
         groupSize,
-        lamportsToDistribute,
+        traderLamportsToDistribute,
         usdPriceForSol,
         dryRun
     );
@@ -238,16 +242,12 @@ async function sendDistributeWhaleFunds(
         dryRun
     );
 
-    const lamportsToDistribute = envVars.WHALE_AMOUNTS_SOL.map((amount) =>
-        new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
-    );
-
     return await getSendDistrbiteFundsTransactions(
         whales,
         whaleDistributor,
         KeypairKind.Whale,
         groupSize,
-        lamportsToDistribute,
+        whaleLamportsToDistribute,
         usdPriceForSol,
         dryRun
     );
@@ -334,10 +334,10 @@ async function distributeFunds(
     if (dryRun) {
         await showDistributeDistributorFunds(
             distributor,
+            keypairKind,
             fundedLamportsTotal,
             fundedAccountCount,
-            usdPriceForSol,
-            keypairKind
+            usdPriceForSol
         );
         return Promise.resolve(undefined);
     }

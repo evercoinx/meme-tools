@@ -33,6 +33,11 @@ export const MINT_DUST_UNITS = new Decimal(100).mul(UNITS_PER_MINT);
 export const MINT_IMAGE_TYPE = "jpg";
 export const MINT_IMAGE_FILE_NAME = `${envVars.TOKEN_SYMBOL.toLowerCase()}.${MINT_IMAGE_TYPE}`;
 export const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 60_000;
+export const DISTRIBUTOR_BALANCE_SOL = Math.max(
+    envVars.SNIPER_BALANCE_SOL,
+    envVars.TRADER_BALANCE_SOL,
+    envVars.WHALE_BALANCE_SOL
+);
 
 const currentWorkingDir = process.cwd();
 export const IMAGE_DIR = join(currentWorkingDir, "images", envVars.NODE_ENV);

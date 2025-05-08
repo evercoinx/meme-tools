@@ -60,7 +60,7 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
         const traders = importSwapperKeypairs(KeypairKind.Trader);
         const whales = importSwapperKeypairs(KeypairKind.Whale);
 
-        const sendcloseSwapperTokenAccountsTransactions: Promise<
+        const sendCloseSwapperTokenAccountsTransactions: Promise<
             TransactionSignature | undefined
         >[] = [];
 
@@ -68,7 +68,7 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
         if (!raydiumLpMint) {
             logger.warn("Raydium LP mint not loaded from storage");
         } else {
-            sendcloseSwapperTokenAccountsTransactions.push(
+            sendCloseSwapperTokenAccountsTransactions.push(
                 ...(await closeDevTokenAccount(dev, new PublicKey(raydiumLpMint)))
             );
         }
@@ -77,17 +77,17 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
         if (!mint) {
             logger.warn("Mint not loaded from storage");
         } else {
-            sendcloseSwapperTokenAccountsTransactions.push(
+            sendCloseSwapperTokenAccountsTransactions.push(
                 ...(await closeSwapperTokenAccounts(snipers, KeypairKind.Sniper, mint))
             );
-            sendcloseSwapperTokenAccountsTransactions.push(
+            sendCloseSwapperTokenAccountsTransactions.push(
                 ...(await closeSwapperTokenAccounts(whales, KeypairKind.Whale, mint))
             );
-            sendcloseSwapperTokenAccountsTransactions.push(
+            sendCloseSwapperTokenAccountsTransactions.push(
                 ...(await closeSwapperTokenAccounts(traders, KeypairKind.Trader, mint))
             );
         }
-        await Promise.all(sendcloseSwapperTokenAccountsTransactions);
+        await Promise.all(sendCloseSwapperTokenAccountsTransactions);
 
         const sendCollectSwapperFundsTransactions: Promise<TransactionSignature | undefined>[] = [];
         sendCollectSwapperFundsTransactions.push(
