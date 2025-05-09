@@ -2,7 +2,6 @@ import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionSignature } from "
 import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";
 import { getSolBalance, importKeypairFromFile, KeypairKind } from "../helpers/account";
-import { checkFileExists } from "../helpers/filesystem";
 import { formatDecimal, formatError, formatPublicKey } from "../helpers/format";
 import {
     getComputeBudgetInstructions,
@@ -13,7 +12,6 @@ import {
     envVars,
     heliusClientPool,
     logger,
-    storage,
     SNIPER_LAMPORTS_TO_DISTRIBUTE,
     TRADER_LAMPORTS_TO_DISTRIBUTE,
     WHALE_LAMPORTS_TO_DISTRIBUTE,
@@ -22,8 +20,6 @@ import {
 
 (async () => {
     try {
-        await checkFileExists(storage.cacheFilePath);
-
         const dev = await importKeypairFromFile(KeypairKind.Dev);
         const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
         const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
