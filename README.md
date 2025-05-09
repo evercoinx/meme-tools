@@ -5,7 +5,7 @@
 1. Run this command to set the _production_ environment:
 
     ```bash
-    yarn setenv:prod
+    yarn set-env:prod
     ```
 
 2. Set this environment variable in the _.env.production_ file:
@@ -127,7 +127,7 @@
 3. Run this command to make sure that the _production_ environment is set:
 
     ```bash
-    yarn getenv
+    yarn get-env
     ```
 
 4. Set the following environment variables in the _.env.production_ file:
