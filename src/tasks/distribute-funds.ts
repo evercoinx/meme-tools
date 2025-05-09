@@ -27,6 +27,7 @@ import {
 } from "../helpers/network";
 import {
     connectionPool,
+    DEV_LAMPORTS_TO_DISTRIBUTE,
     envVars,
     heliusClientPool,
     logger,
@@ -36,9 +37,6 @@ import {
     WHALE_LAMPORTS_TO_DISTRIBUTE,
     ZERO_DECIMAL,
 } from "../modules";
-
-const DEV_BALANCE_SOL = 0.1;
-const RAYDIUM_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
 
 (async () => {
     try {
@@ -56,15 +54,16 @@ const RAYDIUM_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 :
         const usdPriceForSol = await pythClient.getUsdPriceForSol();
         let groupSize = 20;
 
-        if (dryRun) {
-            logger.warn("Dry run mode enabled");
-            await estimateDevFunds(usdPriceForSol);
-            groupSize = Number.MAX_SAFE_INTEGER;
-        }
-
+        const dev = await importKeypairFromFile(KeypairKind.Dev);
         const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
         const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
         const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
+
+        if (dryRun) {
+            logger.warn("Dry run mode enabled");
+            await estimateDevFunds(dev, DEV_LAMPORTS_TO_DISTRIBUTE, usdPriceForSol);
+            groupSize = Number.MAX_SAFE_INTEGER;
+        }
 
         const snipers = generateOrImportSwapperKeypairs(
             envVars.SNIPER_POOL_SHARE_PERCENTS.size,
@@ -122,14 +121,11 @@ const RAYDIUM_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 :
     }
 })();
 
-async function estimateDevFunds(usdPriceForSol: Decimal): Promise<void> {
-    const dev = await importKeypairFromFile(KeypairKind.Dev);
-    const lamportsToDistribute = new Decimal(envVars.POOL_LIQUIDITY_SOL)
-        .plus(DEV_BALANCE_SOL)
-        .plus(RAYDIUM_POOL_CREATION_FEE_SOL)
-        .mul(LAMPORTS_PER_SOL)
-        .trunc();
-
+async function estimateDevFunds(
+    dev: Keypair,
+    lamportsToDistribute: Decimal,
+    usdPriceForSol: Decimal
+): Promise<void> {
     const solBalance = await getSolBalance(connectionPool, dev);
     if (solBalance.gte(lamportsToDistribute)) {
         logger.info(

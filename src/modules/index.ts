@@ -87,6 +87,13 @@ export const encryption = new Encryption(
 );
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 
+export const MAIN_ACCOUNT_BALANCE_SOL = 0.01;
+const RAYDIUM_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
+export const DEV_LAMPORTS_TO_DISTRIBUTE = new Decimal(envVars.POOL_LIQUIDITY_SOL)
+    .plus(MAIN_ACCOUNT_BALANCE_SOL)
+    .plus(RAYDIUM_POOL_CREATION_FEE_SOL)
+    .mul(LAMPORTS_PER_SOL)
+    .trunc();
 export const SNIPER_LAMPORTS_TO_DISTRIBUTE = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
     (poolSharePercent) =>
         new Decimal(envVars.POOL_LIQUIDITY_SOL)
@@ -97,7 +104,6 @@ export const SNIPER_LAMPORTS_TO_DISTRIBUTE = Array.from(envVars.SNIPER_POOL_SHAR
             .mul(LAMPORTS_PER_SOL)
             .trunc()
 );
-
 export const TRADER_LAMPORTS_TO_DISTRIBUTE = new Array(envVars.TRADER_COUNT)
     .fill(0)
     .map(() =>
@@ -108,7 +114,6 @@ export const TRADER_LAMPORTS_TO_DISTRIBUTE = new Array(envVars.TRADER_COUNT)
             .mul(LAMPORTS_PER_SOL)
             .trunc()
     );
-
 export const WHALE_LAMPORTS_TO_DISTRIBUTE = envVars.WHALE_AMOUNTS_SOL.map((amount) =>
     new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
 );

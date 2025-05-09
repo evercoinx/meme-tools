@@ -12,6 +12,7 @@ import {
     envVars,
     heliusClientPool,
     logger,
+    MAIN_ACCOUNT_BALANCE_SOL,
     SNIPER_LAMPORTS_TO_DISTRIBUTE,
     TRADER_LAMPORTS_TO_DISTRIBUTE,
     WHALE_LAMPORTS_TO_DISTRIBUTE,
@@ -28,15 +29,39 @@ import {
         const sendTransferFundsTransactions = await transferFunds(dev, [
             [
                 sniperDistributor,
-                SNIPER_LAMPORTS_TO_DISTRIBUTE.reduce((sum, value) => sum.add(value), ZERO_DECIMAL),
+                new Decimal(MAIN_ACCOUNT_BALANCE_SOL)
+                    .mul(LAMPORTS_PER_SOL)
+                    .trunc()
+                    .add(
+                        SNIPER_LAMPORTS_TO_DISTRIBUTE.reduce(
+                            (sum, value) => sum.add(value),
+                            ZERO_DECIMAL
+                        )
+                    ),
             ],
             [
                 traderDistributor,
-                TRADER_LAMPORTS_TO_DISTRIBUTE.reduce((sum, value) => sum.add(value), ZERO_DECIMAL),
+                new Decimal(MAIN_ACCOUNT_BALANCE_SOL)
+                    .mul(LAMPORTS_PER_SOL)
+                    .trunc()
+                    .add(
+                        TRADER_LAMPORTS_TO_DISTRIBUTE.reduce(
+                            (sum, value) => sum.add(value),
+                            ZERO_DECIMAL
+                        )
+                    ),
             ],
             [
                 whaleDistributor,
-                WHALE_LAMPORTS_TO_DISTRIBUTE.reduce((sum, value) => sum.add(value), ZERO_DECIMAL),
+                new Decimal(MAIN_ACCOUNT_BALANCE_SOL)
+                    .mul(LAMPORTS_PER_SOL)
+                    .trunc()
+                    .add(
+                        WHALE_LAMPORTS_TO_DISTRIBUTE.reduce(
+                            (sum, value) => sum.add(value),
+                            ZERO_DECIMAL
+                        )
+                    ),
             ],
         ]);
         await Promise.all(sendTransferFundsTransactions);
