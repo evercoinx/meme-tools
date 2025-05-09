@@ -140,8 +140,9 @@ async function closeDevTokenAccount(
 
     if (!lpMintTokenInitialized) {
         logger.warn(
-            "Dev (%s) has uninitialized LP mint ATA (%s)",
+            "Dev (%s) has uninitialized LP-%s mint ATA (%s)",
             formatPublicKey(dev.publicKey),
+            envVars.TOKEN_SYMBOL,
             formatPublicKey(lpMintTokenAccount)
         );
     } else if (lpMintTokenBalance.lte(ZERO_DECIMAL)) {

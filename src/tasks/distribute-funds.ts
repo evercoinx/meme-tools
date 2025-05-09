@@ -31,38 +31,14 @@ import {
     heliusClientPool,
     logger,
     pythClient,
-    tokenSeed,
+    SNIPER_LAMPORTS_TO_DISTRIBUTE,
+    TRADER_LAMPORTS_TO_DISTRIBUTE,
+    WHALE_LAMPORTS_TO_DISTRIBUTE,
     ZERO_DECIMAL,
 } from "../modules";
 
 const DEV_BALANCE_SOL = 0.1;
 const RAYDIUM_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
-
-export const SNIPER_LAMPORTS_TO_DISTRIBUTE = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
-    (poolSharePercent) =>
-        new Decimal(envVars.POOL_LIQUIDITY_SOL)
-            .mul(poolSharePercent)
-            .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
-            .add(tokenSeed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
-            .add(envVars.SNIPER_BALANCE_SOL)
-            .mul(LAMPORTS_PER_SOL)
-            .trunc()
-);
-
-export const TRADER_LAMPORTS_TO_DISTRIBUTE = new Array(envVars.TRADER_COUNT)
-    .fill(0)
-    .map(() =>
-        new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
-            .mul(envVars.POOL_TRADING_CYCLE_COUNT)
-            .add(tokenSeed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
-            .add(envVars.TRADER_BALANCE_SOL)
-            .mul(LAMPORTS_PER_SOL)
-            .trunc()
-    );
-
-export const WHALE_LAMPORTS_TO_DISTRIBUTE = envVars.WHALE_AMOUNTS_SOL.map((amount) =>
-    new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
-);
 
 (async () => {
     try {

@@ -1,10 +1,4 @@
-import {
-    Keypair,
-    LAMPORTS_PER_SOL,
-    SystemProgram,
-    TransactionInstruction,
-    TransactionSignature,
-} from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionSignature } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";
 import { getSolBalance, importKeypairFromFile, KeypairKind } from "../helpers/account";
@@ -20,13 +14,11 @@ import {
     heliusClientPool,
     logger,
     storage,
-    ZERO_DECIMAL,
-} from "../modules";
-import {
     SNIPER_LAMPORTS_TO_DISTRIBUTE,
     TRADER_LAMPORTS_TO_DISTRIBUTE,
     WHALE_LAMPORTS_TO_DISTRIBUTE,
-} from "./distribute-funds";
+    ZERO_DECIMAL,
+} from "../modules";
 
 (async () => {
     try {

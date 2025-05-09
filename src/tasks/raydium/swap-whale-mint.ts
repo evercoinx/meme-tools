@@ -1,7 +1,7 @@
 import { parseArgs } from "node:util";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, TransactionSignature } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { PriorityLevel } from "helius-sdk";

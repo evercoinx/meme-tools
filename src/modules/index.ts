@@ -1,7 +1,7 @@
 import { Agent } from "node:https";
 import { homedir } from "node:os";
 import { join, parse } from "node:path";
-import { Connection } from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { formatInteger, formatMilliseconds, formatUri } from "../helpers/format";
@@ -86,6 +86,32 @@ export const encryption = new Encryption(
     "encrypted:"
 );
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
+
+export const SNIPER_LAMPORTS_TO_DISTRIBUTE = Array.from(envVars.SNIPER_POOL_SHARE_PERCENTS).map(
+    (poolSharePercent) =>
+        new Decimal(envVars.POOL_LIQUIDITY_SOL)
+            .mul(poolSharePercent)
+            .add(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL[1])
+            .add(tokenSeed.generateRandomFloat(envVars.SNIPER_REPEATABLE_BUY_AMOUNT_RANGE_SOL))
+            .add(envVars.SNIPER_BALANCE_SOL)
+            .mul(LAMPORTS_PER_SOL)
+            .trunc()
+);
+
+export const TRADER_LAMPORTS_TO_DISTRIBUTE = new Array(envVars.TRADER_COUNT)
+    .fill(0)
+    .map(() =>
+        new Decimal(envVars.TRADER_BUY_AMOUNT_RANGE_SOL[1])
+            .mul(envVars.POOL_TRADING_CYCLE_COUNT)
+            .add(tokenSeed.generateRandomFloat(envVars.TRADER_BUY_AMOUNT_RANGE_SOL))
+            .add(envVars.TRADER_BALANCE_SOL)
+            .mul(LAMPORTS_PER_SOL)
+            .trunc()
+    );
+
+export const WHALE_LAMPORTS_TO_DISTRIBUTE = envVars.WHALE_AMOUNTS_SOL.map((amount) =>
+    new Decimal(amount).add(envVars.WHALE_BALANCE_SOL).mul(LAMPORTS_PER_SOL).trunc()
+);
 
 const MAX_FETCH_ATTEMTPS = 5;
 const BASE_BACKOFF_PERIOD_MS = 1_000;
