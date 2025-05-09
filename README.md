@@ -86,11 +86,15 @@
     yarn distribute-funds:dry-run
     ```
 
-7. Transfer the reported SOL from the _collector_ account on Solana to the _one_ on Base via [Mayan Bridge](https://swap.mayan.finance).
+7. Transfer the reported SOL (the _dev_ account) from the _collector_ account on Solana to the _one_ on Base via [Mayan Bridge](https://swap.mayan.finance).
 
-8. Transfer SOL from the _collector_ account on Base to the _dev_ and _sniper distributor_ accounts on Solana via [Mayan Bridge](https://swap.mayan.finance).
+8. Transfer SOL from the _collector_ account on Base to the _dev_ account on Solana via [Mayan Bridge](https://swap.mayan.finance).
 
-9. Transfer SOL from _collector_ account on Solana to the _trader distributor_ and _whale distributor_ accounts.
+    ```bash
+    yarn transfer-funds
+    ```
+
+9. Run this command to transfer SOL from the _collector_ account to the _sniper distributor_, _trader distributor_ and _whale distributor_ accounts.
 
 10. Run this command to make sure that all the _main_ accounts have the sufficient SOL balances:
 
