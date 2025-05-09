@@ -83,7 +83,7 @@ export const pythClient = new Pyth(connectionPool, envVars.RPC_CLUSTER);
 export const encryption = new Encryption(
     "aes-256-cbc",
     envVars.KEYPAIR_ENCRYPTION_SECRET,
-    "encrypted"
+    "encrypted:"
 );
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 

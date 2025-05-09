@@ -10,7 +10,7 @@ export class Encryption {
     constructor(algorithm: string, secretKey: string, prefix: string) {
         this.algorithm = algorithm;
         this.secretKey = secretKey;
-        this.prefix = `${prefix}:`;
+        this.prefix = prefix;
         this.iv = Buffer.from(
             secretKey
                 .split("")

@@ -91,13 +91,13 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
 
         const sendCollectSwapperFundsTransactions: Promise<TransactionSignature | undefined>[] = [];
         sendCollectSwapperFundsTransactions.push(
-            ...(await collectFunds(snipers, sniperDistributor.publicKey, KeypairKind.Sniper))
+            ...(await collectFunds(snipers, KeypairKind.Sniper, sniperDistributor))
         );
         sendCollectSwapperFundsTransactions.push(
-            ...(await collectFunds(whales, whaleDistributor.publicKey, KeypairKind.Whale))
+            ...(await collectFunds(whales, KeypairKind.Whale, whaleDistributor))
         );
         sendCollectSwapperFundsTransactions.push(
-            ...(await collectFunds(traders, traderDistributor.publicKey, KeypairKind.Trader))
+            ...(await collectFunds(traders, KeypairKind.Trader, traderDistributor))
         );
         await Promise.all(sendCollectSwapperFundsTransactions);
 
@@ -107,15 +107,15 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
         );
         await new Promise((resolve) => setTimeout(resolve, MAIN_FUNDS_COLLECTION_INTERVAL_MS));
 
-        const accounts = [sniperDistributor, traderDistributor, whaleDistributor];
+        const mainAccounts = [sniperDistributor, traderDistributor, whaleDistributor];
         if (envVars.NODE_ENV === "production") {
-            accounts.push(dev);
+            mainAccounts.push(dev);
         }
 
         const sendCollectMainFundsTransactions = await collectFunds(
-            accounts,
-            new PublicKey(envVars.COLLECTOR_ADDRESS),
-            KeypairKind.Main
+            mainAccounts,
+            KeypairKind.Main,
+            new PublicKey(envVars.COLLECTOR_PUBLIC_KEY)
         );
         await Promise.all(sendCollectMainFundsTransactions);
         process.exit(0);
@@ -284,9 +284,13 @@ async function closeSwapperTokenAccounts(
 
 async function collectFunds(
     accounts: Keypair[],
-    recipient: PublicKey,
-    keypairKind: KeypairKind
+    keypairKind: KeypairKind,
+    recipient: Keypair | PublicKey
 ): Promise<Promise<TransactionSignature | undefined>[]> {
+    if (recipient instanceof Keypair) {
+        recipient = recipient.publicKey;
+    }
+
     const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
     const computeBudgetInstructions: TransactionInstruction[] = [];
     let fee: number | undefined;

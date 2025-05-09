@@ -34,6 +34,7 @@ interface EnvironmentSchema {
     POOL_TRADING_CYCLE_COUNT: number;
     POOL_TRADING_PUMP_BIAS_PERCENT: number;
     POOL_TRADING_ONLY_NEW_TRADERS: boolean;
+    COLLECTOR_PUBLIC_KEY: string;
     SNIPER_POOL_SHARE_RANGE_PERCENT: [number, number];
     SNIPER_POOL_SHARE_PERCENTS: Set<number>;
     SNIPER_BALANCE_SOL: number;
@@ -49,7 +50,6 @@ interface EnvironmentSchema {
     WHALE_BALANCE_SOL: number;
     SWAPPER_GROUP_SIZE: number;
     SWAPPER_TRADE_DELAY_RANGE_SEC: [number, number];
-    COLLECTOR_ADDRESS: string;
 }
 
 const ARRAY_SEPARATOR = ",";
@@ -387,18 +387,18 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .min(2)
                 .max(2)
                 .description("Trader swap delay range (in seconds)"),
-            COLLECTOR_ADDRESS: Joi.string()
+            COLLECTOR_PUBLIC_KEY: Joi.string()
                 .required()
                 .trim()
                 .alphanum()
                 .length(44)
-                .custom((address: string) => {
-                    if (!PublicKey.isOnCurve(address)) {
-                        throw new Error(`Solana address is invalid: ${address}`);
+                .custom((publicKey: string) => {
+                    if (!PublicKey.isOnCurve(publicKey)) {
+                        throw new Error(`Collector public key is invalid: ${publicKey}`);
                     }
-                    return address;
+                    return publicKey;
                 })
-                .description("Collector address"),
+                .description("Collector public key"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 
