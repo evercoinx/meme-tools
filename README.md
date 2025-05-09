@@ -37,6 +37,10 @@
         - `POOL_TRADING_CYCLE_COUNT`
         - `POOL_TRADING_PUMP_BIAS_PERCENT` (Defaults to _50_)
         - `POOL_TRADING_ONLY_NEW_TRADERS` (Defaults to _false_)
+    
+    - Collector:
+
+        - `COLLECTOR_PUBLIC_KEY`
 
     - Sniper:
 

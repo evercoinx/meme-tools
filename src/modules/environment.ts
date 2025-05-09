@@ -391,7 +391,8 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .required()
                 .trim()
                 .alphanum()
-                .length(44)
+                .min(43)
+                .max(44)
                 .custom((publicKey: string) => {
                     if (!PublicKey.isOnCurve(publicKey)) {
                         throw new Error(`Collector public key is invalid: ${publicKey}`);
