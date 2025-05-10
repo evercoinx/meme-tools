@@ -68,10 +68,6 @@
         - `SWAPPER_GROUP_SIZE` (Defaults to _1_)
         - `SWAPPER_TRADE_DELAY_RANGE_SEC`
 
-    - Collector:
-
-        - `COLLECTOR_ADDRESS` (Defaults to _""_)
-
 4. Run this command to check the current configuration:
 
     ```bash
