@@ -71,7 +71,8 @@
         "grind-keypair:dsn": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/grind-keypair.ts --prefix Ds --postfix N",
         "grind-keypair:dtr": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/grind-keypair.ts --prefix Dt --postfix R",
         "grind-keypair:dwh": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/grind-keypair.ts --prefix Dw --postfix H",
-        "rename-token-files": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/rename-token-files.ts"
+        "rename-token-files": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/rename-token-files.ts",
+        "analyze-channel:telegram": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/telegram/analyze-channel.ts"
     },
     "keywords": [],
     "author": "EverCoinX <2901744+evercoinx@users.noreply.github.com>",
@@ -96,7 +97,8 @@
         "image-size": "^2.0.2",
         "pinata-web3": "^0.5.4",
         "pino": "^9.6.0",
-        "pino-pretty": "^13.0.0"
+        "pino-pretty": "^13.0.0",
+        "telegram": "^2.26.22"
     },
     "devDependencies": {
         "@eslint/js": "^9.26.0",

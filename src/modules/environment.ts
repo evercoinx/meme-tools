@@ -50,6 +50,9 @@ interface EnvironmentSchema {
     WHALE_BALANCE_SOL: number;
     SWAPPER_GROUP_SIZE: number;
     SWAPPER_TRADE_DELAY_RANGE_SEC: [number, number];
+    TELEGRAM_API_ID: number;
+    TELEGRAM_API_HASH: string;
+    TELEGRAM_STRING_SESSION: string;
 }
 
 const ARRAY_SEPARATOR = ",";
@@ -400,6 +403,19 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                     return publicKey;
                 })
                 .description("Collector public key"),
+            TELEGRAM_API_ID: Joi.number().required().positive().description("Telegram API id"),
+            TELEGRAM_API_HASH: Joi.string()
+                .required()
+                .trim()
+                .alphanum()
+                .length(32)
+                .description("Telegram API hash"),
+            TELEGRAM_STRING_SESSION: Joi.string()
+                .optional()
+                .trim()
+                .allow("")
+                .regex(/[A-Za-z0-9+/=]/)
+                .description("Telegram string session"),
         })
         .unknown() as Joi.ObjectSchema<EnvironmentSchema>;
 
