@@ -12,6 +12,8 @@ import {
 } from "../../helpers/format";
 import { envVars, timeSeed } from "../../modules";
 
+const PERIOD_SECS = 1_209_600; // 1 month
+
 function prompt(question: string): Promise<string> {
     const rl = readline.createInterface({
         input: process.stdin,
@@ -55,14 +57,6 @@ function prompt(question: string): Promise<string> {
         }
 
         const channelName = await prompt("Enter channel name: ");
-        const periodSecondsString = await prompt("Enter period in seconds: ");
-
-        const periodSeconds = parseInt(periodSecondsString);
-        if (Number.isNaN(periodSeconds) || periodSeconds <= 0) {
-            throw new Error("Invalid period specified");
-        }
-
-        const startTime = Date.now() - periodSeconds * 1000;
         const channelEntity = await client.getInputEntity(channelName);
         const fullChannel = await client.invoke(
             new Api.channels.GetFullChannel({ channel: channelEntity })
@@ -78,6 +72,7 @@ function prompt(question: string): Promise<string> {
 
         const firstChat = fullChannel.chats[0];
         const title = firstChat instanceof Api.Channel ? firstChat.title : "Unknown channel";
+        const startTime = Date.now() - PERIOD_SECS * 1_000;
 
         let totalViews = 0;
         let totalMessages = 0;
@@ -117,7 +112,7 @@ function prompt(question: string): Promise<string> {
                 break;
             }
 
-            const delay = timeSeed.generateRandomInteger([5_000, 10_000]);
+            const delay = timeSeed.generateRandomInteger([4_000, 8_000]);
             console.info("Waiting for %s sec before next request", formatMilliseconds(delay));
             await new Promise((resolve) => setTimeout(resolve, delay));
         }
@@ -125,7 +120,7 @@ function prompt(question: string): Promise<string> {
         const averageViews = totalMessages > 0 ? totalViews / totalMessages : 0;
         const engagementRate = participantsCount > 0 ? averageViews / participantsCount : 0;
 
-        const periodDays = periodSeconds / (24 * 60 * 60);
+        const periodDays = PERIOD_SECS / (24 * 60 * 60);
         const averageDailyPosts = periodDays > 0 ? postsInPeriod / periodDays : 0;
 
         console.info(
