@@ -31,6 +31,7 @@ import {
     envVars,
     heliusClientPool,
     logger,
+    MAIN_ACCOUNT_BALANCE_SOL,
     pythClient,
     SNIPER_LAMPORTS_TO_DISTRIBUTE,
     TRADER_LAMPORTS_TO_DISTRIBUTE,
@@ -181,17 +182,30 @@ async function estimateDistributorFunds(
         return;
     }
 
-    const solToDistribute = lamportsToDistribute.sub(solBalance).div(LAMPORTS_PER_SOL);
+    if (fundedAccountCount > 0) {
+        const solToDistribute = lamportsToDistribute
+            .sub(solBalance)
+            .div(LAMPORTS_PER_SOL)
+            .add(MAIN_ACCOUNT_BALANCE_SOL);
+
+        logger.info(
+            "%s distributor (%s) has %s balance: %s SOL. Transfer %s SOL ($%s) to distribute among %s %ss",
+            capitalize(keypairKind),
+            formatPublicKey(account.publicKey, "long"),
+            formatError("insufficient"),
+            formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
+            formatDecimal(solToDistribute),
+            formatDecimal(solToDistribute.mul(usdPriceForSol).toDP(2, Decimal.ROUND_CEIL)),
+            formatInteger(fundedAccountCount),
+            keypairKind
+        );
+        return;
+    }
+
     logger.info(
-        "%s distributor (%s) has %s balance: %s SOL. Transfer %s SOL ($%s) to distribute among %s %ss",
+        "%s distributor (%s) already distributed funds",
         capitalize(keypairKind),
-        formatPublicKey(account.publicKey, "long"),
-        formatError("insufficient"),
-        formatDecimal(solBalance.div(LAMPORTS_PER_SOL)),
-        formatDecimal(solToDistribute),
-        formatDecimal(solToDistribute.mul(usdPriceForSol).toDP(2, Decimal.ROUND_CEIL)),
-        formatInteger(fundedAccountCount),
-        keypairKind
+        formatPublicKey(account.publicKey, "long")
     );
 }
 

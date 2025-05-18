@@ -87,7 +87,7 @@ export const encryption = new Encryption(
 );
 export const storage = createStorage(STORAGE_DIR, envVars.TOKEN_SYMBOL);
 
-export const MAIN_ACCOUNT_BALANCE_SOL = 0.01;
+export const MAIN_ACCOUNT_BALANCE_SOL = 0.1;
 const RAYDIUM_POOL_CREATION_FEE_SOL = envVars.NODE_ENV === "production" ? 0.15 : 1;
 export const DEV_LAMPORTS_TO_DISTRIBUTE = new Decimal(envVars.POOL_LIQUIDITY_SOL)
     .plus(MAIN_ACCOUNT_BALANCE_SOL)
