@@ -19,51 +19,44 @@ import {
     ZERO_DECIMAL,
 } from "../modules";
 
+const sumAmounts = (total: Decimal, amount: Decimal) => total.add(amount);
+
 (async () => {
     try {
+        if (envVars.NODE_ENV === "production") {
+            throw new Error("Production environment not supported");
+        }
+
         const dev = await importKeypairFromFile(KeypairKind.Dev);
         const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
         const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
         const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
 
+        const mainAccountBalance = new Decimal(MAIN_ACCOUNT_BALANCE_SOL)
+            .mul(LAMPORTS_PER_SOL)
+            .trunc();
+
         const sendTransferFundsTransactions = await transferFunds(dev, [
             [
                 sniperDistributor,
-                new Decimal(MAIN_ACCOUNT_BALANCE_SOL)
-                    .mul(LAMPORTS_PER_SOL)
-                    .trunc()
-                    .add(
-                        SNIPER_LAMPORTS_TO_DISTRIBUTE.reduce(
-                            (sum, value) => sum.add(value),
-                            ZERO_DECIMAL
-                        )
-                    ),
+                mainAccountBalance.add(
+                    SNIPER_LAMPORTS_TO_DISTRIBUTE.reduce(sumAmounts, ZERO_DECIMAL)
+                ),
             ],
             [
                 traderDistributor,
-                new Decimal(MAIN_ACCOUNT_BALANCE_SOL)
-                    .mul(LAMPORTS_PER_SOL)
-                    .trunc()
-                    .add(
-                        TRADER_LAMPORTS_TO_DISTRIBUTE.reduce(
-                            (sum, value) => sum.add(value),
-                            ZERO_DECIMAL
-                        )
-                    ),
+                mainAccountBalance.add(
+                    TRADER_LAMPORTS_TO_DISTRIBUTE.reduce(sumAmounts, ZERO_DECIMAL)
+                ),
             ],
             [
                 whaleDistributor,
-                new Decimal(MAIN_ACCOUNT_BALANCE_SOL)
-                    .mul(LAMPORTS_PER_SOL)
-                    .trunc()
-                    .add(
-                        WHALE_LAMPORTS_TO_DISTRIBUTE.reduce(
-                            (sum, value) => sum.add(value),
-                            ZERO_DECIMAL
-                        )
-                    ),
+                mainAccountBalance.add(
+                    WHALE_LAMPORTS_TO_DISTRIBUTE.reduce(sumAmounts, ZERO_DECIMAL)
+                ),
             ],
         ]);
+
         await Promise.all(sendTransferFundsTransactions);
         process.exit(0);
     } catch (error: unknown) {

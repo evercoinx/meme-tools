@@ -14,7 +14,7 @@
         "lint:fix": "eslint --fix .",
         "test:raydium": "yarn set-env:test && yarn start:raydium && yarn add-liquidity:raydium && yarn trade:raydium && yarn buy-mint:whale1 && yarn buy-mint:whale2 && yarn sell-mint:whale1 && yarn finish:raydium && yarn set-env:dev",
         "start:raydium": "yarn get-config && yarn cleanup && yarn transfer-funds && yarn distribute-funds && yarn create-mint && yarn open-pool:raydium && yarn get-pool:raydium && yarn get-funds:main",
-        "finish:raydium": "yarn close-pool:raydium && yarn collect-funds && yarn remove-liquidity:raydium && yarn get-funds",
+        "finish:raydium": "yarn close-pool:raydium && yarn remove-liquidity:raydium && yarn collect-funds && yarn get-funds",
         "cleanup": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/cleanup.ts",
         "distribute-funds": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/distribute-funds.ts",
         "distribute-funds:replay": "NODE_ENV=$(yarn get-env) LOGGER_NAME=distribute-funds ts-node -r ./src/init.ts src/tasks/replay-logs.ts",
