@@ -56,50 +56,21 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
         const sniperDistributor = await importKeypairFromFile(KeypairKind.SniperDistributor);
         const traderDistributor = await importKeypairFromFile(KeypairKind.TraderDistributor);
         const whaleDistributor = await importKeypairFromFile(KeypairKind.WhaleDistributor);
+
         const snipers = importSwapperKeypairs(KeypairKind.Sniper);
         const traders = importSwapperKeypairs(KeypairKind.Trader);
         const whales = importSwapperKeypairs(KeypairKind.Whale);
 
-        const sendCloseSwapperTokenAccountsTransactions: Promise<
-            TransactionSignature | undefined
-        >[] = [];
+        await closeAllSwapperTokenAccounts(dev, snipers, traders, whales);
 
-        const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
-        if (!raydiumLpMint) {
-            logger.warn("Raydium LP mint not loaded from storage");
-        } else {
-            sendCloseSwapperTokenAccountsTransactions.push(
-                ...(await closeDevTokenAccount(dev, new PublicKey(raydiumLpMint)))
-            );
-        }
-
-        const mint = importMintKeypair();
-        if (!mint) {
-            logger.warn("Mint not loaded from storage");
-        } else {
-            sendCloseSwapperTokenAccountsTransactions.push(
-                ...(await closeSwapperTokenAccounts(snipers, KeypairKind.Sniper, mint))
-            );
-            sendCloseSwapperTokenAccountsTransactions.push(
-                ...(await closeSwapperTokenAccounts(whales, KeypairKind.Whale, mint))
-            );
-            sendCloseSwapperTokenAccountsTransactions.push(
-                ...(await closeSwapperTokenAccounts(traders, KeypairKind.Trader, mint))
-            );
-        }
-        await Promise.all(sendCloseSwapperTokenAccountsTransactions);
-
-        const sendCollectSwapperFundsTransactions: Promise<TransactionSignature | undefined>[] = [];
-        sendCollectSwapperFundsTransactions.push(
-            ...(await collectFunds(snipers, KeypairKind.Sniper, sniperDistributor))
+        await collectAllSwapperFunds(
+            sniperDistributor,
+            traderDistributor,
+            whaleDistributor,
+            snipers,
+            traders,
+            whales
         );
-        sendCollectSwapperFundsTransactions.push(
-            ...(await collectFunds(whales, KeypairKind.Whale, whaleDistributor))
-        );
-        sendCollectSwapperFundsTransactions.push(
-            ...(await collectFunds(traders, KeypairKind.Trader, traderDistributor))
-        );
-        await Promise.all(sendCollectSwapperFundsTransactions);
 
         logger.warn(
             "Waiting %s sec to collect funds from main accounts",
@@ -107,23 +78,98 @@ const MAIN_FUNDS_COLLECTION_INTERVAL_MS = 15_000;
         );
         await new Promise((resolve) => setTimeout(resolve, MAIN_FUNDS_COLLECTION_INTERVAL_MS));
 
-        const mainAccounts = [sniperDistributor, traderDistributor, whaleDistributor];
-        if (envVars.NODE_ENV === "production") {
-            mainAccounts.push(dev);
-        }
-
-        const sendCollectMainFundsTransactions = await collectFunds(
-            mainAccounts,
-            KeypairKind.Main,
-            new PublicKey(envVars.COLLECTOR_PUBLIC_KEY)
+        await collectAllMainAccountFunds(
+            dev,
+            sniperDistributor,
+            traderDistributor,
+            whaleDistributor
         );
-        await Promise.all(sendCollectMainFundsTransactions);
+
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
         process.exit(1);
     }
 })();
+
+async function closeAllSwapperTokenAccounts(
+    dev: Keypair,
+    snipers: Keypair[],
+    traders: Keypair[],
+    whales: Keypair[]
+): Promise<void> {
+    const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
+
+    const raydiumLpMint = storage.get<string | undefined>(STORAGE_RAYDIUM_LP_MINT);
+    if (!raydiumLpMint) {
+        logger.warn("Raydium LP mint not loaded from storage");
+    } else {
+        sendTransactions.push(...(await closeDevTokenAccount(dev, new PublicKey(raydiumLpMint))));
+    }
+
+    const mint = importMintKeypair();
+    if (!mint) {
+        logger.warn("Mint not loaded from storage");
+    } else {
+        sendTransactions.push(
+            ...(await closeSwapperTokenAccounts(snipers, KeypairKind.Sniper, mint))
+        );
+        sendTransactions.push(
+            ...(await closeSwapperTokenAccounts(traders, KeypairKind.Trader, mint))
+        );
+        sendTransactions.push(
+            ...(await closeSwapperTokenAccounts(whales, KeypairKind.Whale, mint))
+        );
+    }
+
+    await Promise.all(sendTransactions);
+}
+
+async function collectAllSwapperFunds(
+    sniperDistributor: Keypair,
+    traderDistributor: Keypair,
+    whaleDistributor: Keypair,
+    snipers: Keypair[],
+    traders: Keypair[],
+    whales: Keypair[]
+): Promise<void> {
+    const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
+
+    sendTransactions.push(...(await collectFunds(snipers, KeypairKind.Sniper, sniperDistributor)));
+    sendTransactions.push(...(await collectFunds(whales, KeypairKind.Whale, whaleDistributor)));
+    sendTransactions.push(...(await collectFunds(traders, KeypairKind.Trader, traderDistributor)));
+
+    await Promise.all(sendTransactions);
+}
+
+async function collectAllMainAccountFunds(
+    dev: Keypair,
+    sniperDistributor: Keypair,
+    traderDistributor: Keypair,
+    whaleDistributor: Keypair
+): Promise<void> {
+    const sendTransactions: Promise<TransactionSignature | undefined>[] = [];
+    const mainAccounts = new Map<KeypairKind, Keypair>([
+        [KeypairKind.SniperDistributor, sniperDistributor],
+        [KeypairKind.TraderDistributor, traderDistributor],
+        [KeypairKind.WhaleDistributor, whaleDistributor],
+    ]);
+    if (envVars.NODE_ENV === "production") {
+        mainAccounts.set(KeypairKind.Dev, dev);
+    }
+
+    for (const [keypairKind, account] of mainAccounts.entries()) {
+        sendTransactions.push(
+            ...(await collectFunds(
+                [account],
+                keypairKind,
+                new PublicKey(envVars.COLLECTOR_PUBLIC_KEY)
+            ))
+        );
+    }
+
+    await Promise.all(sendTransactions);
+}
 
 async function closeDevTokenAccount(
     dev: Keypair,
@@ -213,16 +259,12 @@ async function closeSwapperTokenAccounts(
                 envVars.TOKEN_SYMBOL,
                 formatPublicKey(mintTokenAccount)
             );
-        } else if (mintTokenBalance.lte(ZERO_DECIMAL)) {
-            logger.warn(
-                "%s (%s) has zero balance on %s ATA (%s)",
-                capitalize(keypairKind),
-                formatPublicKey(account.publicKey),
-                envVars.TOKEN_SYMBOL,
-                formatPublicKey(mintTokenAccount)
+        } else if (mintTokenBalance.gt(MINT_DUST_UNITS)) {
+            throw new Error(
+                `${capitalize(keypairKind)} (${formatPublicKey(account.publicKey)}) has positive balance on ${envVars.TOKEN_SYMBOL} ATA (${formatPublicKey(mintTokenAccount)}): ${formatDecimal(mintTokenBalance.div(UNITS_PER_MINT), envVars.TOKEN_DECIMALS)}`
             );
         } else {
-            if (mintTokenBalance.lte(MINT_DUST_UNITS)) {
+            if (mintTokenBalance.gt(ZERO_DECIMAL) && mintTokenBalance.lte(MINT_DUST_UNITS)) {
                 instructions.push(
                     createBurnInstruction(
                         mintTokenAccount,

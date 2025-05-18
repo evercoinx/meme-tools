@@ -22,7 +22,6 @@ export enum KeypairKind {
     SniperDistributor = "sniperDistributor",
     TraderDistributor = "traderDistributor",
     WhaleDistributor = "whaleDistributor",
-    Main = "main",
     Sniper = "sniper",
     Trader = "trader",
     Whale = "whale",
