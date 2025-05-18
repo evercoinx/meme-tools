@@ -39,6 +39,8 @@ import {
     ZERO_DECIMAL,
 } from "../modules";
 
+const DEV_DISTRIBUTION_FUNDS_MULTIPLIER = 1.1;
+
 (async () => {
     try {
         const {
@@ -144,7 +146,10 @@ async function estimateDevFunds(
         return;
     }
 
-    const solToDistribute = lamportsToDistribute.sub(solBalance).div(LAMPORTS_PER_SOL);
+    const solToDistribute = lamportsToDistribute
+        .sub(solBalance)
+        .div(LAMPORTS_PER_SOL)
+        .mul(DEV_DISTRIBUTION_FUNDS_MULTIPLIER);
     logger.info(
         "Dev (%s) has %s balance: %s SOL. Transfer %s SOL ($%s)",
         formatPublicKey(dev.publicKey, "long"),

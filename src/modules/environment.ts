@@ -364,7 +364,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .description("Trader sell amount range (in percent)"),
             WHALE_AMOUNTS_SOL: Joi.array()
                 .optional()
-                .items(Joi.number().min(1).max(5))
+                .items(Joi.number().min(0.5).max(5))
                 .min(0)
                 .max(5)
                 .default([])
