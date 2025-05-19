@@ -138,8 +138,8 @@
         - `TOKEN_NAME` (Defaults to _"Official $TOKEN_NAME $TOKEN_TAGS0"_)
         - `TOKEN_DESCRIPTION` (Defaults to _"$TOKEN_NAME" on Solana"_)
         - `TOKEN_WEBSITE_URI` (Defaults to _""_)
-        - `TOKEN_TWITTER_URI`
-        - `TOKEN_TELEGRAM_URI`
+        - `TOKEN_TWITTER_URI` (Defaults to _""_)
+        - `TOKEN_TELEGRAM_URI` (Defaults to _""_)
         - `TOKEN_TAGS` (Defaults to _"meme"_)
 
 5. Run this command to check the current configuration:

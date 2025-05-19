@@ -82,9 +82,9 @@ export function generateOffchainTokenMetadata(
     decimals: number,
     imageUri: string,
     tags: Set<string>,
-    twitterUri: string,
-    telegramUri: string,
-    websiteUri?: string
+    websiteUri?: string,
+    twitterUri?: string,
+    telegramUri?: string
 ): Omit<OffchainTokenMetadata, "uri"> {
     if (tags.size === 0) {
         throw new Error("Tags must have at least one item");
@@ -102,15 +102,16 @@ export function generateOffchainTokenMetadata(
         image: imageUri,
     };
 
-    metadata.social_links = {
-        twitter: twitterUri,
-        telegram: telegramUri,
-    };
-
     metadata.tags = Array.from(tags);
 
     if (websiteUri) {
         metadata.external_url = websiteUri;
+    }
+    if (twitterUri) {
+        (metadata.social_links ??= {}).twitter = twitterUri;
+    }
+    if (telegramUri) {
+        (metadata.social_links ??= {}).telegram = telegramUri;
     }
 
     return metadata;
@@ -221,9 +222,9 @@ async function uploadMetadata(groupId: string, imageUri: string): Promise<Offcha
         envVars.TOKEN_DECIMALS,
         imageUri,
         envVars.TOKEN_TAGS,
+        envVars.TOKEN_WEBSITE_URI,
         envVars.TOKEN_TWITTER_URI,
         envVars.TOKEN_TELEGRAM_URI,
-        envVars.TOKEN_WEBSITE_URI
     );
 
     const metadataFilename = `${envVars.TOKEN_SYMBOL.toLowerCase()}.json`;
@@ -295,14 +296,14 @@ async function createMint(
         additionalMetadata: [],
     };
 
+    if (offchainTokenMetadata.external_url) {
+        metadata.additionalMetadata.push(["website", offchainTokenMetadata.external_url]);
+    }
     if (offchainTokenMetadata.social_links?.twitter) {
         metadata.additionalMetadata.push(["twitter", offchainTokenMetadata.social_links.twitter]);
     }
     if (offchainTokenMetadata.social_links?.telegram) {
         metadata.additionalMetadata.push(["telegram", offchainTokenMetadata.social_links.telegram]);
-    }
-    if (offchainTokenMetadata.external_url) {
-        metadata.additionalMetadata.push(["website", offchainTokenMetadata.external_url]);
     }
 
     // Size of Mint account with MetadataPointer extension

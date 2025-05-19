@@ -194,8 +194,9 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 })
                 .description("Token website URI"),
             TOKEN_TWITTER_URI: Joi.string()
-                .required()
+                .optional()
                 .trim()
+                .allow("")
                 .uri()
                 .custom((uri: string) => {
                     if (!uri.startsWith("https://x.com")) {
@@ -205,8 +206,9 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 })
                 .description("Token Twitter URI"),
             TOKEN_TELEGRAM_URI: Joi.string()
-                .required()
+                .optional()
                 .trim()
+                .allow("")
                 .uri()
                 .custom((uri: string) => {
                     if (!uri.startsWith("https://t.me")) {
@@ -260,7 +262,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .description("Pool trading with only new traders"),
             SNIPER_POOL_SHARE_RANGE_PERCENT: Joi.array()
                 .required()
-                .items(Joi.number().min(0.5).max(1.5).custom(convertToDecimalFraction))
+                .items(Joi.number().min(0.5).max(2).custom(convertToDecimalFraction))
                 .unique()
                 .sort({ order: "ascending" })
                 .min(2)
