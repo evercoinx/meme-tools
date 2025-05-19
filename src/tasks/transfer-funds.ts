@@ -36,28 +36,29 @@ const sumAmounts = (total: Decimal, amount: Decimal) => total.add(amount);
             .mul(LAMPORTS_PER_SOL)
             .trunc();
 
-        const sendTransferFundsTransactions = await transferFunds(dev, [
-            [
-                sniperDistributor,
-                mainAccountBalance.add(
-                    SNIPER_LAMPORTS_TO_DISTRIBUTE.reduce(sumAmounts, ZERO_DECIMAL)
-                ),
-            ],
-            [
-                traderDistributor,
-                mainAccountBalance.add(
-                    TRADER_LAMPORTS_TO_DISTRIBUTE.reduce(sumAmounts, ZERO_DECIMAL)
-                ),
-            ],
-            [
-                whaleDistributor,
-                mainAccountBalance.add(
-                    WHALE_LAMPORTS_TO_DISTRIBUTE.reduce(sumAmounts, ZERO_DECIMAL)
-                ),
-            ],
-        ]);
+        const recipientLamports: [Keypair, Decimal][] = [];
+        const sniperLamports = SNIPER_LAMPORTS_TO_DISTRIBUTE.reduce(sumAmounts, ZERO_DECIMAL);
+        if (sniperLamports.gt(ZERO_DECIMAL)) {
+            recipientLamports.push([sniperDistributor, sniperLamports.add(mainAccountBalance)]);
+        }
 
-        await Promise.all(sendTransferFundsTransactions);
+        const traderLamports = TRADER_LAMPORTS_TO_DISTRIBUTE.reduce(sumAmounts, ZERO_DECIMAL);
+        if (traderLamports.gt(ZERO_DECIMAL)) {
+            recipientLamports.push([traderDistributor, traderLamports.add(mainAccountBalance)]);
+        }
+
+        const whaleLamports = WHALE_LAMPORTS_TO_DISTRIBUTE.reduce(sumAmounts, ZERO_DECIMAL);
+        if (whaleLamports.gt(ZERO_DECIMAL)) {
+            recipientLamports.push([whaleDistributor, whaleLamports.add(mainAccountBalance)]);
+        }
+
+        if (recipientLamports.length === 0) {
+            logger.warn("No lamports to distribute");
+        } else {
+            const sendTransferFundsTransactions = await transferFunds(dev, recipientLamports);
+            await Promise.all(sendTransferFundsTransactions);
+        }
+
         process.exit(0);
     } catch (error: unknown) {
         logger.fatal(formatError(error));
