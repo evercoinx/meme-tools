@@ -157,7 +157,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .required()
                 .trim()
                 .uppercase()
-                .pattern(/^[A-Z0-9-_.]+$/)
+                .pattern(/^[A-Z0-9-_.$]+$/)
                 .max(20)
                 .description("Token symbol"),
             TOKEN_NAME: Joi.string().optional().trim().allow("").max(40).description("Token name"),
@@ -178,7 +178,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                 .optional()
                 .integer()
                 .min(100_000)
-                .max(100_000_000_000)
+                .max(999_999_999_999)
                 .default(1_000_000_000)
                 .description("Token supply"),
             TOKEN_WEBSITE_URI: Joi.string()
