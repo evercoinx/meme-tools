@@ -223,7 +223,7 @@ export function extractEnvironmentVariables(seed: Seed): EnvironmentSchema {
                     Joi.string()
                         .required()
                         .trim()
-                        .allow("ai", "celebrity", "fun", "gaming", "meme", "sports")
+                        .allow("ai", "celebrity", "fun", "gaming", "meme", "sports", "token")
                 )
                 .min(1)
                 .max(3)

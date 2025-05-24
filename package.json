@@ -66,6 +66,7 @@
         "get-pool:raydium": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/raydium/get-pool.ts",
         "generate-encryption-secret": "hexdump -vn16 -e'4/4 \"%08x\" 1 \"\n\"' /dev/urandom",
         "get-comments:twitter": "shuf -n30 data/twitter/comments.txt | bash -c 'set -a; source .env.$(yarn get-env); envsubst'",
+        "get-keypairs": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/get-keypairs.ts",
         "grind-keypairs": "yarn grind-keypair:dev && yarn grind-keypair:dsn && yarn grind-keypair:dtr && yarn grind-keypair:dwh",
         "grind-keypair:dev": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/grind-keypair.ts --prefix De --postfix V",
         "grind-keypair:dsn": "NODE_ENV=$(yarn get-env) ts-node -r ./src/init.ts src/tasks/grind-keypair.ts --prefix Ds --postfix N",
