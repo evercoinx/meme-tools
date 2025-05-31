@@ -12,7 +12,7 @@ import {
 } from "../../helpers/format";
 import { envVars, timeSeed } from "../../modules";
 
-const PERIOD_SECS = 1_209_600; // 1 month
+const PERIOD_SECS = 1_209_600; // 2 weeks
 
 function prompt(question: string): Promise<string> {
     const rl = readline.createInterface({
@@ -81,7 +81,7 @@ function prompt(question: string): Promise<string> {
 
         while (true) {
             const messages = await client.getMessages(channelEntity, {
-                limit: 20,
+                limit: 50,
                 maxId: lastMessageId,
             });
             if (!messages.length) {
@@ -124,12 +124,11 @@ function prompt(question: string): Promise<string> {
         const averageDailyPosts = periodDays > 0 ? postsInPeriod / periodDays : 0;
 
         console.info(
-            "Channel stats: %s\nSubscribers: %s\nAverage views: %s\nEngagement rate: %s\nTotal posts: %s\nAverage daily posts: %s",
+            "Channel stats: %s\nSubscribers: %s\nAverage views: %s\nEngagement rate: %s\nAverage daily posts: %s",
             formatText(title),
             formatInteger(participantsCount),
             formatInteger(Math.round(averageViews)),
             formatPercent(engagementRate),
-            formatInteger(postsInPeriod),
             formatDecimal(averageDailyPosts, 2)
         );
 
